@@ -1,0 +1,426 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	targetNamespace="http://mbilotta.altervista.org/julia/descriptor"
+	xmlns:tns="http://mbilotta.altervista.org/julia/descriptor"
+	xmlns:xml="http://www.w3.org/XML/1998/namespace"
+	elementFormDefault="qualified">
+
+	<xs:annotation>
+		<xs:documentation>
+			<![CDATA[
+
+			Copyright (C) 2015 Maurizio Bilotta.
+
+			This file is part of Julia. See <http://mbilotta.altervista.org/>.
+
+			Julia is free software: you can redistribute it and/or modify
+			it under the terms of the GNU Lesser General Public License as published by
+			the Free Software Foundation, either version 3 of the License, or
+			(at your option) any later version.
+
+			Julia is distributed in the hope that it will be useful,
+			but WITHOUT ANY WARRANTY; without even the implied warranty of
+			MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+			GNU Lesser General Public License for more details.
+
+			You should have received a copy of the GNU Lesser General Public License
+			along with Julia. If not, see <http://www.gnu.org/licenses/>.
+
+			]]>
+		</xs:documentation>
+	</xs:annotation>
+	
+ 	<xs:import schemaLocation="xml.xsd" namespace="http://www.w3.org/XML/1998/namespace"/>
+ 
+ 	<xs:simpleType name="nonEmpty">
+ 		<xs:restriction base="xs:string">
+ 			<xs:pattern value="\s*([^\s]\s*)+"/>
+ 			<xs:whiteSpace value="replace"/>
+ 		</xs:restriction>
+ 	</xs:simpleType>
+
+ 	<xs:simpleType name="collapsedNonEmpty">
+ 		<xs:restriction base="tns:nonEmpty">
+ 			<xs:whiteSpace value="collapse" fixed="true"/>
+ 		</xs:restriction>
+ 	</xs:simpleType>
+
+ 	<xs:simpleType name="stringList">
+		<xs:list itemType="xs:string"/>
+ 	</xs:simpleType>
+
+ 	<xs:simpleType name="groupList">
+		<xs:restriction base="tns:stringList">
+			<xs:minLength value="1"/>
+		</xs:restriction>
+ 	</xs:simpleType>
+
+	<xs:simpleType name="javaBoolean">
+		<xs:restriction base="xs:string">
+			<xs:pattern value="true|false"/>
+			<xs:whiteSpace value="collapse" fixed="true"/>
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="unsignedByteList">
+		<xs:list itemType="xs:unsignedByte"/>
+	</xs:simpleType>
+
+	<xs:simpleType name="decRGB">
+		<xs:restriction base="tns:unsignedByteList">
+			<xs:length value="3" fixed="true"/>
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="javaDecimal">
+		<xs:restriction base="xs:string">
+			<xs:pattern value="[+-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+-]?[0-9]+)?"/>
+			<xs:whiteSpace value="collapse" fixed="true"/>
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="ieee754NotNaN">
+		<xs:union memberTypes="tns:javaDecimal">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:pattern value="[+-]?Infinity"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:union>
+	</xs:simpleType>
+
+	<xs:simpleType name="ieee754">
+		<xs:union memberTypes="tns:ieee754NotNaN">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:pattern value="[+-]?NaN"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:union>
+	</xs:simpleType>
+
+	<xs:simpleType name="javaClass">
+		<xs:restriction base="xs:string">
+			<xs:pattern value="([\p{L}_\p{Sc}][\p{L}\p{N}_\p{Sc}]*\.)*[\p{L}_\p{Sc}][\p{L}\p{N}_\p{Sc}]*"/>
+			<xs:whiteSpace value="collapse" fixed="true"/>
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="javaIdentifier">
+		<xs:restriction base="xs:string">
+			<xs:pattern value="[\p{L}_\p{Sc}][\p{L}\p{N}_\p{Sc}]*"/>
+			<xs:whiteSpace value="collapse" fixed="true"/>
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:complexType name="complexRectangle">
+		<xs:sequence>
+			<xs:element name="re0" type="tns:javaDecimal"/>
+			<xs:element name="im0" type="tns:javaDecimal"/>
+			<xs:element name="re1" type="tns:javaDecimal"/>
+			<xs:element name="im1" type="tns:javaDecimal"/>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="parameterType" abstract="true">
+		<xs:sequence>
+		</xs:sequence>
+		<xs:attribute name="id" type="tns:javaIdentifier" use="required"/>
+	</xs:complexType>
+
+	<xs:complexType name="int">
+		<xs:complexContent>
+			<xs:extension base="tns:parameterType">
+				<xs:sequence>
+					<xs:element name="min" type="xs:int" minOccurs="0"/>
+					<xs:element name="max" type="xs:int" minOccurs="0"/>
+					<xs:element name="hint" minOccurs="0" maxOccurs="unbounded">
+						<xs:complexType>
+							<xs:simpleContent>
+								<xs:extension base="xs:int">
+									<xs:attribute name="groups" type="tns:groupList"/>
+								</xs:extension>
+							</xs:simpleContent>
+						</xs:complexType>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="double">
+		<xs:complexContent>
+			<xs:extension base="tns:parameterType">
+				<xs:sequence>
+					<xs:choice minOccurs="0">
+						<xs:element name="minInclusive" type="tns:ieee754NotNaN"/>
+						<xs:element name="minExclusive" type="tns:ieee754NotNaN"/>
+					</xs:choice>
+					<xs:choice minOccurs="0">
+						<xs:element name="maxInclusive" type="tns:ieee754NotNaN"/>
+						<xs:element name="maxExclusive" type="tns:ieee754NotNaN"/>
+					</xs:choice>
+					<xs:element name="exception" type="tns:ieee754NotNaN" minOccurs="0" maxOccurs="unbounded"/>
+					<xs:element name="hint" minOccurs="0" maxOccurs="unbounded">
+						<xs:complexType>
+							<xs:simpleContent>
+								<xs:extension base="tns:ieee754">
+									<xs:attribute name="groups" type="tns:groupList"/>
+								</xs:extension>
+							</xs:simpleContent>
+						</xs:complexType>
+					</xs:element>
+				</xs:sequence>
+				<xs:attribute name="acceptsNaN">
+					<xs:simpleType>
+						<xs:restriction base="xs:token">
+							<xs:enumeration value="1"/>
+							<xs:enumeration value="true"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:attribute>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="decimal">
+		<xs:complexContent>
+			<xs:extension base="tns:parameterType">
+				<xs:sequence>
+					<xs:choice minOccurs="0">
+						<xs:element name="minInclusive" type="tns:javaDecimal"/>
+						<xs:element name="minExclusive" type="tns:javaDecimal"/>
+					</xs:choice>
+					<xs:choice minOccurs="0">
+						<xs:element name="maxInclusive" type="tns:javaDecimal"/>
+						<xs:element name="maxExclusive" type="tns:javaDecimal"/>
+					</xs:choice>
+					<xs:element name="exception" type="tns:javaDecimal" minOccurs="0" maxOccurs="unbounded"/>
+					<xs:element name="hint" minOccurs="0" maxOccurs="unbounded">
+						<xs:complexType>
+							<xs:simpleContent>
+								<xs:extension base="tns:javaDecimal">
+									<xs:attribute name="groups" type="tns:groupList"/>
+								</xs:extension>
+							</xs:simpleContent>
+						</xs:complexType>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="real">
+		<xs:complexContent>
+			<xs:extension base="tns:decimal" />
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="boolean">
+		<xs:complexContent>
+			<xs:extension base="tns:parameterType">
+				<xs:sequence>
+					<xs:element name="hint" minOccurs="0" maxOccurs="unbounded">
+						<xs:complexType>
+							<xs:simpleContent>
+								<xs:extension base="tns:javaBoolean">
+									<xs:attribute name="groups" type="tns:groupList"/>
+								</xs:extension>
+							</xs:simpleContent>
+						</xs:complexType>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="enum">
+		<xs:complexContent>
+			<xs:extension base="tns:parameterType">
+				<xs:sequence>
+					<xs:element name="hint" minOccurs="0" maxOccurs="unbounded">
+						<xs:complexType>
+							<xs:simpleContent>
+								<xs:extension base="tns:javaIdentifier">
+									<xs:attribute name="groups" type="tns:groupList"/>
+								</xs:extension>
+							</xs:simpleContent>
+						</xs:complexType>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="gradient">
+		<xs:complexContent>
+			<xs:extension base="tns:parameterType">
+				<xs:sequence>
+					<xs:element name="hint" minOccurs="0" maxOccurs="unbounded">
+						<xs:complexType>
+							<xs:sequence>
+								<xs:element name="color" minOccurs="2" maxOccurs="unbounded">
+									<xs:complexType>
+										<xs:simpleContent>
+											<xs:extension base="tns:decRGB">
+												<xs:attribute name="location" use="required">
+													<xs:simpleType>
+														<xs:restriction base="xs:float">
+															<xs:minInclusive value="0"/>
+															<xs:maxInclusive value="1"/>
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:attribute>
+												<xs:attribute name="alpha" type="xs:unsignedByte" default="255"/>
+											</xs:extension>
+										</xs:simpleContent>
+									</xs:complexType>
+								</xs:element>
+							</xs:sequence>
+							<xs:attribute name="groups" type="tns:groupList"/>
+						</xs:complexType>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="color">
+		<xs:complexContent>
+			<xs:extension base="tns:parameterType">
+				<xs:sequence>
+					<xs:element name="hint" minOccurs="0" maxOccurs="unbounded">
+						<xs:complexType>
+							<xs:simpleContent>
+								<xs:extension base="tns:decRGB">
+									<xs:attribute name="groups" type="tns:groupList"/>
+									<xs:attribute name="alpha" type="xs:unsignedByte" default="255"/>
+								</xs:extension>
+							</xs:simpleContent>
+						</xs:complexType>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="any">
+		<xs:complexContent>
+			<xs:extension base="tns:parameterType">
+				<xs:sequence>
+					<xs:element name="hint" minOccurs="0" maxOccurs="unbounded">
+						<xs:complexType>
+							<xs:simpleContent>
+								<xs:extension base="tns:nonEmpty">
+									<xs:attribute name="groups" type="tns:groupList"/>
+								</xs:extension>
+							</xs:simpleContent>
+						</xs:complexType>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="plugin" abstract="true">
+		<xs:sequence>
+			<xs:element ref="tns:class"/>
+			<xs:element ref="tns:mandelbrotSetDefaults" minOccurs="0"/>
+			<xs:element ref="tns:juliaSetDefaults" minOccurs="0"/>
+			<xs:element ref="tns:parameter" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element ref="tns:documentation" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="formula">
+		<xs:complexContent>
+			<xs:restriction base="tns:plugin">
+				<xs:sequence>
+					<xs:element ref="tns:class"/>
+					<xs:element ref="tns:mandelbrotSetDefaults"/>
+					<xs:element ref="tns:juliaSetDefaults"/>
+					<xs:element ref="tns:parameter" minOccurs="0" maxOccurs="unbounded"/>
+					<xs:element ref="tns:documentation" minOccurs="0" maxOccurs="unbounded"/>
+				</xs:sequence>
+			</xs:restriction>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="representation">
+		<xs:complexContent>
+			<xs:restriction base="tns:plugin">
+				<xs:sequence>
+					<xs:element ref="tns:class"/>
+					<xs:element ref="tns:parameter" minOccurs="0" maxOccurs="unbounded"/>
+					<xs:element ref="tns:documentation" minOccurs="0" maxOccurs="unbounded"/>
+				</xs:sequence>
+			</xs:restriction>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="numberFactory">
+		<xs:complexContent>
+			<xs:restriction base="tns:plugin">
+				<xs:sequence>
+					<xs:element ref="tns:class"/>
+					<xs:element ref="tns:parameter" minOccurs="0" maxOccurs="unbounded"/>
+					<xs:element ref="tns:documentation" minOccurs="0" maxOccurs="unbounded"/>
+				</xs:sequence>
+			</xs:restriction>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<xs:element name="class" type="tns:javaClass"/>
+
+	<xs:element name="mandelbrotSetDefaults" type="tns:complexRectangle"/>
+	<xs:element name="juliaSetDefaults">
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:extension base="tns:complexRectangle">
+					<xs:sequence>
+						<xs:element name="reC" type="tns:javaDecimal"/>
+						<xs:element name="imC" type="tns:javaDecimal"/>
+					</xs:sequence>
+				</xs:extension>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="parameter" type="tns:parameterType">
+	</xs:element>
+
+	<xs:element name="documentation">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="name" type="xs:token"/>
+				<xs:element name="description" type="xs:token"/>
+				<xs:element name="parameter" minOccurs="0" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="name" type="xs:token"/>
+							<xs:element name="description" type="xs:token"/>
+						</xs:sequence>
+						<xs:attribute name="id" type="tns:javaIdentifier" use="required"/>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+			<xs:attribute ref="xml:lang" use="required"/>
+		</xs:complexType>
+		<xs:unique name="idUniquenessDoc">
+			<xs:selector xpath="tns:parameter"/>
+			<xs:field xpath="@id"/>
+		</xs:unique>
+	</xs:element>
+
+	<xs:element name="plugin" type="tns:plugin">
+		<xs:unique name="idUniqueness">
+			<xs:selector xpath="tns:parameter"/>
+			<xs:field xpath="@id"/>
+		</xs:unique>
+		<xs:key name="docLangUniqueness">
+			<xs:selector xpath="tns:documentation"/>
+			<xs:field xpath="@xml:lang"/>
+		</xs:key>
+	</xs:element>
+
+</xs:schema>

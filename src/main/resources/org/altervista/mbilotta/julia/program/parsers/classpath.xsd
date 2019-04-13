@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	targetNamespace="http://mbilotta.altervista.org/julia/classpath"
+	xmlns:tns="http://mbilotta.altervista.org/julia/classpath"
+	elementFormDefault="qualified">
+
+	<xs:annotation>
+		<xs:documentation>
+			<![CDATA[
+
+			Copyright (C) 2015 Maurizio Bilotta.
+
+			This file is part of Julia. See <http://mbilotta.altervista.org/>.
+
+			Julia is free software: you can redistribute it and/or modify
+			it under the terms of the GNU Lesser General Public License as published by
+			the Free Software Foundation, either version 3 of the License, or
+			(at your option) any later version.
+
+			Julia is distributed in the hope that it will be useful,
+			but WITHOUT ANY WARRANTY; without even the implied warranty of
+			MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+			GNU Lesser General Public License for more details.
+
+			You should have received a copy of the GNU Lesser General Public License
+			along with Julia. If not, see <http://www.gnu.org/licenses/>.
+
+			]]>
+		</xs:documentation>
+	</xs:annotation>
+
+ 	<xs:simpleType name="nonEmpty">
+ 		<xs:restriction base="xs:string">
+ 			<xs:pattern value="\s*([^\s]\s*)+"/>
+ 			<xs:whiteSpace value="preserve"/>
+ 		</xs:restriction>
+ 	</xs:simpleType>
+
+	<xs:element name="classpath">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="entry" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:simpleContent>
+							<xs:extension base="tns:nonEmpty">
+								<xs:attribute name="jarFolder">
+									<xs:simpleType>
+										<xs:restriction base="xs:token">
+											<xs:enumeration value="1"/>
+											<xs:enumeration value="true"/>
+										</xs:restriction>
+									</xs:simpleType>
+								</xs:attribute>
+							</xs:extension>
+						</xs:simpleContent>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+</xs:schema>
