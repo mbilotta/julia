@@ -50,6 +50,10 @@ You need JDK 1.8+ and Maven installed in your system:
     cd julia
     mvn clean package
 
+## Acknowledgements
+
+Thanks to [Robert Munafo](https://mrob.com/pub/index.html) for providing valuable informations on fractal rendering algorithms througout its [Mu-Ency](https://mrob.com/pub/muency.html) site.
+
 ## Licensing information
 
 Julia is provided under the terms of the GNU Lesser General Public License (LGPL), ver. 3. You can read the license terms clicking the _About Julia_ button in the dialog you see the first time it runs or you can open _Help → About Julia_ in the main UI.
