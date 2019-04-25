@@ -92,6 +92,7 @@ import javax.swing.Timer;
 import javax.swing.colorchooser.ColorSelectionModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.altervista.mbilotta.julia.Consumer;
@@ -601,11 +602,16 @@ public class Application {
 		public void actionPerformed(ActionEvent e) {
 			JFileChooser fc = new JFileChooser();
 			fc.setDialogType(JFileChooser.SAVE_DIALOG);
-			fc.setFileFilter(new FileNameExtensionFilter("Julia image (*.jim)", "jim"));
+			FileFilter jimWithRasterFilter = new FileNameExtensionFilter("Julia image (*.jim)", "jim");
+			FileFilter jimWithoutRasterFilter = new FileNameExtensionFilter("Julia image w/o raster data (*.jim)", "jim");
+			fc.addChoosableFileFilter(jimWithRasterFilter);
+			fc.addChoosableFileFilter(jimWithoutRasterFilter);
+			fc.setFileFilter(jimWithRasterFilter);
 			int rv = showSaveDialog(fc, mainWindow);
 			if (rv == JFileChooser.APPROVE_OPTION) {
 				File file = fc.getSelectedFile();
-				SaveWorker saveWorker = new SaveWorker(file, currentImage, iimg);
+				FileFilter selectedFilter = fc.getFileFilter();
+				SaveWorker saveWorker = new SaveWorker(file, currentImage, selectedFilter == jimWithoutRasterFilter ? null : iimg);
 				executorService.execute(saveWorker);
 				saveWorker.block(mainWindow, "Writing to " + file + ":", "number factory...");
 			}
