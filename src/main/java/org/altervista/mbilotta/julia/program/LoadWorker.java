@@ -46,6 +46,7 @@ public class LoadWorker extends BlockingSwingWorker<Void> {
 	private final boolean loadIntermediateImage;
 	private int errorCount = 0;
 	private int fatalCount = 0;
+	private boolean hasIntermediateImage = false;
 	private IntermediateImage iimg;
 
 	private final Out<Integer> errorCountOut = new Out<Integer>() {
@@ -155,6 +156,10 @@ public class LoadWorker extends BlockingSwingWorker<Void> {
 				juliaSetPointOut.isSet();
 	}
 
+	public boolean hasIntermediateImage() {
+		return hasIntermediateImage;
+	}
+
 	@Override
 	protected Void doInBackground() throws Exception {
 		try (ZipFile zipFile = new ZipFile(file)) {
@@ -209,12 +214,10 @@ public class LoadWorker extends BlockingSwingWorker<Void> {
 			}
 			setProgress(60);
 
-			if (loadIntermediateImage) {
+			if (fatalCount == 0 && loadIntermediateImage) {
 				entry = zipFile.getEntry("intermediateImage");
-				if (entry == null) {
-					addFatalError(null);
-					errorOutput.println("could not find intermediate image zip entry.");
-				} else if (fatalCount == 0) {
+				if (entry != null) {
+					hasIntermediateImage = true;
 					publish("intermediate image...");
 					try {
 						Representation representation = (Representation) representationInstance.create();
