@@ -584,6 +584,7 @@ public class Application {
 								load(header, getIntermediateImage(), false);
 								setStatusMessage(null, false);							
 							} else {
+								// invokeLater is needed here to make window move to front
 								SwingUtilities.invokeLater(() -> {
 									openNewControlWindow(getFile().getName(), header);
 								});
