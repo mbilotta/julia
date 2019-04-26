@@ -2066,7 +2066,7 @@ public class ControlWindow extends JFrame {
 
 	private void save() {
 		JFileChooser fc = new JFileChooser();
-		FileFilter jimFilter = new FileNameExtensionFilter("Julia image w/o raster data (*.jim)", "jim");
+		FileFilter jimFilter = new FileNameExtensionFilter("Julia image w/o intermediate data (*.jim)", "jim");
 		fc.setFileFilter(jimFilter);
 		fc.setDialogType(JFileChooser.SAVE_DIALOG);
 		int rv = showSaveDialog(fc, this);

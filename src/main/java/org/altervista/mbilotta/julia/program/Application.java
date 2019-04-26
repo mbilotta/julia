@@ -64,6 +64,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
@@ -577,10 +579,15 @@ public class Application {
 									getRectangle(),
 									getForceEqualScales(),
 									getJuliaSetPoint());
-							
-							load(header, getIntermediateImage(), false);
 
-							setStatusMessage(null, false);
+							if (getIntermediateImage() != null) {
+								load(header, getIntermediateImage(), false);
+								setStatusMessage(null, false);							
+							} else {
+								SwingUtilities.invokeLater(() -> {
+									openNewControlWindow(getFile().getName(), header);
+								});
+							}
 						}
 					}
 				};
@@ -602,16 +609,16 @@ public class Application {
 		public void actionPerformed(ActionEvent e) {
 			JFileChooser fc = new JFileChooser();
 			fc.setDialogType(JFileChooser.SAVE_DIALOG);
-			FileFilter jimWithRasterFilter = new FileNameExtensionFilter("Julia image (*.jim)", "jim");
-			FileFilter jimWithoutRasterFilter = new FileNameExtensionFilter("Julia image w/o raster data (*.jim)", "jim");
-			fc.addChoosableFileFilter(jimWithRasterFilter);
-			fc.addChoosableFileFilter(jimWithoutRasterFilter);
-			fc.setFileFilter(jimWithRasterFilter);
+			FileFilter jimWithIntermDataFilter = new FileNameExtensionFilter("Julia image (*.jim)", "jim");
+			FileFilter jimWithoutIntermDataFilter = new FileNameExtensionFilter("Julia image w/o intermediate data (*.jim)", "jim");
+			fc.addChoosableFileFilter(jimWithIntermDataFilter);
+			fc.addChoosableFileFilter(jimWithoutIntermDataFilter);
+			fc.setFileFilter(jimWithIntermDataFilter);
 			int rv = showSaveDialog(fc, mainWindow);
 			if (rv == JFileChooser.APPROVE_OPTION) {
 				File file = fc.getSelectedFile();
 				FileFilter selectedFilter = fc.getFileFilter();
-				SaveWorker saveWorker = new SaveWorker(file, currentImage, selectedFilter == jimWithoutRasterFilter ? null : iimg);
+				SaveWorker saveWorker = new SaveWorker(file, currentImage, selectedFilter == jimWithoutIntermDataFilter ? null : iimg);
 				executorService.execute(saveWorker);
 				saveWorker.block(mainWindow, "Writing to " + file + ":", "number factory...");
 			}
@@ -2380,6 +2387,33 @@ public class Application {
 		haltAction.setEnabled(true);
 		resumeAction.setEnabled(false);
 		setStatusMessage(null, false);
+	}
+
+	public void openNewControlWindow(String fileName, Image image) {
+		// First of all, let's compute the title
+		Pattern pattern = Pattern.compile(Pattern.quote(fileName) + " \\(([1-9][0-9]*)\\)");
+		int max = -1;
+		for (ControlWindow cw : getControlWindows()) {
+			if (max < 0 && fileName.equals(cw.getTitle())) {
+				max = 0;
+			} else {
+				Matcher matcher = pattern.matcher(cw.getTitle());
+				if (matcher.matches()) {
+					int number = Integer.valueOf(matcher.group(1));
+					if (number > max) {
+						max = number;
+					}
+				}
+			}
+		}
+		String title = max < 0 ? fileName : fileName + " (" + (max + 1) + ")";
+
+		ControlWindow cw = createControlWindow(title);
+		cw.setTitle(title);
+		cw.init(image);
+		cw.install();
+		cw.pack();
+		cw.setVisible(true);
 	}
 
 	private void run(Production production) {
