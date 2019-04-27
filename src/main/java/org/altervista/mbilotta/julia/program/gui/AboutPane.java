@@ -5,7 +5,6 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.InputStream;
 import java.net.URI;
@@ -26,9 +25,8 @@ import org.altervista.mbilotta.julia.program.Application;
 
 
 public class AboutPane extends JTabbedPane {
-	private JButton btnLink0;
-	private JButton btnLink1;
-	private JButton btnLink2;
+
+	private Application application;
 
 	/**
 	 * Create the panel.
@@ -82,40 +80,49 @@ public class AboutPane extends JTabbedPane {
 		
 		JPanel pnlLinks = new JPanel();
 		creditsTab.add(pnlLinks, BorderLayout.SOUTH);
-		pnlLinks.setLayout(new GridLayout(3, 1, 0, 5));
+		pnlLinks.setLayout(new GridLayout(3, 2, 10, 5));
+
+		JButton[][] linkGrid = new JButton[3][2];
+		linkGrid[0][0] = buildLinkButton("<html><em>Momentum Design Lab</em> home page", "http://momentumdesignlab.com/");
+		linkGrid[1][0] = buildLinkButton("<html><em>Momenticons</em> set on iconfinder.com", "https://www.iconfinder.com/iconsets/momenticons-basic");
+		linkGrid[2][0] = buildLinkButton("CC BY 3.0 license page", "http://creativecommons.org/licenses/by/3.0/legalcode");
+
+		linkGrid[0][1] = buildLinkButton("<html><em>FatCow Web Hosting</em> home page", "https://www.fatcow.com/");
+		linkGrid[1][1] = buildLinkButton("<html><em>Farm-fresh</em> set on iconfinder.com", "https://www.iconfinder.com/iconsets/fatcow");
+		linkGrid[2][1] = buildLinkButton("CC BY 3.0 US license page", "https://creativecommons.org/licenses/by/3.0/us/legalcode");
+
+		for (int r = 0; r < linkGrid.length; r++) {
+			for (int c = 0; c < linkGrid[r].length; c++) {
+				pnlLinks.add(linkGrid[r][c]);
+			}
+		}
 		
-		btnLink0 = new JButton("<html><em>Momentum Design Lab</em> home page");
-		btnLink0.setActionCommand("http://momentumdesignlab.com/");
-		pnlLinks.add(btnLink0);
-		
-		btnLink1 = new JButton("<html><em>Momenticons</em> set page on iconfinder.com");
-		btnLink1.setActionCommand("https://www.iconfinder.com/iconsets/momenticons-basic");
-		pnlLinks.add(btnLink1);
-		
-		btnLink2 = new JButton("CC BY 3.0 license page");
-		btnLink2.setActionCommand("http://creativecommons.org/licenses/by/3.0/legalcode");
-		pnlLinks.add(btnLink2);
-		
-		JLabel lblIconAttrib = new JLabel("<html>Icons are taken/derived from the <em>Momenticons</em> "
+		JLabel lblIconAttrib = new JLabel("<html>Most of the icons are taken/derived from the <em>Momenticons</em> "
 				+ "matte set by <em>Momentum Design Lab</em>, licensed under "
-				+ "Creative Commons Attribution 3.0 unported (CC BY 3.0).");
+				+ "Creative Commons Attribution 3.0 unported (CC BY 3.0).<br><br>"
+				+ "Some other icons are taken from the <em>Farm-fresh</em> set by <em>FatCow Web Hosting</em>, "
+				+ "licensed under Creative Commons Attribution 3.0 United States (CC BY 3.0 US).");
 		lblIconAttrib.setVerticalAlignment(SwingConstants.TOP);
 		creditsTab.add(lblIconAttrib, BorderLayout.CENTER);
-		
+
 		setPreferredSize(new Dimension(595, 380));
 	}
 
-	public void init(final Application application) {
-		ActionListener buttonListener = new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				application.visitPage(URI.create(e.getActionCommand()), AboutPane.this);
-			}
-		};
-		
-		btnLink0.addActionListener(buttonListener);
-		btnLink1.addActionListener(buttonListener);
-		btnLink2.addActionListener(buttonListener);
+	public void init(Application application) {
+		this.application = application;
+	}
+
+	private final ActionListener linkButtonListener = e -> {
+		if (application != null) {
+			application.visitPage(URI.create(e.getActionCommand()), AboutPane.this);
+		}
+	};
+
+	private JButton buildLinkButton(String label, String url) {
+		JButton rv = new JButton(label);
+		rv.setActionCommand(url);
+		rv.addActionListener(linkButtonListener);
+		return rv;
 	}
 
 	private static String readFully(String resource) {

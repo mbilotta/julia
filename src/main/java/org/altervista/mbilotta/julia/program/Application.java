@@ -228,7 +228,7 @@ public class Application {
 	private MainWindow mainWindow;
 	private ControlWindow previewOwner;
 	private JuliaButtonGroup previewCheckBoxGroup;
-	private JuliaButtonGroup pinButtonGroup;
+	private JuliaButtonGroup connectionTogglerGroup;
 	private List<ControlWindow> cwList;
 	private List<ControlWindow> cwPool;
 	private static final int MAX_CW_POOL_SIZE = 5;
@@ -237,6 +237,8 @@ public class Application {
 	public static final String ZOOM_IN_ICON_KEY = "zoom_in";
 	public static final String DISCARD_ICON_KEY = "eraser";
 	public static final String PIN_ICON_KEY = "pin_yellow";
+	public static final String CONNECTED_ICON_KEY = "connected";
+	public static final String DISCONNECTED_ICON_KEY = "disconnected";
 	public static final String CLONE_ICON_KEY = "clone";
 	public static final String RENAME_ICON_KEY = "document_pencil";
 	public static final String HIDE_ICON_KEY = "document_minus";
@@ -1333,7 +1335,7 @@ public class Application {
 		PluginInstance<RepresentationPlugin> representationInstance = header.getRepresentationInstance();
 		if (previewOwner != null) {
 			PluginInstance<RepresentationPlugin> representationPreviewInstance = previewOwner.getRepresentationPreviewInstance();
-			if (representationPreviewInstance != null && representationPreviewInstance.getPlugin() == representationInstance.getPlugin() && previewOwner.isPinned()) {
+			if (representationPreviewInstance != null && representationPreviewInstance.getPlugin() == representationInstance.getPlugin() && !previewOwner.isConnected()) {
 				representationPreviewInstance = new PluginInstance<>(representationPreviewInstance);
 				RepresentationPlugin plugin = representationInstance.getPlugin();
 				for (Parameter<?> parameter : plugin.getParameters()) {
@@ -1465,10 +1467,10 @@ public class Application {
 		this.representation = representationPreview;
 
 		for (ControlWindow cw : cwList) {
-			if (cw.isPinned()) {
-				cw.markEdits();
-			} else {
+			if (cw.isConnected()) {
 				cw.discardEdits();
+			} else {
+				cw.markEdits();
 			}
 		}
 
@@ -1564,7 +1566,7 @@ public class Application {
 		boolean previewing = false;
 		if (previewOwner != null) {
 			PluginInstance<RepresentationPlugin> representationPreviewInstance = previewOwner.getRepresentationPreviewInstance();
-			if (representationPreviewInstance != null && representationPreviewInstance.getPlugin() == representationInstance.getPlugin() && previewOwner.isPinned()) {
+			if (representationPreviewInstance != null && representationPreviewInstance.getPlugin() == representationInstance.getPlugin() && !previewOwner.isConnected()) {
 				representationPreviewInstance = new PluginInstance<>(representationPreviewInstance);
 				RepresentationPlugin plugin = representationInstance.getPlugin();
 				for (Parameter<?> parameter : plugin.getParameters()) {
@@ -1649,10 +1651,10 @@ public class Application {
 			}
 			for (ControlWindow cw : cwList) {
 				if (cw != source) {
-					if (cw.isPinned()) {
-						cw.markEdits();
-					} else {
+					if (cw.isConnected()) {
 						cw.discardEdits();
+					} else {
+						cw.markEdits();
 					}
 				}
 			}
@@ -1680,10 +1682,10 @@ public class Application {
 			}
 			for (ControlWindow cw : cwList) {
 				if (cw != source) {
-					if (cw.isPinned()) {
-						cw.markEdits();
-					} else {
+					if (cw.isConnected()) {
 						cw.discardEdits();
+					} else {
+						cw.markEdits();
 					}
 				}
 			}
@@ -1726,8 +1728,8 @@ public class Application {
 		}
 		ControlWindow initialCw = new ControlWindow(this);
 		initialCw.setDisposeButtonEnabled(false);
-		initialCw.setPinned(false);
-		initialCw.setPinButtonGroup(getPinButtonGroup());
+		initialCw.setConnected(true);
+		initialCw.setConnectionTogglerGroup(getConnectionTogglerGroup());
 		initialCw.setPreviewCheckBoxGroup(getPreviewCheckBoxGroup());
 		cwList = new LinkedList<>();
 		cwList.add(initialCw);
@@ -2094,11 +2096,11 @@ public class Application {
 		return previewCheckBoxGroup;
 	}
 
-	public JuliaButtonGroup getPinButtonGroup() {
-		if (pinButtonGroup == null) {
-			pinButtonGroup = new JuliaButtonGroup(true);
+	public JuliaButtonGroup getConnectionTogglerGroup() {
+		if (connectionTogglerGroup == null) {
+			connectionTogglerGroup = new JuliaButtonGroup();
 		}
-		return pinButtonGroup;
+		return connectionTogglerGroup;
 	}
 
 	public PluginInstance<NumberFactoryPlugin> getNumberFactoryInstance() {

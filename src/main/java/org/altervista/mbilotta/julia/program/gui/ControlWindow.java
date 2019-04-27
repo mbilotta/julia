@@ -124,7 +124,7 @@ public class ControlWindow extends JFrame {
 	private PluginInstance<RepresentationPlugin> representationPreviewInstance;
 
 	private JMenuItem itemInWindowMenu;
-	private JToggleButton pinButton;
+	private JToggleButton connectionToggler;
 	private JButton disposeButton;
 
 	private Application application;
@@ -136,6 +136,14 @@ public class ControlWindow extends JFrame {
 	public ControlWindow(Application application) {
 		this.application = application;
 		initCommon();
+	}
+
+	private static void updateConnectionTogglerTooltip(JToggleButton toggler) {
+		if (toggler.isSelected()) {
+			toggler.setToolTipText("Disconnect from main UI");
+		} else {
+			toggler.setToolTipText("Connect to main UI");
+		}
 	}
 
 	private JMenuBar createMenuBar() {
@@ -167,9 +175,10 @@ public class ControlWindow extends JFrame {
 		JButton discardButton = new JButton(application.getIcon(Application.DISCARD_ICON_KEY));
 		discardButton.setToolTipText("Discard edits");
 
-		pinButton = new JToggleButton(application.getIcon(Application.PIN_ICON_KEY));
-		pinButton.setToolTipText("Pin/Unpin");
-
+		connectionToggler = new JToggleButton(application.getIcon(Application.DISCONNECTED_ICON_KEY));
+		connectionToggler.setSelectedIcon(application.getIcon(Application.CONNECTED_ICON_KEY));
+		updateConnectionTogglerTooltip(connectionToggler);
+		
 		JButton cloneButton = new JButton(application.getIcon(Application.CLONE_ICON_KEY));
 		cloneButton.setToolTipText("Clone window");
 
@@ -250,6 +259,10 @@ public class ControlWindow extends JFrame {
 			}
 		});
 
+		connectionToggler.addItemListener(e -> {
+			updateConnectionTogglerTooltip(connectionToggler);
+		});
+
 		JToolBar rv = new JToolBar(JToolBar.HORIZONTAL);
 		rv.setLayout(new WrapLayout(WrapLayout.LEADING, 0, 0));
 		rv.setFloatable(false);
@@ -258,7 +271,7 @@ public class ControlWindow extends JFrame {
 		rv.add(zoomInButton);
 		rv.add(discardButton);
 		rv.addSeparator();
-		rv.add(pinButton);
+		rv.add(connectionToggler);
 		rv.addSeparator();
 		rv.add(cloneButton);
 		rv.add(renameButton);
@@ -2115,9 +2128,9 @@ public class ControlWindow extends JFrame {
 		numberFactoryPanel.install();
 		formulaPanel.install();
 		representationPanel.install();
-		pinButton.setSelected(true);
+		connectionToggler.setSelected(false);
 		previewCheckBox.setSelected(false);
-		application.getPinButtonGroup().add(pinButton);
+		application.getConnectionTogglerGroup().add(connectionToggler);
 		application.getPreviewCheckBoxGroup().add(previewCheckBox);
 	}
 
@@ -2125,7 +2138,7 @@ public class ControlWindow extends JFrame {
 		numberFactoryPanel.uninstall();
 		formulaPanel.uninstall();
 		representationPanel.uninstall();
-		application.getPinButtonGroup().remove(pinButton);
+		application.getConnectionTogglerGroup().remove(connectionToggler);
 		application.getPreviewCheckBoxGroup().remove(previewCheckBox);
 	}
 
@@ -2141,8 +2154,8 @@ public class ControlWindow extends JFrame {
 		disposeButton.setEnabled(enabled);
 	}
 
-	public void setPinButtonGroup(JuliaButtonGroup buttonGroup) {
-		buttonGroup.add(pinButton);
+	public void setConnectionTogglerGroup(JuliaButtonGroup buttonGroup) {
+		buttonGroup.add(connectionToggler);
 	}
 
 	public void setPreviewCheckBoxGroup(JuliaButtonGroup buttonGroup) {
@@ -2259,11 +2272,11 @@ public class ControlWindow extends JFrame {
 		juliaSetPointPanel.load(image.getJuliaSetPoint());
 	}
 
-	public void setPinned(boolean pinned) {
-		pinButton.setSelected(pinned);
+	public void setConnected(boolean connected) {
+		connectionToggler.setSelected(connected);
 	}
 
-	public boolean isPinned() {
-		return pinButton.isSelected();
+	public boolean isConnected() {
+		return connectionToggler.isSelected();
 	}
 }
