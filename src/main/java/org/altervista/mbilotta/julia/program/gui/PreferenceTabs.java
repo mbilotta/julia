@@ -39,6 +39,8 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Locale;
 
@@ -532,10 +534,14 @@ public class PreferenceTabs extends JTabbedPane {
 		uiTab.add(rdbtnAskWhatTo, gbc_rdbtnAskWhatTo);
 		
 		JLabel lblNewLabel_1 = new JLabel();
-		URL url = getClass().getResource("icons/trash_can.png");
+		URI uri;
+		try {
+			uri = getClass().getResource("icons/trash_can.png").toURI();
+		} catch (URISyntaxException e) {
+			throw new AssertionError(e);
+		}
 		lblNewLabel_1.setText("<html>Remember it is always possible to dispose a control window by<br>" +
-				"clicking the dispose " +
-				"button (<img src=\"" + url + "\" align=\"middle\">) in the toolbar.</html>");
+				"clicking the trash can button in the toolbar.</html>");
 		GridBagConstraints gbc_lblNewLabel_1 = new GridBagConstraints();
 		gbc_lblNewLabel_1.fill = GridBagConstraints.HORIZONTAL;
 		gbc_lblNewLabel_1.anchor = GridBagConstraints.LINE_START;
