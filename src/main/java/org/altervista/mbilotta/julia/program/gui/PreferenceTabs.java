@@ -39,9 +39,6 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.Locale;
 
 import javax.swing.ButtonGroup;
@@ -534,12 +531,6 @@ public class PreferenceTabs extends JTabbedPane {
 		uiTab.add(rdbtnAskWhatTo, gbc_rdbtnAskWhatTo);
 		
 		JLabel lblNewLabel_1 = new JLabel();
-		URI uri;
-		try {
-			uri = getClass().getResource("icons/trash_can.png").toURI();
-		} catch (URISyntaxException e) {
-			throw new AssertionError(e);
-		}
 		lblNewLabel_1.setText("<html>Remember it is always possible to dispose a control window by<br>" +
 				"clicking the trash can button in the toolbar.</html>");
 		GridBagConstraints gbc_lblNewLabel_1 = new GridBagConstraints();
