@@ -42,7 +42,7 @@ public class AboutPane extends JTabbedPane {
 		JLabel lblPreamble = new JLabel("<html><table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\">"
 				+ "<tr><td align=\"left\" valign=\"top\">"
 				+ "Julia: The Fractal Generator<br>"
-				+ "version 1.0.8<br><br>"
+				+ "version 1.0.9<br><br>"
 				+ "Copyright &copy; 2015 Maurizio Bilotta.</td>"
 				+ "<td align=\"right\" valign=\"top\"><img src=\"" + url + "\"></td></tr></table><br>"
 				+ "Julia is free software: you can redistribute it and/or modify it under the terms of the"
