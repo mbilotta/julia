@@ -40,7 +40,16 @@ Beside common formats like JPEG, PNG etc. (only available as outputs), Julia pro
 
 ## Running Julia
 
-You need JRE 1.8+ installed in your system. First time it runs you will get an error about missing plugins. That's because Julia doesn't come equipped with any of the pluggable elements discussed above. You can install [DPC4J](https://github.com/mbilotta/dpc4j) that provides a minimal set of plugins to start exploring fractals.
+You need JRE/JDK 1.8+ installed in your system. After installing Java, you should be able to run Julia simply double clicking on `julia.jar`. Alternatively, you can run Julia from the command line by typing:
+
+* `javaw -jar julia.jar` on Windows
+* `java -jar julia.jar` on Linux, MacOS X
+
+provided you have placed `julia.jar` in your home directory. Windows users may need to add the `bin/` subdirectory of their Java installation to the `PATH` environment variable. Also note that the command line is not only accessible through graphical consoles. Most OSes/desktops provide [Run dialogs](https://en.wikipedia.org/wiki/Run_command).
+
+### Missing plugins error
+
+First time Julia is started you will get an error about missing plugins. That's because Julia doesn't come equipped with any of the pluggable elements discussed above. You can install [DPC4J](https://github.com/mbilotta/dpc4j) that provides a minimal set of plugins to start exploring fractals.
 
 ## Building Julia
 
