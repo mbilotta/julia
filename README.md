@@ -45,7 +45,7 @@ You need JRE/JDK 1.8+ installed in your system. After installing Java, you shoul
 * `javaw -jar julia.jar` on Windows
 * `java -jar julia.jar` on Linux, MacOS X
 
-provided you have placed `julia.jar` in your home directory. Windows users may need to add the `bin/` subdirectory of their Java installation to the `PATH` environment variable. Also note that the command line is not only accessible through graphical consoles. Most OSes/desktops provide [Run dialogs](https://en.wikipedia.org/wiki/Run_command) that hides once you issued a command.
+provided you have placed `julia.jar` in your home directory. Windows users may need to add the `bin/` subdirectory of their Java installation to the `PATH` environment variable. Also note that the command line is not only accessible through terminal emulators/command prompt. Most OSes/desktops provide [Run dialogs](https://en.wikipedia.org/wiki/Run_command) that hides once you issued a command.
 
 ### Missing plugins error
 
