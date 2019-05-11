@@ -72,14 +72,7 @@ public class RootCliModel extends CliModel {
     return model.hasOption("p");
   }
 
-  public String getProfile() {
+  public String getProfilePath() {
     return model.getOptionValue("u");
   }
-
-	public void populate() {
-	}
-
-	public CliModel refine() {
-		return this;
-	}
 }

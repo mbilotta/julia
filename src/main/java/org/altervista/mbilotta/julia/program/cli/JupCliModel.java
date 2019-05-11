@@ -26,9 +26,17 @@ import org.apache.commons.cli.Options;
 
 public class JupCliModel extends CliModel {
 
+  public JupCliModel() {
+    super();
+  }
+
 	public JupCliModel(String[] arguments) {
 		super(arguments);
-	}
+  }
+
+  public JupCliModel(CliModel model) {
+    super(model);
+  }
 
 	public void configure() {
     options = new Options()
@@ -39,6 +47,7 @@ public class JupCliModel extends CliModel {
           .optionalArg(true)
           .argName("INSTALLATION_PATH")
           .required()
+          .desc("Plugin files will be installed in <PROFILE_PATH>/(xml|bin|doc)/<INSTALLATION_PATH> respectively.")
           .build()
       )
       .addOption(
@@ -80,7 +89,7 @@ public class JupCliModel extends CliModel {
           .longOpt("license")
           .hasArg()
           .argName("PATH")
-          .desc("License file")
+          .desc("License file.")
           .build()
       )
       .addOption(
@@ -88,6 +97,7 @@ public class JupCliModel extends CliModel {
           .longOpt("out")
           .hasArg()
           .argName("PATH")
+          .desc("Output path.")
           .build()
       )
       .addOption(
@@ -98,22 +108,31 @@ public class JupCliModel extends CliModel {
       );
 	}
 
-  public boolean isVersionCli() {
-    return model.hasOption("v");
+  public String getInstallationPath() {
+    return model.getOptionValue("p", "");
   }
 
-  public boolean isJupCli() {
-    return model.hasOption("p");
+  public String getBinPath() {
+    return model.getOptionValue("b");
   }
 
-  public String getProfile() {
-    return model.getOptionValue("u");
+  public String getXmlPath() {
+    return model.getOptionValue("x");
   }
 
-	public void populate() {
-	}
+  public String getDocPath() {
+    return model.getOptionValue("d");
+  }
 
-	public CliModel refine() {
-		return this;
-	}
+  public String getDocTreePath() {
+    return model.getOptionValue("D");
+  }
+
+  public String getLicensePath() {
+    return model.getOptionValue("l");
+  }
+
+  public String getOutputPath() {
+    return model.getOptionValue("o");
+  }
 }

@@ -35,8 +35,16 @@ public abstract class CliModel {
 	protected Options options;
 	protected CommandLine model;
 
+	public CliModel() {
+		this.arguments = new String[0];
+	}
+
 	public CliModel(String[] arguments) {
 		this.arguments = arguments;
+	}
+
+	public CliModel(CliModel model) {
+		this.arguments = model.arguments;
 	}
 
 	public void configure() {
@@ -44,15 +52,11 @@ public abstract class CliModel {
 	}
 
 	public void parse() throws ParseException {
+		if (options == null) {
+			configure();
+		}
 		CommandLineParser parser = new DefaultParser();
 		model = parser.parse(options, arguments);
-	}
-
-	public void populate() {
-	}
-
-	public CliModel refine() {
-		return this;
 	}
 
 	public static OptionGroup group(Option o1, Option o2, Option... oN) {
