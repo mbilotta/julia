@@ -30,7 +30,7 @@ public class RootCliModel extends CliModel {
 		super(arguments);
 	}
 
-	public void configure() {
+	protected void configure() {
     options = new Options()
       .addOptionGroup(
         group(

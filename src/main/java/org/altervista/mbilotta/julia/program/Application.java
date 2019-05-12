@@ -109,6 +109,8 @@ import org.altervista.mbilotta.julia.Utilities;
 import org.altervista.mbilotta.julia.math.Complex;
 import org.altervista.mbilotta.julia.math.CoordinateTransform;
 import org.altervista.mbilotta.julia.math.Real;
+import org.altervista.mbilotta.julia.program.cli.JupCliModel;
+import org.altervista.mbilotta.julia.program.cli.RootCliModel;
 import org.altervista.mbilotta.julia.program.gui.AboutPane;
 import org.altervista.mbilotta.julia.program.gui.ControlWindow;
 import org.altervista.mbilotta.julia.program.gui.ImagePanel;
@@ -128,10 +130,12 @@ import org.altervista.mbilotta.julia.program.parsers.Parameter;
 import org.altervista.mbilotta.julia.program.parsers.Plugin;
 import org.altervista.mbilotta.julia.program.parsers.PluginFamily;
 import org.altervista.mbilotta.julia.program.parsers.RepresentationPlugin;
-
+import org.apache.commons.cli.ParseException;
 
 public class Application {
 	
+	public static final String VERSION = "1.0.9";
+
 	public static final class Image {
 		private PluginInstance<NumberFactoryPlugin> numberFactoryInstance;
 		private PluginInstance<FormulaPlugin> formulaInstance;
@@ -2504,6 +2508,29 @@ public class Application {
 	}
 
 	public static void main(String[] args) {
+		RootCliModel rootCli = new RootCliModel(args);
+		try {
+			rootCli.parse();
+
+			if (rootCli.isVersionCli()) {
+				System.out.println("Julia: The Fractal Generator (version " + Application.VERSION + ")");
+				return;
+			}
+			
+			if (rootCli.isHelpCli()) {
+				if (rootCli.isJupCli()) {
+					new JupCliModel().printHelp();
+				} else {
+					rootCli.printHelp();
+				}
+				return;
+			}
+		} catch (ParseException e) {
+			System.out.print(e.getMessage());
+			rootCli.printUsage();
+			return;
+		}
+
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
 				SplashScreen splashScreen = new SplashScreen();

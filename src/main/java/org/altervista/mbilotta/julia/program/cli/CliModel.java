@@ -20,9 +20,13 @@
 
 package org.altervista.mbilotta.julia.program.cli;
 
+import java.io.PrintWriter;
+
+import org.altervista.mbilotta.julia.program.Application;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
@@ -47,7 +51,7 @@ public abstract class CliModel {
 		this.arguments = model.arguments;
 	}
 
-	public void configure() {
+	protected void configure() {
 		options = new Options();
 	}
 
@@ -71,5 +75,31 @@ public abstract class CliModel {
 	public static OptionGroup require(OptionGroup rv) {
 		rv.setRequired(true);
 		return rv;
+	}
+
+	public void printHelp() {
+		if (options == null) {
+			configure();
+		}
+		System.out.print("Julia: The Fractal Generator (version " + Application.VERSION + ")");
+		HelpFormatter formatter = new HelpFormatter();
+		formatter.setOptionComparator(null);
+		formatter.printHelp("julia",
+				"       where options include:\n ",
+				options,
+				"\nPlease report issues to https://github.com/mbilotta/julia",
+				true);
+	}
+
+	public void printUsage() {
+		if (options == null) {
+			configure();
+		}
+		HelpFormatter formatter = new HelpFormatter();
+		formatter.setOptionComparator(null);
+		PrintWriter pw = new PrintWriter(System.out);
+		formatter.printUsage(pw, HelpFormatter.DEFAULT_WIDTH, "julia", options);
+		pw.flush();
+		pw.close();
 	}
 }

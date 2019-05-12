@@ -38,14 +38,14 @@ public class JupCliModel extends CliModel {
     super(model);
   }
 
-	public void configure() {
+	protected void configure() {
     options = new Options()
       .addOption(
         Option.builder("p")
           .longOpt("jup")
           .hasArg()
           .optionalArg(true)
-          .argName("INSTALLATION_PATH")
+          .argName("INSTALLATION_PATH?")
           .required()
           .desc("Plugin files will be installed in <PROFILE_PATH>/(xml|bin|doc)/<INSTALLATION_PATH> respectively.")
           .build()
