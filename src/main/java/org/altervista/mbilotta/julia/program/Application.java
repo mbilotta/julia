@@ -2538,7 +2538,10 @@ public class Application {
 			}
 		});
 		
-		Profile profile = Profile.getDefaultProfile();
+		Profile profile = rootCli.getProfilePath() == null ?
+				Profile.getDefaultProfile() :
+				new Profile(Paths.get(rootCli.getProfilePath()));
+		
 		JuliaExecutorService executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
 		new Loader(profile, executorService);
 	}
