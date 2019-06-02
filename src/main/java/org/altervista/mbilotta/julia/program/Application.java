@@ -109,8 +109,7 @@ import org.altervista.mbilotta.julia.Utilities;
 import org.altervista.mbilotta.julia.math.Complex;
 import org.altervista.mbilotta.julia.math.CoordinateTransform;
 import org.altervista.mbilotta.julia.math.Real;
-import org.altervista.mbilotta.julia.program.cli.JupCliModel;
-import org.altervista.mbilotta.julia.program.cli.RootCliModel;
+import org.altervista.mbilotta.julia.program.cli.MainCli;
 import org.altervista.mbilotta.julia.program.gui.AboutPane;
 import org.altervista.mbilotta.julia.program.gui.ControlWindow;
 import org.altervista.mbilotta.julia.program.gui.ImagePanel;
@@ -130,7 +129,6 @@ import org.altervista.mbilotta.julia.program.parsers.Parameter;
 import org.altervista.mbilotta.julia.program.parsers.Plugin;
 import org.altervista.mbilotta.julia.program.parsers.PluginFamily;
 import org.altervista.mbilotta.julia.program.parsers.RepresentationPlugin;
-import org.apache.commons.cli.ParseException;
 
 public class Application {
 	
@@ -2507,30 +2505,7 @@ public class Application {
 								KeyEvent.VK_TAB, KeyEvent.SHIFT_DOWN_MASK)));
 	}
 
-	public static void main(String[] args) {
-		RootCliModel rootCli = new RootCliModel(args);
-		try {
-			rootCli.parse();
-
-			if (rootCli.isVersionCli()) {
-				System.out.println("Julia: The Fractal Generator (version " + Application.VERSION + ")");
-				return;
-			}
-			
-			if (rootCli.isHelpCli()) {
-				if (rootCli.isJupCli()) {
-					new JupCliModel().printHelp();
-				} else {
-					rootCli.printHelp();
-				}
-				return;
-			}
-		} catch (ParseException e) {
-			System.out.print(e.getMessage());
-			rootCli.printUsage();
-			return;
-		}
-
+	public static void run(MainCli cli) {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
 				SplashScreen splashScreen = new SplashScreen();
@@ -2538,9 +2513,9 @@ public class Application {
 			}
 		});
 		
-		Profile profile = rootCli.getProfilePath() == null ?
+		Profile profile = cli.getProfilePath() == null ?
 				Profile.getDefaultProfile() :
-				new Profile(Paths.get(rootCli.getProfilePath()));
+				new Profile(cli.getProfilePath());
 		
 		JuliaExecutorService executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
 		new Loader(profile, executorService);
