@@ -20,8 +20,17 @@
 
 package org.altervista.mbilotta.julia.program.cli;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -60,7 +69,7 @@ public class JupCli implements Runnable {
     arity = "1",
     paramLabel = "PLUGIN_PATH",
     description = "Relative path that will be created inside the /xml, /bin, /doc subdirectories of the target profile when this plugin is installed.")
-  String pluginPath;
+  Path pluginPath;
 
   @Parameters(index = "1..*", arity = "1", paramLabel = "INPUT_PATH",
     description = "Each INPUT_PATH can be a file or a directory. Files will be added to the right entry in the archive based on their extension: plugin descriptors must end with       \".xml\"; JARs must end with \".jar\"; files that are none of the two will be treated as documentation resources. When INPUT_PATH is a directory, its contents will be added to the archive following the same logic. Subdirectories will be ignored.")
@@ -81,8 +90,124 @@ public class JupCli implements Runnable {
     return new CommandLine(this).execute(args);
   }
 
+  static final int KILOBYTE = 1024;
+  static final int BUFFER_SIZE = 8 * KILOBYTE;
+
+  private byte[] buffer;
+  private String xmlEntry;
+  private String binEntry;
+  private String docEntry;
+
+  private void compress(Path filePath, String parentEntry, ZipOutputStream target) throws IOException {
+    target.putNextEntry(new ZipEntry(parentEntry + filePath.getFileName().toString()));
+    try (FileInputStream fis = new FileInputStream(filePath.toFile())) {
+      int length;
+      while ((length = fis.read(buffer)) >= 0) {
+        target.write(buffer, 0, length);
+      }
+    }
+  }
+
+  private void compressDoc(Path filePath, ZipOutputStream target) throws IOException {
+    if (docEntry == null) {
+      docEntry = "doc/";
+      target.putNextEntry(new ZipEntry(docEntry));
+      target.closeEntry();
+    }
+    compress(filePath, docEntry, target);
+  }
+
+  private void compress(List<Path> paths, ZipOutputStream target) throws IOException {
+    for (Path path : paths) {
+      String fileName = path.getFileName().toString();
+      if (Files.isDirectory(path)) {
+        List<Path> contents = Files.list(path)
+          .filter(subpath -> Files.isRegularFile(subpath))
+          .collect(Collectors.toList());
+        compress(contents, target);
+
+      } else if (fileName.endsWith(".xml")) {
+        if (xmlEntry == null) {
+          xmlEntry = createXmlEntry(target);
+        }
+        compress(path, xmlEntry, target);
+
+      } else if (fileName.endsWith(".jar")) {
+        if (binEntry == null) {
+          binEntry = "bin/";
+          target.putNextEntry(new ZipEntry(binEntry));
+          target.closeEntry();
+          if (licensePath != null) {
+            compress(licensePath, binEntry, target);
+          }
+        }
+        compress(path, binEntry, target);
+        
+      } else {
+        compressDoc(path, target);
+      }
+    }
+  }
+
+  private String createXmlEntry(ZipOutputStream target) throws IOException {
+    String entry = "xml/";
+    target.putNextEntry(new ZipEntry(entry));
+    target.closeEntry();
+    for (Path segment : pluginPath) {
+      entry += segment + "/";
+      target.putNextEntry(new ZipEntry(entry));
+      target.closeEntry();  
+    }
+    return entry;
+  }
+
   @Override
   public void run() {
-    System.out.println(this);
+    if (pluginPath.isAbsolute()) {
+      // Error?
+    }
+  
+    if (outputPath == null) {
+      String fileName = pluginPath.getFileName() + ".jup";
+      outputPath = Paths.get(fileName);
+    } else if (!outputPath.getFileName().toString().endsWith(".jup")) {
+      String fileName = pluginPath.getFileName() + ".jup";
+      outputPath = outputPath.resolve(Paths.get(fileName));
+    }
+
+    File tempFile;
+    try {
+      tempFile = File.createTempFile("juliafg-", "-jup");
+    } catch (IOException e) {
+      System.err.println("Error: " + e.getMessage());
+      return;
+    }
+    tempFile.deleteOnExit();
+
+    try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(tempFile))) {
+      buffer = new byte[BUFFER_SIZE];
+      if (licensePath != null) {
+        compressDoc(licensePath, zos);
+      }
+      compress(inputPaths, zos);
+
+      if (xmlEntry == null) {
+        System.err.println("Error: no descriptor provided");
+        return;
+      } else if (binEntry == null) {
+        System.err.println("Error: no JAR provided");
+        return;
+      }
+    } catch (IOException e) {
+      System.err.println("Error: " + e.getMessage());
+      return;
+    }
+
+    try {
+      Files.copy(tempFile.toPath(), outputPath);
+    } catch (IOException e) {
+      System.err.println("Error: " + e.getMessage());
+      return;
+    }
   }
 }

@@ -84,6 +84,9 @@ public class MainCli {
       }
 
       // invoke the business logic
+      if (cliMode.jupCreationRequested) {
+        return new JupCli().execute(args);
+      }
       Application.run(this);
       return null;
 
