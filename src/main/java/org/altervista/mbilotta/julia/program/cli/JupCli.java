@@ -24,6 +24,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -113,7 +115,7 @@ public class JupCli implements Runnable {
     }
   }
 
-  private void compressDoc(Path filePath, ZipOutputStream target) throws IOException {
+  private void compressDocFile(Path filePath, ZipOutputStream target) throws IOException {
     if (docEntry == null) {
       docEntry = "doc/";
       target.putNextEntry(new ZipEntry(docEntry));
@@ -149,7 +151,7 @@ public class JupCli implements Runnable {
         compress(path, binEntry, target);
         
       } else {
-        compressDoc(path, target);
+        compressDocFile(path, target);
       }
     }
   }
@@ -181,7 +183,7 @@ public class JupCli implements Runnable {
     try {
       tempFile = File.createTempFile("juliafg-", "-jup");
     } catch (IOException e) {
-      System.err.println("Error: " + e.getMessage());
+      System.err.printf("Error (%s): %s%n", e.getClass().getSimpleName(), e.getMessage());
       return;
     }
     tempFile.deleteOnExit();
@@ -189,19 +191,19 @@ public class JupCli implements Runnable {
     try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(tempFile))) {
       buffer = new byte[BUFFER_SIZE];
       if (licensePath != null) {
-        compressDoc(licensePath, zos);
+        compressDocFile(licensePath, zos);
       }
       compress(inputPaths, zos);
 
       if (xmlEntry == null) {
-        System.err.println("Error: no descriptor provided");
+        System.err.println("Error: no descriptor was found. At least one must be provided.");
         return;
       } else if (binEntry == null) {
-        System.err.println("Error: no JAR provided");
+        System.err.println("Error: no JAR was found. At least one must be provided.");
         return;
       }
     } catch (IOException e) {
-      System.err.println("Error: " + e.getMessage());
+      System.err.printf("Error (%s): %s%n", e.getClass().getSimpleName(), e.getMessage());
       return;
     }
 
@@ -211,9 +213,12 @@ public class JupCli implements Runnable {
       } else {
         Files.copy(tempFile.toPath(), outputPath);
       }
+    } catch (FileAlreadyExistsException e) {
+      System.err.println("Error: cannot write to " + outputPath.toAbsolutePath() + " because a file already exists at that location. Add --replace-existing to overwrite that file.");
+    } catch (DirectoryNotEmptyException e) {
+      System.err.println("Error: cannot write to " + outputPath.toAbsolutePath() + " because a non-empty directory already exists at that location.");
     } catch (IOException e) {
-      System.err.println("Error: " + e.getMessage());
-      return;
+      System.err.printf("Error (%s): %s%n", e.getClass().getSimpleName(), e.getMessage());
     }
   }
 }
