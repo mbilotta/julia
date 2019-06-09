@@ -1,4 +1,5 @@
-[![picocli](https://img.shields.io/badge/picocli-4.0.0-green.svg)](https://github.com/remkop/picocli)
+[![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0) [![picocli](https://img.shields.io/badge/picocli-4.0.0-green.svg)](https://github.com/remkop/picocli)
+
 # Julia: The Fractal Generator
 
 Julia is a fractal generator program completely written in Java. Please note that this project is very old. It started as a college work around 2010; some design choices I made at that time (e.g. multi-window UI) could look awful today.
