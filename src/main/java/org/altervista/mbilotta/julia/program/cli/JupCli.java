@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -59,6 +60,10 @@ public class JupCli implements Runnable {
   @Option(names = { "-o", "--out" }, paramLabel = "OUTPUT_PATH",
     description = "Output file path. If this option is absent, a .jup file named as the last segment of PLUGIN_PATH will be created in the current directory. If OUTPUT_PATH is a directory, such file will be created there. If OUTPUT_PATH ends with \".jup\", OUTPUT_PATH will be the output file.")
   Path outputPath;
+
+  @Option(names = { "-r", "--replace-existing" },
+    description = "Use this flag to eventually replace an already existing file at output path.")
+  boolean replaceExisting;
 
   @Option(names = { "-h", "--help" },
     usageHelp = true,
@@ -163,10 +168,7 @@ public class JupCli implements Runnable {
 
   @Override
   public void run() {
-    if (pluginPath.isAbsolute()) {
-      // Error?
-    }
-  
+ 
     if (outputPath == null) {
       String fileName = pluginPath.getFileName() + ".jup";
       outputPath = Paths.get(fileName);
@@ -204,7 +206,11 @@ public class JupCli implements Runnable {
     }
 
     try {
-      Files.copy(tempFile.toPath(), outputPath);
+      if (replaceExisting) {
+        Files.copy(tempFile.toPath(), outputPath, StandardCopyOption.REPLACE_EXISTING);
+      } else {
+        Files.copy(tempFile.toPath(), outputPath);
+      }
     } catch (IOException e) {
       System.err.println("Error: " + e.getMessage());
       return;
