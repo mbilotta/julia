@@ -80,9 +80,6 @@
             <manifest>
               <mainClass>org.altervista.mbilotta.julia.program.cli.MainCli</mainClass>
             </manifest>
-            <manifestEntries>
-              <SplashScreen-Image>org/altervista/mbilotta/julia/program/gui/splash.png</SplashScreen-Image>
-            </manifestEntries>
           </archive>
         </configuration>
       </plugin>
