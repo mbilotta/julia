@@ -1,4 +1,4 @@
-[![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0) [![picocli](https://img.shields.io/badge/picocli-4.0.0-green.svg)](https://github.com/remkop/picocli)
+[![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0) [![picocli](https://img.shields.io/badge/picocli-4.0.0-green.svg)](https://github.com/remkop/picocli) [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=FMKKXRVLLGYWU&item_name=Support+Julia%3A+The+Fractal+Generator&currency_code=EUR&source=url)
 
 # Julia: The Fractal Generator
 
@@ -64,6 +64,10 @@ You need JDK 1.8+ and Maven installed in your system:
 ## Acknowledgements
 
 Thanks to [Robert Munafo](https://mrob.com/pub/index.html) for providing valuable informations on fractal rendering algorithms througout its [Mu-Ency](https://mrob.com/pub/muency.html) site.
+
+## Supporting this project
+
+[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=FMKKXRVLLGYWU&item_name=Support+Julia%3A+The+Fractal+Generator&currency_code=EUR&source=url)
 
 ## Licensing information
 
