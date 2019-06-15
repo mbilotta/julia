@@ -68,7 +68,7 @@ public class MainWindow extends JFrame {
 	private int[] percentages;
 
 	public MainWindow(Application application) {
-		super("Julia");
+		super("Julia: The Fractal Generator");
 		this.application = application;
 		Preferences preferences = application.getPreferences();
 		imagePanel = new ImagePanel(
