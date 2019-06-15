@@ -300,30 +300,31 @@ public abstract class Parameter<T> implements Serializable {
 					if (pluginInstance != null && getter != null) {
 						try {
 							getterHint = (T) getter.invoke(pluginInstance, (Object[]) null);
-							if (getterHint == null) {
+							if (getterHint != null) {
+								Groups annotation = getter.getAnnotation(Groups.class);
+								if (annotation != null) {
+									List<String> groupList = Arrays.asList(annotation.value().split("\\s+"));
+									if (groupList.get(0).isEmpty()) {
+										groupList = groupList.subList(1, groupList.size());
+									}
+									switch (groupList.size()) {
+									case 0:
+										getterGroupSet = Collections.emptySet();
+										descriptorParser.warning(new ValidationException(currentPath, position, "Empty group list from getter method annotation."));
+										break;
+									case 1:
+										getterGroupSet = Collections.singleton(groupList.get(0));
+										break;
+									default:
+										getterGroupSet = new HashSet<>(groupList);
+									}
+									if (getterGroupSet.size() < groupList.size()) {
+										descriptorParser.warning(new ValidationException(currentPath, position, "Redundant group list from getter method annotation."));
+									}
+								}
+							} else {
 								String message = "Getter method " + getter.getName() + " has returned null.";
-								descriptorParser.fatalError(new ValidationException(currentPath, position, message));
-							}
-							Groups annotation = getter.getAnnotation(Groups.class);
-							if (annotation != null) {
-								List<String> groupList = Arrays.asList(annotation.value().split("\\s+"));
-								if (groupList.get(0).isEmpty()) {
-									groupList = groupList.subList(1, groupList.size());
-								}
-								switch (groupList.size()) {
-								case 0:
-									getterGroupSet = Collections.emptySet();
-									descriptorParser.warning(new ValidationException(currentPath, position, "Empty group list from getter method annotation."));
-									break;
-								case 1:
-									getterGroupSet = Collections.singleton(groupList.get(0));
-									break;
-								default:
-									getterGroupSet = new HashSet<>(groupList);
-								}
-								if (getterGroupSet.size() < groupList.size()) {
-									descriptorParser.warning(new ValidationException(currentPath, position, "Redundant group list from getter method annotation."));
-								}
+								descriptorParser.warning(new ValidationException(currentPath, position, message));
 							}
 						} catch (ReflectiveOperationException e) {
 							String message = "Reflective invocation of getter method " + getter.getName() + " has failed.";

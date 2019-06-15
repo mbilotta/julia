@@ -339,43 +339,42 @@ public abstract class Plugin implements Serializable {
 					if (pluginInstance == null) {
 						pluginInstance = constructor.newInstance((Object[]) null);
 					}
+
 					Object getterHint = getter.invoke(pluginInstance, (Object[]) null);
-					if (getterHint == null) {
-						throw newIOException('[' + p.getId() + ".getterMethod=" + getMethodString(getter) + "] has returned null.");
-					}
-
-					Set<String> getterGroupSet = null;
-					Groups annotation = getter.getAnnotation(Groups.class);
-					if (annotation != null) {
-						List<String> groupList = Arrays.asList(annotation.value().split("\\s+"));
-						if (groupList.get(0).isEmpty()) {
-							groupList = groupList.subList(1, groupList.size());
+					if (getterHint != null) {
+						Set<String> getterGroupSet = null;
+						Groups annotation = getter.getAnnotation(Groups.class);
+						if (annotation != null) {
+							List<String> groupList = Arrays.asList(annotation.value().split("\\s+"));
+							if (groupList.get(0).isEmpty()) {
+								groupList = groupList.subList(1, groupList.size());
+							}
+							switch (groupList.size()) {
+							case 0:
+								getterGroupSet = Collections.emptySet();
+								break;
+							case 1:
+								getterGroupSet = Collections.singleton(groupList.get(0));
+								break;
+							default:
+								getterGroupSet = new HashSet<>(groupList);
+							}
 						}
-						switch (groupList.size()) {
-						case 0:
-							getterGroupSet = Collections.emptySet();
-							break;
-						case 1:
-							getterGroupSet = Collections.singleton(groupList.get(0));
-							break;
-						default:
-							getterGroupSet = new HashSet<>(groupList);
-						}
-					}
-
-					if (getterGroupSet == null || getterGroupSet.isEmpty()) {
-						if (!p.getHints().contains(getterHint)) {
-							throw newIOException("Possible code change was detected.");
-						}
-					} else {
-						for (String group : getterGroupSet) {
-							List<Object> hintGroup = hintGroups.get(group);
-							if (hintGroup == null) {
+	
+						if (getterGroupSet == null || getterGroupSet.isEmpty()) {
+							if (!p.getHints().contains(getterHint)) {
 								throw newIOException("Possible code change was detected.");
 							}
-							Object hint = hintGroup.get(index);
-							if (hint == null || !hint.equals(getterHint)) {
-								throw newIOException("Possible code change was detected.");
+						} else {
+							for (String group : getterGroupSet) {
+								List<Object> hintGroup = hintGroups.get(group);
+								if (hintGroup == null) {
+									throw newIOException("Possible code change was detected.");
+								}
+								Object hint = hintGroup.get(index);
+								if (hint == null || !hint.equals(getterHint)) {
+									throw newIOException("Possible code change was detected.");
+								}
 							}
 						}
 					}
