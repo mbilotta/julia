@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -213,6 +214,8 @@ public class JupCli implements Runnable {
       } else {
         Files.copy(tempFile.toPath(), outputPath);
       }
+    } catch (NoSuchFileException e) {
+      System.err.println("Error: cannot write to " + outputPath.toAbsolutePath() + " because the parent directory does not exist.");
     } catch (FileAlreadyExistsException e) {
       System.err.println("Error: cannot write to " + outputPath.toAbsolutePath() + " because a file already exists at that location. Add --replace-existing to overwrite that file.");
     } catch (DirectoryNotEmptyException e) {

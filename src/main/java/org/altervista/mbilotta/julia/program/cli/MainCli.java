@@ -44,7 +44,8 @@ public class MainCli {
 
   static class CliMode {
 
-    @Option(names = { "-j", "--jup" }, required = true, description = "Create a plugin archive. Add --help to read more about this option.")
+    @Option(names = { "-j", "--jup" }, required = true,
+      description = "Create a plugin archive. Add --help to read more about this option.")
     boolean jupCreationRequested = false;
 
     @Option(names = { "-p", "--profile" }, paramLabel = "PATH",
@@ -58,10 +59,12 @@ public class MainCli {
     }
   }
 
-  @Option(names = { "-h", "--help" }, usageHelp = true, description = "Print this help message and exit.")
+  @Option(names = { "-h", "--help" }, usageHelp = true,
+    description = "Print this help message and exit.")
   boolean helpRequested;
 
-  @Option(names = { "-v", "--version" }, versionHelp = true, description = "Print version information and exit.")
+  @Option(names = { "-v", "--version" }, versionHelp = true,
+    description = "Print version information and exit.")
   boolean versionRequested;
 
   public Integer execute(String[] args) {
