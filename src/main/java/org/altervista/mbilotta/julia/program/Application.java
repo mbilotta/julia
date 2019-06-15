@@ -798,7 +798,7 @@ public class Application {
 
 		@Override
 		public void actionPerformed(ActionEvent e) {
-			visitPage(URI.create("http://mbilotta.altervista.org/"), mainWindow);
+			visitPage(URI.create("https://github.com/mbilotta/julia"), mainWindow);
 		}
 	}
 
