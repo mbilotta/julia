@@ -61,6 +61,7 @@ public class ImagePanel extends JPanel {
 	static final ChessboardPainter chessboardPainter = new ChessboardPainter(10);
 
 	private final Application application;
+	private final MouseEventHandler mouseEventHandler;
 
 	public ImagePanel(int imgWidth, int imgHeight, Color selectionColor, Application application) {
 		setOpaque(true);
@@ -70,9 +71,8 @@ public class ImagePanel extends JPanel {
 		this.application = application;
 		setPreferredSize(new Dimension(imgWidth, imgHeight));
 
-		MouseEventHandler handler = new MouseEventHandler();
-		addMouseListener(handler);
-		addMouseWheelListener(handler);
+		mouseEventHandler = new MouseEventHandler();
+		addMouseListener(mouseEventHandler);
 	}
 
 	public ImagePanel(BufferedImage fimg, Color selectionColor, Consumer consumer) {
@@ -85,9 +85,8 @@ public class ImagePanel extends JPanel {
 		this.application = null;
 		setPreferredSize(new Dimension(fimg.getWidth(), fimg.getHeight()));
 
-		MouseEventHandler handler = new MouseEventHandler();
-		addMouseListener(handler);
-		addMouseWheelListener(handler);
+		mouseEventHandler = new MouseEventHandler();
+		addMouseListener(mouseEventHandler);
 	}
 
 	protected void paintComponent(Graphics g) {
@@ -329,6 +328,7 @@ public class ImagePanel extends JPanel {
 			selection = null;
 			repaint(oldSelection);
 			if (application != null) application.setStatusMessage(null, false);
+			removeMouseWheelListener(mouseEventHandler);
 		}
 	}
 
@@ -347,6 +347,7 @@ public class ImagePanel extends JPanel {
 					selection = addThickness(new Rectangle(x, y, selectionWidth, selectionHeight), SELECTION_THICKNESS);
 					repaint(selection);
 					if (application != null) application.setStatusMessage(null, false);
+					addMouseWheelListener(this);
 				} else {
 					Rectangle oldSelection = new Rectangle(selection);
 					selection.translate(e.getX() - selectionCenterX, e.getY() - selectionCenterY);
