@@ -127,7 +127,7 @@ public class LogTab extends JPanel {
 			} else {
 				printer = null;
 				this.maxLength = maxLength;
-				appendLine("No output set.", Color.RED);
+				appendLine("Logging is disabled. Open preferences to enable logging.", Color.RED);
 			}
 		} else {
 			printer = null;
