@@ -1602,9 +1602,9 @@ public class Application {
 
 			int imgWidth = iimg.getWidth();
 			int imgHeight = iimg.getHeight();
-			CoordinateTransform coordinateTransform = createCoordinateTransform(imgWidth, imgHeight, image, numberFactory);
-
+			CoordinateTransform coordinateTransform;
 			if (source != null && zoomIn && mainWindow.hasSelection()) {
+				coordinateTransform = createCoordinateTransform(imgWidth, imgHeight, currentImage, numberFactory);
 				ImageSelection selection = mainWindow.getSelection();
 				Real width = coordinateTransform.getScaleRe().times(selection.getWidth());
 				Real centerRe = coordinateTransform.toRe(selection.getCenterX());
@@ -1621,6 +1621,8 @@ public class Application {
 				Real im1 = coordinateTransform.toIm(imgHeight);
 				
 				image.rectangle = new Rectangle(re0.decimalValue(), im0.decimalValue(), re1.decimalValue(), im1.decimalValue());
+			} else {
+				coordinateTransform = createCoordinateTransform(imgWidth, imgHeight, image, numberFactory);
 			}
 
 			Complex cJuliaSetPoint = juliaSetPoint != null ?
