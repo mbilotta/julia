@@ -169,8 +169,8 @@ public class ControlWindow extends JFrame {
 		JButton applyButton = new JButton(application.getIcon(Application.APPLY_ICON_KEY));
 		applyButton.setToolTipText("Apply edits");
 
-		JButton zoomInButton = new JButton(application.getIcon(Application.ZOOM_IN_ICON_KEY));
-		zoomInButton.setToolTipText("Apply edits w/ Zoom In");
+		JButton zoomInButton = new JButton(application.getIcon(Application.APPLY_WITH_ZOOM_ICON_KEY));
+		zoomInButton.setToolTipText("Apply edits but zoom selection");
 
 		JButton discardButton = new JButton(application.getIcon(Application.DISCARD_ICON_KEY));
 		discardButton.setToolTipText("Discard edits");

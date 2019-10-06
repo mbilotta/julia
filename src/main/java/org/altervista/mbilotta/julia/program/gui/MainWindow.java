@@ -122,6 +122,7 @@ public class MainWindow extends JFrame {
 		add(toolBar, application.getUndoAction());
 		add(toolBar, application.getRedoAction());
 		toolBar.addSeparator();
+		add(toolBar, application.getZoomAction());
 		add(toolBar, application.getHaltAction());
 		add(toolBar, application.getResumeAction());
 		toolBar.addSeparator();

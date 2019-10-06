@@ -145,27 +145,21 @@ public class Application {
 		private Image previous;
 		private Image next;
 
-		public Image(PluginInstance<NumberFactoryPlugin> numberFactoryInstance,
-				PluginInstance<FormulaPlugin> formulaInstance,
-				PluginInstance<RepresentationPlugin> representationInstance,
-				Rectangle rectangle, boolean forceEqualScales,
-				JuliaSetPoint juliaSetPoint) {
-			this(numberFactoryInstance, formulaInstance, representationInstance, rectangle, forceEqualScales, juliaSetPoint, null);
+		public Image(Image img) {
+			this(img.numberFactoryInstance, img.formulaInstance, img.representationInstance, img.rectangle, img.forceEqualScales, img.juliaSetPoint);
 		}
 
 		public Image(PluginInstance<NumberFactoryPlugin> numberFactoryInstance,
 				PluginInstance<FormulaPlugin> formulaInstance,
 				PluginInstance<RepresentationPlugin> representationInstance,
 				Rectangle rectangle, boolean forceEqualScales,
-				JuliaSetPoint juliaSetPoint,
-				Image previous) {
+				JuliaSetPoint juliaSetPoint) {
 			this.formulaInstance = formulaInstance;
 			this.numberFactoryInstance = numberFactoryInstance;
 			this.representationInstance = representationInstance;
 			this.rectangle = rectangle;
 			this.forceEqualScales = forceEqualScales;
 			this.juliaSetPoint = juliaSetPoint;
-			this.previous = previous;
 		}
 
 		public PluginInstance<NumberFactoryPlugin> getNumberFactoryInstance() {
@@ -236,7 +230,8 @@ public class Application {
 	private static final int MAX_CW_POOL_SIZE = 5;
 
 	public static final String APPLY_ICON_KEY = "accept";
-	public static final String ZOOM_IN_ICON_KEY = "zoom_in";
+	public static final String APPLY_WITH_ZOOM_ICON_KEY = "accept_w_zoom";
+	public static final String ZOOM_ICON_KEY = "zoom";
 	public static final String DISCARD_ICON_KEY = "eraser";
 	public static final String PIN_ICON_KEY = "pin_yellow";
 	public static final String CONNECTED_ICON_KEY = "connected";
@@ -273,6 +268,7 @@ public class Application {
 
 	private UndoAction undoAction;
 	private RedoAction redoAction;
+	private ZoomAction zoomAction;
 	private HaltAction haltAction;
 	private ResumeAction resumeAction;
 	private RefreshAction refreshAction;
@@ -297,6 +293,20 @@ public class Application {
 			iconCache.put(name, rv);
 		}
 		return rv;
+	}
+
+	private class ZoomAction extends AbstractAction {
+		public ZoomAction() {
+			putValue(NAME, "Zoom");
+			putValue(SHORT_DESCRIPTION, "Zoom selection");
+			putValue(MNEMONIC_KEY, KeyEvent.VK_Z);
+			putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_M, ActionEvent.CTRL_MASK));
+			putValue(LARGE_ICON_KEY, getIcon(ZOOM_ICON_KEY));
+		}
+	
+		public void actionPerformed(ActionEvent e) {
+			apply(null, true);
+		}
 	}
 
 	private class HaltAction extends AbstractAction {
@@ -1217,10 +1227,17 @@ public class Application {
 	}
 
 	public void apply(ControlWindow source, boolean zoomIn) {
-		assert cwList.contains(source);
-		if (!source.isConsistent()) {
-			setStatusMessage("Highlighted fields contain an illegal/incorrect value. Please review your input.", true);
-			return;
+		assert source == null || cwList.contains(source);
+
+		Image image;
+		if (source != null) {
+			if (!source.isConsistent()) {
+				setStatusMessage("Highlighted fields contain an illegal/incorrect value. Please review your input.", true);
+				return;
+			}
+			image = source.getImage();
+		} else {
+			image = new Image(currentImage);
 		}
 
 		if (zoomIn && !mainWindow.hasSelection()) {
@@ -1230,7 +1247,6 @@ public class Application {
 
 		Image oldCurrentImage = currentImage;
 		Image oldNextImage = currentImage.next;
-		Image image = source.getImage();
 		image.previous = oldCurrentImage;
 
 		setCurrentImage(image, source, zoomIn);
@@ -1603,7 +1619,7 @@ public class Application {
 			int imgWidth = iimg.getWidth();
 			int imgHeight = iimg.getHeight();
 			CoordinateTransform coordinateTransform;
-			if (source != null && zoomIn && mainWindow.hasSelection()) {
+			if (zoomIn && mainWindow.hasSelection()) {
 				coordinateTransform = createCoordinateTransform(imgWidth, imgHeight, currentImage, numberFactory);
 				ImageSelection selection = mainWindow.getSelection();
 				Real width = coordinateTransform.getScaleRe().times(selection.getWidth());
@@ -1740,6 +1756,7 @@ public class Application {
 
 		undoAction = new UndoAction();
 		redoAction = new RedoAction();
+		zoomAction = new ZoomAction();
 		haltAction = new HaltAction();
 		resumeAction = new ResumeAction();
 		refreshAction = new RefreshAction();
@@ -2174,6 +2191,10 @@ public class Application {
 
 	public Action getRedoAction() {
 		return redoAction;
+	}
+
+	public Action getZoomAction() {
+		return zoomAction;
 	}
 
 	public Action getHaltAction() {
