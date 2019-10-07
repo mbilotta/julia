@@ -186,22 +186,20 @@ public class MainWindow extends JFrame {
 		editMenu.setMnemonic(KeyEvent.VK_E);
 		add(editMenu, application.getUndoAction());
 		add(editMenu, application.getRedoAction());
+		editMenu.addSeparator();
+		add(editMenu, application.getEditSelectionColorAction());
+		add(editMenu, application.getEditPreferencesAction());
 		menuBar.add(editMenu);
-
-		JMenu calculationMenu = new JMenu("Calculation");
-		calculationMenu.setMnemonic(KeyEvent.VK_C);
-		add(calculationMenu, application.getHaltAction());
-		add(calculationMenu, application.getResumeAction());
-		add(calculationMenu, application.getShowLogsAction());
-		menuBar.add(calculationMenu);
 
 		JMenu toolsMenu = new JMenu("Tools");
 		toolsMenu.setMnemonic(KeyEvent.VK_T);
+		add(toolsMenu, application.getZoomAction());
+		add(toolsMenu, application.getHaltAction());
+		add(toolsMenu, application.getResumeAction());
+		add(toolsMenu, application.getShowLogsAction());
+		toolsMenu.addSeparator();
 		add(toolsMenu, application.getRefreshAction());
 		add(toolsMenu, new JCheckBoxMenuItem(application.getRefreshPeriodicallyAction()));
-		toolsMenu.addSeparator();
-		add(toolsMenu, application.getEditSelectionColorAction());
-		add(toolsMenu, application.getEditPreferencesAction());
 		menuBar.add(toolsMenu);
 
 		windowMenu = new JMenu("Window");

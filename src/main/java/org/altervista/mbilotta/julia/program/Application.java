@@ -380,7 +380,7 @@ public class Application {
 		public RefreshAction() {
 			putValue(NAME, "Refresh");
 			putValue(SHORT_DESCRIPTION, "Refresh");
-			putValue(MNEMONIC_KEY, KeyEvent.VK_R);
+			putValue(MNEMONIC_KEY, KeyEvent.VK_E);
 			putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0));
 			putValue(LARGE_ICON_KEY, getIcon(REFRESH_ICON_KEY));
 		}
@@ -394,7 +394,7 @@ public class Application {
 		public RefreshPeriodicallyAction() {
 			putValue(NAME, "Refresh periodically");
 			putValue(SHORT_DESCRIPTION, "Refresh periodically");
-			putValue(MNEMONIC_KEY, KeyEvent.VK_E);
+			putValue(MNEMONIC_KEY, KeyEvent.VK_F);
 			putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_F5, ActionEvent.SHIFT_MASK));
 			putValue(LARGE_ICON_KEY, getIcon(REFRESH_PERIODICALLY_ICON_KEY));
 			putValue(SELECTED_KEY, periodicRefreshEnabled);
