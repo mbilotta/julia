@@ -62,7 +62,7 @@ public class Preferences implements Serializable, Cloneable {
 		imageHeight = 575;
 		transparency = Transparency.TRANSLUCENT;
 		refreshDelay = 500;
-		numOfProducerThreads = 2;
+		numOfProducerThreads = Math.max(Runtime.getRuntime().availableProcessors() - 1, 1);
 		loggingEnabled = false;
 		maxLogLength = 5000;
 		selectionColor = Color.BLUE;
