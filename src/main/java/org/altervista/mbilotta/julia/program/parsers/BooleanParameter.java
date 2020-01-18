@@ -48,11 +48,15 @@ final class BooleanParameter extends Parameter<Boolean> {
 	
 	private static TransferHandler TRANSFER_HANDLER;
 
+	@Override
+	void initConstraints() {
+	}
+
 	private class Validator extends Parameter<Boolean>.Validator {
 
 		public Validator(DescriptorParser descriptorParser,
 				XmlPath parameterPath,
-				Class<?> pluginType, Object pluginInstance) throws ValidationException {
+				Class<?> pluginType, Object pluginInstance) throws DomValidationException {
 			BooleanParameter.this.super(descriptorParser, parameterPath, pluginType, pluginInstance);
 		}
 
@@ -74,7 +78,7 @@ final class BooleanParameter extends Parameter<Boolean> {
 
 	Validator createValidator(DescriptorParser descriptorParser,
 			XmlPath parameterPath,
-			Class<?> pluginType, Object pluginInstance) throws ValidationException {
+			Class<?> pluginType, Object pluginInstance) throws DomValidationException {
 		return new Validator(descriptorParser, parameterPath, pluginType, pluginInstance);
 	}
 	

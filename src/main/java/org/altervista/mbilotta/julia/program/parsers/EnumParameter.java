@@ -51,19 +51,23 @@ final class EnumParameter extends Parameter<Enum<?>> {
 	 */
 	private static final long serialVersionUID = 1L;
 
+	@Override
+	void initConstraints() {
+	}
+
 	private class Validator extends Parameter<Enum<?>>.Validator {
 
 		public Validator(DescriptorParser descriptorParser,
 				XmlPath parameterPath,
-				Class<?> pluginType, Object pluginInstance) throws ValidationException {
+				Class<?> pluginType, Object pluginInstance) throws DomValidationException {
 			EnumParameter.this.super(descriptorParser, parameterPath, pluginType, pluginInstance);
 		}
 
 		@Override
-		Class<?> inspectType(XmlPath currentPath) throws ValidationException {
+		Class<?> inspectType(XmlPath currentPath) throws DomValidationException {
 			Class<?> rv = super.inspectType(currentPath);
 			if (rv != null && !rv.isEnum()) {
-				descriptorParser.fatalError(new ValidationException(
+				descriptorParser.fatalError(new DomValidationException(
 						currentPath,
 						position,
 						"Type " + rv.getName() + " not an enum type"));
@@ -72,14 +76,14 @@ final class EnumParameter extends Parameter<Enum<?>> {
 			return rv;
 		}
 
-		public Enum<?> validateHint(XmlPath hintPath, Element hint) throws ValidationException {
+		public Enum<?> validateHint(XmlPath hintPath, Element hint) throws DomValidationException {
 			String valueString = DescriptorParser.getNodeValue(hint);
 			Enum<?> value = null;
 			try {
 				if (getType() != null)
 					value = Enum.valueOf((Class) getType(), valueString);
 			} catch (IllegalArgumentException e) {
-				descriptorParser.fatalError(ValidationException.atEndOf(
+				descriptorParser.fatalError(DomValidationException.atEndOf(
 						hintPath,
 						"Invalid enum constant " + valueString +
 						". Possible ones are: " + Arrays.toString(getType().getEnumConstants()) + "."));
@@ -107,7 +111,7 @@ final class EnumParameter extends Parameter<Enum<?>> {
 
 	Validator createValidator(DescriptorParser descriptorParser,
 			XmlPath parameterPath,
-			Class<?> pluginType, Object pluginInstance) throws ValidationException {
+			Class<?> pluginType, Object pluginInstance) throws DomValidationException {
 		return new Validator(descriptorParser, parameterPath, pluginType, pluginInstance);
 	}
 

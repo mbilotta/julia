@@ -43,7 +43,6 @@ import javax.xml.validation.SchemaFactory;
 import org.altervista.mbilotta.julia.Utilities;
 import org.altervista.mbilotta.julia.program.Buffer;
 import org.altervista.mbilotta.julia.program.LockedFile;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.Attributes;
@@ -63,7 +62,7 @@ public abstract class Parser<T> {
 	private int errorCount = 0;
 	private int fatalErrorCount = 0;
 	private List<Problem> problems = Collections.emptyList();
-	private boolean validationProblemsEncountered = false;
+	private boolean domValidationProblemsEncountered = false;
 
 	private SAXParser saxParser;
 	private boolean saxParserInstantiationFailed = false;
@@ -82,36 +81,36 @@ public abstract class Parser<T> {
 		documentBuilder.setErrorHandler(new ErrorHandler() {
 			public void warning(SAXParseException exception) throws SAXException {
 				warningCount++;
-				problems.add(Problem.warning(currentFile, exception));
+				problems.add(Problem.warning(relativize(currentFile), exception));
 			}
 			public void fatalError(SAXParseException exception) throws SAXException {
 				fatalErrorCount++;
-				problems.add(Problem.fatalError(currentFile, exception));
+				problems.add(Problem.fatalError(relativize(currentFile), exception));
 			}
 			public void error(SAXParseException exception) throws SAXException {
 				fatalErrorCount++;
-				problems.add(Problem.fatalError(currentFile, exception));
+				problems.add(Problem.fatalError(relativize(currentFile), exception));
 			}
 		});
 	}
 
 	protected void reset() {
 		problems = new LinkedList<>();
-		validationProblemsEncountered = false;
+		domValidationProblemsEncountered = false;
 		warningCount = 0;
 		errorCount = 0;
 		fatalErrorCount = 0;
 	}
 
-	protected abstract T validate(Document dom) throws ValidationException, InterruptedException;
+	protected abstract T validate(Document dom) throws DomValidationException, ClassValidationException, InterruptedException;
 
 	public T parse(LockedFile file, StringBuilder outputBuilder)
-			throws SAXException, IOException, ValidationException, InterruptedException {
+			throws SAXException, IOException, DomValidationException, ClassValidationException, InterruptedException {
 		return parse(Buffer.readFully(file, null, null), file.getPath(), outputBuilder);
 	}
 
 	public T parse(Buffer bytes, Path source, StringBuilder outputBuilder)
-			throws SAXException, IOException, ValidationException, InterruptedException {
+			throws SAXException, IOException, DomValidationException, ClassValidationException, InterruptedException {
 		currentFile = source;
 		reset();
 		Document dom = documentBuilder.parse(bytes.toInputStream(), source.toUri().toASCIIString());
@@ -126,9 +125,9 @@ public abstract class Parser<T> {
 	}
 
 	private void locateProblem(Buffer bytes, Problem problem) {
-		if (problem instanceof ValidationProblem) {
+		if (problem instanceof DomValidationProblem) {
 			DefaultHandler vpl =
-					new ValidationProblemLocator((ValidationProblem) problem);
+					new DomValidationProblemLocator((DomValidationProblem) problem);
 			try {
 				saxParser.parse(bytes.toInputStream(), vpl);
 			} catch (SAXException | IOException e) {
@@ -141,7 +140,7 @@ public abstract class Parser<T> {
 		if (outputBuilder != null) {
 			for (Problem problem : problems) {
 				locateProblem(bytes, problem);
-				appendProblem(problem, outputBuilder);
+				problem.appendTo(outputBuilder);
 			}
 		} else {
 			for (Problem problem : problems) {
@@ -153,14 +152,14 @@ public abstract class Parser<T> {
 	private void appendProblems(StringBuilder outputBuilder) {
 		if (outputBuilder != null) {
 			for (Problem problem : problems) {
-				appendProblem(problem, outputBuilder);
+				problem.appendTo(outputBuilder);
 			}
 		}
 	}
 
 	private void appendProblems(Buffer bytes, StringBuilder outputBuilder) {
 		if (!saxParserInstantiationFailed &&
-				validationProblemsEncountered) {
+				domValidationProblemsEncountered) {
 			if (saxParser == null) {
 				SAXParserFactory spf = SAXParserFactory.newInstance();
 				spf.setNamespaceAware(true);
@@ -178,32 +177,6 @@ public abstract class Parser<T> {
 			}
 		} else {
 			appendProblems(outputBuilder);
-		}
-	}
-
-	private void appendProblem(Problem p, StringBuilder outputBuilder) {
-		Exception e = p.getException();
-		Throwable cause = e.getCause();
-		String causeString;
-		if (cause == null) {
-			causeString = "";
-		} else {
-			StringWriter sw = new StringWriter();
-			cause.printStackTrace(new PrintWriter(sw));
-			causeString = sw.toString();
-		}
-		
-		if ((p.getLineNumber() == -1 || p.getColumnNumber() == -1) && p instanceof ValidationProblem) {
-			append(outputBuilder, "[", Problem.toTypeString(p.getType()), "] ",
-					relativize(p.getFile()), ":",
-					((ValidationException) e).getElementPath(), ": ",
-					e.getMessage(), "\n", causeString);
-		} else {
-			append(outputBuilder, "[", Problem.toTypeString(p.getType()), "] ",
-					relativize(p.getFile()), ":",
-					p.getLineNumber(), ":",
-					p.getColumnNumber(), ": ",
-					e.getMessage(), "\n", causeString);
 		}
 	}
 
@@ -227,22 +200,37 @@ public abstract class Parser<T> {
 		return Collections.unmodifiableList(problems);
 	}
 
-	protected void warning(ValidationException exception) throws ValidationException {
+	protected void warning(DomValidationException exception) throws DomValidationException {
 		warningCount++;
-		validationProblemsEncountered = true;
-		problems.add(Problem.warning(currentFile, exception));
+		domValidationProblemsEncountered = true;
+		problems.add(Problem.warning(relativize(currentFile), exception));
 	}
 
-	protected void fatalError(ValidationException exception) throws ValidationException {
+	protected void fatalError(DomValidationException exception) throws DomValidationException {
 		fatalErrorCount++;
-		validationProblemsEncountered = true;
-		problems.add(Problem.fatalError(currentFile, exception));
+		domValidationProblemsEncountered = true;
+		problems.add(Problem.fatalError(relativize(currentFile), exception));
 	}
 
-	protected void error(ValidationException exception) throws ValidationException {
+	protected void error(DomValidationException exception) throws DomValidationException {
 		errorCount++;
-		validationProblemsEncountered = true;
-		problems.add(Problem.error(currentFile, exception));
+		domValidationProblemsEncountered = true;
+		problems.add(Problem.error(relativize(currentFile), exception));
+	}
+
+	protected void warning(ClassValidationException exception) throws ClassValidationException {
+		warningCount++;
+		problems.add(Problem.warning(exception));
+	}
+
+	protected void fatalError(ClassValidationException exception) throws ClassValidationException {
+		fatalErrorCount++;
+		problems.add(Problem.fatalError(exception));
+	}
+
+	protected void error(ClassValidationException exception) throws ClassValidationException {
+		errorCount++;
+		problems.add(Problem.error(exception));
 	}
 
 	protected Path relativize(Path path) {
@@ -316,16 +304,28 @@ public abstract class Parser<T> {
 			return new ParsingProblem(FATAL_ERROR, file, exception);
 		}
 
-		public static Problem warning(Path file, ValidationException exception) {
-			return new ValidationProblem(WARNING, file, exception);
+		public static Problem warning(Path file, DomValidationException exception) {
+			return new DomValidationProblem(WARNING, file, exception);
 		}
 
-		public static Problem error(Path file, ValidationException exception) {
-			return new ValidationProblem(ERROR, file, exception);
+		public static Problem error(Path file, DomValidationException exception) {
+			return new DomValidationProblem(ERROR, file, exception);
 		}
 
-		public static Problem fatalError(Path file, ValidationException exception) {
-			return new ValidationProblem(FATAL_ERROR, file, exception);
+		public static Problem fatalError(Path file, DomValidationException exception) {
+			return new DomValidationProblem(FATAL_ERROR, file, exception);
+		}
+
+		public static Problem warning(ClassValidationException exception) {
+			return new ClassValidationProblem(WARNING, exception);
+		}
+
+		public static Problem error(ClassValidationException exception) {
+			return new ClassValidationProblem(ERROR, exception);
+		}
+
+		public static Problem fatalError(ClassValidationException exception) {
+			return new ClassValidationProblem(FATAL_ERROR, exception);
 		}
 
 		public static String toTypeString(int type) {
@@ -335,6 +335,28 @@ public abstract class Parser<T> {
 			case FATAL_ERROR: return "FATAL_ERROR";
 			default: throw new IllegalArgumentException("" + type);
 			}
+		}
+	
+		public String getCauseString() {
+			Exception e = getException();
+			Throwable cause = e.getCause();
+			String rv;
+			if (cause == null) {
+				rv = "";
+			} else {
+				StringWriter sw = new StringWriter();
+				cause.printStackTrace(new PrintWriter(sw));
+				rv = sw.toString();
+			}
+			return rv;
+		}
+
+		public void appendTo(StringBuilder sb) {
+			append(sb, "[", Problem.toTypeString(getType()), "] ",
+					getFile(), ":",
+					getLineNumber(), ":",
+					getColumnNumber(), ": ",
+					getException().getMessage(), "\n", getCauseString());
 		}
 	}
 
@@ -356,16 +378,16 @@ public abstract class Parser<T> {
 		}
 	}
 
-	public static final class ValidationProblem extends Problem {
+	public static final class DomValidationProblem extends Problem {
 		private int lineNumber = -1;
 		private int columnNumber = -1;
 
-		private ValidationProblem(int type, Path file, ValidationException exception) {
+		private DomValidationProblem(int type, Path file, DomValidationException exception) {
 			super(type, file, exception);
 		}
 
-		public ValidationException getException() {
-			return (ValidationException) super.getException();
+		public DomValidationException getException() {
+			return (DomValidationException) super.getException();
 		}
 
 		public int getLineNumber() {
@@ -383,9 +405,21 @@ public abstract class Parser<T> {
 		public XmlPath getElementPath() {
 			return getException().getElementPath();
 		}
+
+		@Override
+		public void appendTo(StringBuilder sb) {
+			if (getLineNumber() == -1 || getColumnNumber() == -1) {
+				append(sb, "[", Problem.toTypeString(getType()), "] ",
+						getFile(), ":",
+						getElementPath(), ": ",
+						getException().getMessage(), "\n", getCauseString());
+			} else {
+				super.appendTo(sb);
+			}
+		}
 	}
 
-	public static final class ValidationProblemLocator extends DefaultHandler {
+	public static final class DomValidationProblemLocator extends DefaultHandler {
 		private final ListIterator<ChildSelector> pathIterator;
 		private ChildSelector currentSelector;
 		private final int position;
@@ -394,10 +428,10 @@ public abstract class Parser<T> {
 		private int currentIndex = 1;
 		private int parserDepth = 0;
 		private int pathDepth = 0;
-		private ValidationProblem problem;
+		private DomValidationProblem problem;
 		private Locator locator;
 
-		public ValidationProblemLocator(ValidationProblem problem) {
+		public DomValidationProblemLocator(DomValidationProblem problem) {
 			this.pathIterator = problem.getElementPath().iterator();
 			this.currentSelector = pathIterator.next();
 			this.position = problem.getPosition();
@@ -437,7 +471,7 @@ public abstract class Parser<T> {
 			if (!endFound) {
 				if (startFound && parserDepth == pathDepth && localName.equals(currentSelector.getLocalName())) {
 					endFound = true;
-					if (position == ValidationException.END_OF_ELEMENT) {
+					if (position == DomValidationException.END_OF_ELEMENT) {
 						problem.lineNumber = locator.getLineNumber();
 						problem.columnNumber = locator.getColumnNumber();
 					}
@@ -457,7 +491,7 @@ public abstract class Parser<T> {
 				currentSelector = next;
 			} else {
 				startFound = true;
-				if (position == ValidationException.START_OF_ELEMENT) {
+				if (position == DomValidationException.START_OF_ELEMENT) {
 					problem.lineNumber = locator.getLineNumber();
 					problem.columnNumber = locator.getColumnNumber();
 				}
@@ -472,6 +506,43 @@ public abstract class Parser<T> {
 
 			currentSelector = previous;
 			currentIndex = 1;
+		}
+	}
+
+	public static final class ClassValidationProblem extends Problem {
+
+		private ClassValidationProblem(int type, ClassValidationException exception) {
+			super(type, null, exception);
+		}
+
+		@Override
+		public int getLineNumber() {
+			return -1;
+		}
+
+		@Override
+		public int getColumnNumber() {
+			return -1;
+		}
+
+		@Override
+		public ClassValidationException getException() {
+			return (ClassValidationException) super.getException();
+		}
+
+		public String getClassName() {
+			return this.getException().getClassName();
+		}
+
+		public String getPropertyName() {
+			return this.getException().getPropertyName();
+		}
+
+		@Override
+		public void appendTo(StringBuilder sb) {
+			append(sb, "[", Problem.toTypeString(getType()), "] ",
+					getClassName(), ".", getPropertyName(), ": ",
+					getException().getMessage(), "\n", getCauseString());
 		}
 	}
 }

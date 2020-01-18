@@ -271,13 +271,29 @@ public abstract class Plugin implements Serializable {
 
 		authors = Author.inspectAnnotations(type, in instanceof JuliaObjectInputStream ? author -> ((JuliaObjectInputStream) in).resolveAuthor(author) : null);
 		parameters = readNonNullList(in, "parameters", Parameter.class);
-		for (Parameter<?> parameter : parameters) {
-			if (parameter instanceof AnyParameter) {
+
+		int index = 0;
+		for (Parameter<?> p : parameters) {
+			p.setIndex(index++);
+			p.setPlugin(this);
+
+			try {
+				Method setter = findSetter(p.getId(), p.getType(), type);
+				p.setSetterMethod(setter);
+				p.initConstraints();
+				p.validateHints();
+			} catch (NoSuchMethodException e) {
+				throw newIOException(p.getId() + ".setterMethod", e);
+			} catch (ClassValidationException e) {
+				throw newIOException(p.getId(), e);
+			}
+
+			if (p instanceof AnyParameter) {
 				Out<String> fieldNameOut = Out.newOut();
 				try {
-					((AnyParameter) parameter).initMethods(type, fieldNameOut);
+					((AnyParameter) p).initMethods(type, fieldNameOut);
 				} catch (NoSuchMethodException e) {
-					throw newIOException(parameter.getId() + "." + fieldNameOut.get(), e);
+					throw newIOException(p.getId() + "." + fieldNameOut.get(), e);
 				}
 			}
 		}
@@ -320,19 +336,8 @@ public abstract class Plugin implements Serializable {
 			throw newIOException("constructor", e);
 		}
 
-		int index = 0;
 		Object pluginInstance = null;
 		for (Parameter<?> p : parameters) {
-			p.setIndex(index);
-			p.setPlugin(this);
-
-			try {
-				Method setter = findSetter(p.getId(), p.getType(), type);
-				p.setSetterMethod(setter);
-			} catch (NoSuchMethodException e) {
-				throw newIOException(p.getId() + ".setterMethod", e);
-			}
-
 			try {
 				Method getter = findGetter(p.getId(), p.getType(), type);
 				if (getter != null) {
@@ -371,7 +376,7 @@ public abstract class Plugin implements Serializable {
 								if (hintGroup == null) {
 									throw newIOException("Possible code change was detected.");
 								}
-								Object hint = hintGroup.get(index);
+								Object hint = hintGroup.get(p.getIndex());
 								if (hint == null || !hint.equals(getterHint)) {
 									throw newIOException("Possible code change was detected.");
 								}
@@ -384,8 +389,6 @@ public abstract class Plugin implements Serializable {
 			} catch (ReflectiveOperationException e) {
 				throw newIOException("Reflective invocation has failed.", e);
 			}
-			
-			index++;
 		}
 	}
 

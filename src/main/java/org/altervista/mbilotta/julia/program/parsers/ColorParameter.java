@@ -46,11 +46,15 @@ final class ColorParameter extends Parameter<Color> {
 	 */
 	private static final long serialVersionUID = 1L;
 
+	@Override
+	void initConstraints() {
+	}
+
 	private class Validator extends Parameter<Color>.Validator {
 
 		public Validator(DescriptorParser descriptorParser,
 				XmlPath parameterPath,
-				Class<?> pluginType, Object pluginInstance) throws ValidationException {
+				Class<?> pluginType, Object pluginInstance) throws DomValidationException {
 			ColorParameter.this.super(descriptorParser, parameterPath, pluginType, pluginInstance);
 			getterHint = descriptorParser.replace(getterHint);
 		}
@@ -93,7 +97,7 @@ final class ColorParameter extends Parameter<Color> {
 
 	Validator createValidator(DescriptorParser descriptorParser,
 			XmlPath parameterPath,
-			Class<?> pluginType, Object pluginInstance) throws ValidationException {
+			Class<?> pluginType, Object pluginInstance) throws DomValidationException {
 		return new Validator(descriptorParser, parameterPath, pluginType, pluginInstance);
 	}
 

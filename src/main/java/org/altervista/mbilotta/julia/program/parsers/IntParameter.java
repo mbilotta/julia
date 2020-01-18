@@ -26,6 +26,11 @@ import static org.altervista.mbilotta.julia.program.parsers.Parser.println;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.lang.reflect.Method;
 
 import javax.swing.JComponent;
 import javax.swing.JSpinner;
@@ -33,33 +38,70 @@ import javax.swing.JSpinner;
 import org.altervista.mbilotta.julia.program.gui.IntParameterEditor;
 import org.altervista.mbilotta.julia.program.gui.ParameterChangeListener;
 import org.altervista.mbilotta.julia.program.gui.PreviewUpdater;
-
 import org.w3c.dom.Element;
 
 
-final class IntParameter extends Parameter<Integer> {
+public final class IntParameter extends Parameter<Integer> {
 	
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 
-	private int min;
-	private int max;
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target(ElementType.METHOD)
+	public static @interface Min {
+		int value();
+	}
+
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target(ElementType.METHOD)
+	public static @interface Max {
+		int value();
+	}
+
+	private transient int min;
+	private transient int max;
+
+	@Override
+	void initConstraints() throws ClassValidationException {
+		Method setter = getSetterMethod();
+
+		Min minAnnotation = setter.getAnnotation(Min.class);
+		if (minAnnotation != null) {
+			min = minAnnotation.value();
+		} else {
+			min = Integer.MIN_VALUE;
+		}
+
+		Max maxAnnotation = setter.getAnnotation(Max.class);
+		if (maxAnnotation != null) {
+			max = maxAnnotation.value();
+		} else {
+			max = Integer.MAX_VALUE;
+		}
+
+		if (max < min) {
+			String message = "Invalid range [" + min + ", " + max + "].";
+			max = Integer.MAX_VALUE;
+			min = Integer.MIN_VALUE;
+			throw new ClassValidationException(this, message);
+		}
+	}
 	
 	private class Validator extends Parameter<Integer>.Validator {
 
 		public Validator(DescriptorParser descriptorParser,
 				XmlPath parameterPath,
-				Class<?> pluginType, Object pluginInstance) throws ValidationException {
+				Class<?> pluginType, Object pluginInstance) throws DomValidationException {
 			IntParameter.this.super(descriptorParser, parameterPath, pluginType, pluginInstance);
 		}
 
-		public Integer validateHint(XmlPath hintPath, Element hint) throws ValidationException {
+		public Integer validateHint(XmlPath hintPath, Element hint) throws DomValidationException {
 			int value = Integer.parseInt(getNodeValue(hint));
 			println(hintPath, value);
 			if (value > max || value < min) {
-				descriptorParser.fatalError(ValidationException.atEndOf(
+				descriptorParser.fatalError(DomValidationException.atEndOf(
 						hintPath,
 						"Suggested value "+ value + " lies outside range."));
 				return null;
@@ -67,45 +109,24 @@ final class IntParameter extends Parameter<Integer> {
 			return value;
 		}
 
-		public void validate(Element node) throws ValidationException {
+		public void validate(Element node) throws DomValidationException, ClassValidationException {
 			XmlPath currentPath = parameterPath;
 			init(currentPath);
 
-			Element offset = node != null ? (Element) node.getFirstChild() : null;
-			if (offset != null && offset.getLocalName().equals("min")) {
-				currentPath = parameterPath.getChild(offset);
-				min = Integer.parseInt(getNodeValue(offset));
-				println(currentPath, min);
-				
-				offset = (Element) offset.getNextSibling();
-			} else {
-				min = Integer.MIN_VALUE;
-			}
-
-			if (offset != null && offset.getLocalName().equals("max")) {
-				currentPath = parameterPath.getChild(offset);
-				max = Integer.parseInt(getNodeValue(offset));
-				println(currentPath, max);
-
-				offset = (Element) offset.getNextSibling();
-			} else {
-				max = Integer.MAX_VALUE;
-			}
-			
-			if (max < min) {
-				String message = "Invalid range [" + min + ", " + max + "].";
-				max = Integer.MAX_VALUE;
-				min = Integer.MIN_VALUE;
-				descriptorParser.fatalError(ValidationException.atEndOf(currentPath, message));
+			try {
+				initConstraints();
+			} catch (ClassValidationException e) {
+				descriptorParser.fatalError(e);
 			}
 
 			if (getterHint != null &&
 					(getterHint > max || getterHint < min)) {
 				String message = "Suggested value (from getter) " + getterHint + " lies outside range.";
 				getterHint = null;
-				descriptorParser.fatalError(ValidationException.atEndOf(currentPath, message));
+				descriptorParser.fatalError(new ClassValidationException(this, message));
 			}
 
+			Element offset = node != null ? (Element) node.getFirstChild() : null;
 			validateHints(offset);
 		}
 
@@ -125,7 +146,7 @@ final class IntParameter extends Parameter<Integer> {
 
 	Validator createValidator(DescriptorParser descriptorParser,
 			XmlPath parameterPath,
-			Class<?> pluginType, Object pluginInstance) throws ValidationException {
+			Class<?> pluginType, Object pluginInstance) throws DomValidationException {
 		return new Validator(descriptorParser, parameterPath, pluginType, pluginInstance);
 	}
 
@@ -223,10 +244,6 @@ final class IntParameter extends Parameter<Integer> {
 	private void readObject(ObjectInputStream in)
 			throws IOException, ClassNotFoundException {
 		in.defaultReadObject();
-
-		if (max < min) {
-			throw newIOException('[' + getId() + ".min=" + min + "; " + getId() + ".max=" + max + "] is not a valid range.");
-		}
 
 		setType(int.class);
 		readHints(in);

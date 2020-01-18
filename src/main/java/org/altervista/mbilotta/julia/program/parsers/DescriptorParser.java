@@ -107,12 +107,12 @@ public class DescriptorParser extends Parser<Plugin> {
 	}
 
 	@Override
-	protected Plugin validate(Document dom) throws ValidationException, InterruptedException {
+	protected Plugin validate(Document dom) throws DomValidationException, ClassValidationException, InterruptedException {
 		Element root = dom.getDocumentElement();
 		XmlPath rootPath = new XmlPath(root);
 		XmlPath currentPath = rootPath;
 		if (!(root.getNamespaceURI().equals(DESCRIPTOR_NS_URI) && root.getLocalName().equals("plugin"))) {
-			fatalError(ValidationException.atStartOf(
+			fatalError(DomValidationException.atStartOf(
 					currentPath,
 					"Invalid root element: " + root));
 			return null;
@@ -126,7 +126,7 @@ public class DescriptorParser extends Parser<Plugin> {
 		Class<?> pluginType = parseClass(currentPath, offset, false, true);
 		if (pluginType != null) {
 			if (!pluginFamily.getInterfaceType().isAssignableFrom(pluginType)) {
-				fatalError(ValidationException.atEndOf(
+				fatalError(DomValidationException.atEndOf(
 						currentPath,
 						"Class " + pluginType.getName() + " does not implement " + pluginFamily.getInterfaceType()));
 			}
@@ -135,7 +135,7 @@ public class DescriptorParser extends Parser<Plugin> {
 		try {
 			propertyMap = inspectProperties(pluginType);
 		} catch (IntrospectionException e) {
-			fatalError(ValidationException.atEndOf(
+			fatalError(DomValidationException.atEndOf(
 					currentPath,
 					"Could not inspect properties of class " + pluginType.getName(), e));
 			propertyMap = Collections.emptyMap();
@@ -177,11 +177,11 @@ public class DescriptorParser extends Parser<Plugin> {
 				pluginInstance = rv.initializeConstructor()
 						.newInstance((Object[]) null);
 			} catch (NoSuchMethodException e) {
-				fatalError(ValidationException.atEndOf(
+				fatalError(DomValidationException.atEndOf(
 						pluginTypePath,
 						"Could not find public default constructor in " + pluginType + "."));
 			} catch (ReflectiveOperationException | ExceptionInInitializerError e) {
-				fatalError(ValidationException.atEndOf(
+				fatalError(DomValidationException.atEndOf(
 						pluginTypePath,
 						"Could not instantiate " + pluginType + ".", e));
 			}
@@ -265,7 +265,7 @@ public class DescriptorParser extends Parser<Plugin> {
 	
 				String name = getNodeValueUnescaped(offset);
 				if (name.length() == 0) {
-					warning(ValidationException.atStartOf(currentPath.getChild(offset), "Empty plugin name."));
+					warning(DomValidationException.atStartOf(currentPath.getChild(offset), "Empty plugin name."));
 				} else {
 					rv.setName(name);
 				}
@@ -273,7 +273,7 @@ public class DescriptorParser extends Parser<Plugin> {
 	
 				description = getNodeValueUnescaped(offset);
 				if (description.length() == 0) {
-					warning(ValidationException.atStartOf(currentPath.getChild(offset), "Empty plugin description."));
+					warning(DomValidationException.atStartOf(currentPath.getChild(offset), "Empty plugin description."));
 				}
 				offset = (Element) offset.getNextSibling();
 				
@@ -283,12 +283,12 @@ public class DescriptorParser extends Parser<Plugin> {
 					String idref = idrefAttr.getValue();
 					Parameter<?>.Validator validator = idToValidator.get(idref);
 					if (validator == null) {
-						warning(ValidationException.atStartOf(currentPath, "Attribute id points to the unspecified property " + idref + "."));
+						warning(DomValidationException.atStartOf(currentPath, "Attribute id points to the unspecified property " + idref + "."));
 					} else {
 						Element nameElement = (Element) offset.getFirstChild();
 						String parameterName = getNodeValueUnescaped(nameElement);
 						if (parameterName.length() == 0) {
-							warning(ValidationException.atEndOf(currentPath.getChild(nameElement), "Empty name for property " + idref + "."));
+							warning(DomValidationException.atEndOf(currentPath.getChild(nameElement), "Empty name for property " + idref + "."));
 						} else {
 							validator.setParameterName(parameterName);
 						}
@@ -296,7 +296,7 @@ public class DescriptorParser extends Parser<Plugin> {
 						Element descriptionElement = (Element) offset.getLastChild();
 						String parameterDescription = getNodeValueUnescaped(descriptionElement);
 						if (parameterDescription.length() == 0) {
-							warning(ValidationException.atEndOf(currentPath.getChild(descriptionElement), "Empty description for property " + idref + "."));
+							warning(DomValidationException.atEndOf(currentPath.getChild(descriptionElement), "Empty description for property " + idref + "."));
 						} else {
 							validator.setParameterDescription(parameterDescription);
 						}
@@ -396,7 +396,7 @@ public class DescriptorParser extends Parser<Plugin> {
 		return rv;
 	}
 
-	Class<?> parseClass(XmlPath elementPath, Node element, boolean enforceEnum, boolean enforceConcrete) throws ValidationException {
+	Class<?> parseClass(XmlPath elementPath, Node element, boolean enforceEnum, boolean enforceConcrete) throws DomValidationException {
 		String className = getNodeValue(element);
 
 		Class<?> rv;
@@ -405,36 +405,40 @@ public class DescriptorParser extends Parser<Plugin> {
 			println(elementPath, rv);
 			if (enforceEnum && !rv.isEnum()) {
 				rv = null;
-				fatalError(ValidationException.atEndOf(elementPath, "Type " + className + " not an enum type"));
+				fatalError(DomValidationException.atEndOf(elementPath, "Type " + className + " not an enum type"));
 			} else if (rv.isPrimitive() || rv.isArray()) {
 				rv = null;
-				fatalError(ValidationException.atEndOf(elementPath, "Type " + className + " is a primitive type or array type"));
+				fatalError(DomValidationException.atEndOf(elementPath, "Type " + className + " is a primitive type or array type"));
 			} else {
 				int modifiers = rv.getModifiers();
 				if (!Modifier.isPublic(modifiers))
-					fatalError(ValidationException.atEndOf(elementPath, "Type " + className + " does not have public visibilty"));
+					fatalError(DomValidationException.atEndOf(elementPath, "Type " + className + " does not have public visibilty"));
 
 				if (Modifier.isInterface(modifiers)) {
 					rv = null;
-					fatalError(ValidationException.atEndOf(elementPath, "Type " + className + " is an interface"));
+					fatalError(DomValidationException.atEndOf(elementPath, "Type " + className + " is an interface"));
 				} else {
 					if (rv.getEnclosingClass() != null && !Modifier.isStatic(modifiers))
-						fatalError(ValidationException.atEndOf(elementPath, "Type " + className + " is a non-static member type"));
+						fatalError(DomValidationException.atEndOf(elementPath, "Type " + className + " is a non-static member type"));
 					if (enforceConcrete && Modifier.isAbstract(modifiers))
-						fatalError(ValidationException.atEndOf(elementPath, "Type " + className + " is an abstract class"));
+						fatalError(DomValidationException.atEndOf(elementPath, "Type " + className + " is an abstract class"));
 				}
 			}
 		} catch (ClassNotFoundException | LinkageError e) {
 			rv = null;
 			println(elementPath, null);
-			fatalError(ValidationException.atEndOf(elementPath, "Reflection of type " + className + " has failed", e));
+			fatalError(DomValidationException.atEndOf(elementPath, "Reflection of type " + className + " has failed", e));
 		}
 
 		return rv;
 	}
 
 	Decimal parseDecimal(Node element) {
-		return replace(new Decimal(getNodeValue(element)));
+		return parseDecimal(getNodeValue(element));
+	}
+
+	Decimal parseDecimal(String text) {
+		return replace(new Decimal(text));
 	}
 
 	Color parseColor(Element element) {

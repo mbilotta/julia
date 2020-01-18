@@ -4,7 +4,7 @@ import org.altervista.mbilotta.julia.Decimal;
 import org.altervista.mbilotta.julia.math.Real;
 
 
-final class RealParameter extends DecimalParameter {
+public final class RealParameter extends DecimalParameter {
 
 	private static final long serialVersionUID = 1L;
 
@@ -12,7 +12,7 @@ final class RealParameter extends DecimalParameter {
 
 		public Validator(DescriptorParser descriptorParser,
 				XmlPath parameterPath,
-				Class<?> pluginType, Object pluginInstance) throws ValidationException {
+				Class<?> pluginType, Object pluginInstance) throws DomValidationException {
 			RealParameter.this.super(descriptorParser, parameterPath, pluginType, pluginInstance);
 		}
 
@@ -29,7 +29,7 @@ final class RealParameter extends DecimalParameter {
 	@Override
 	Validator createValidator(DescriptorParser descriptorParser,
 			XmlPath parameterPath,
-			Class<?> pluginType, Object pluginInstance) throws ValidationException {
+			Class<?> pluginType, Object pluginInstance) throws DomValidationException {
 		return new Validator(descriptorParser, parameterPath, pluginType, pluginInstance);
 	}
 

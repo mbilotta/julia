@@ -60,6 +60,7 @@ import org.altervista.mbilotta.julia.program.gui.MessagePane;
 import org.altervista.mbilotta.julia.program.gui.SplashScreen;
 import org.altervista.mbilotta.julia.program.parsers.Author;
 import org.altervista.mbilotta.julia.program.parsers.BinaryRelation;
+import org.altervista.mbilotta.julia.program.parsers.ClassValidationException;
 import org.altervista.mbilotta.julia.program.parsers.ClasspathParser;
 import org.altervista.mbilotta.julia.program.parsers.DescriptorParser;
 import org.altervista.mbilotta.julia.program.parsers.DocumentationWriter;
@@ -68,7 +69,7 @@ import org.altervista.mbilotta.julia.program.parsers.NumberFactoryPlugin;
 import org.altervista.mbilotta.julia.program.parsers.Parser;
 import org.altervista.mbilotta.julia.program.parsers.Plugin;
 import org.altervista.mbilotta.julia.program.parsers.RepresentationPlugin;
-import org.altervista.mbilotta.julia.program.parsers.ValidationException;
+import org.altervista.mbilotta.julia.program.parsers.DomValidationException;
 import org.xml.sax.SAXException;
 
 
@@ -277,7 +278,7 @@ class Loader extends SwingWorker<Void, String> {
 						println("...success.");
 					}
 					return rv;
-				} catch (SAXException | IOException | ValidationException e) {
+				} catch (SAXException | IOException | DomValidationException | ClassValidationException e) {
 					print("...failure. Cause: ");
 					printStackTrace(e);
 					println("Default classpath will be used.");
@@ -452,7 +453,7 @@ class Loader extends SwingWorker<Void, String> {
 				try {
 					println("Parsing descriptor ", descriptor, "...");
 					plugin = parser.parse(buffer, descriptor.getPath(), parserOutputBuilder);
-				} catch (SAXException | ValidationException e) {
+				} catch (SAXException | DomValidationException e) {
 					noExceptionsThrown = false;
 					print("...failure. Cause: ");
 					printStackTrace(e);

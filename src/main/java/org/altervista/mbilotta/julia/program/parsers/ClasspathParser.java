@@ -52,11 +52,11 @@ public class ClasspathParser extends Parser<Classpath> {
 
 	@Override
 	protected Classpath validate(Document dom)
-			throws ValidationException, InterruptedException {
+			throws DomValidationException, InterruptedException {
 		Element root = dom.getDocumentElement();
 		XmlPath currentPath = new XmlPath(root);
 		if (!(root.getNamespaceURI().equals(CLASSPATH_NS_URI) && root.getLocalName().equals("classpath"))) {
-			fatalError(ValidationException.atStartOf(
+			fatalError(DomValidationException.atStartOf(
 					currentPath,
 					"Invalid root element: " + root));
 			return null;
@@ -76,7 +76,7 @@ public class ClasspathParser extends Parser<Classpath> {
 					rv.addEntry(path);
 				}
 			} catch (InvalidPathException e) {
-				error(ValidationException.atEndOf(currentPath, "Not a valid path.", e));
+				error(DomValidationException.atEndOf(currentPath, "Not a valid path.", e));
 			}
 
 			offset = (Element) offset.getNextSibling();
@@ -85,7 +85,7 @@ public class ClasspathParser extends Parser<Classpath> {
 		}
 
 		if (rv.isEmpty()) {
-			fatalError(ValidationException.atEndOf(currentPath, "Classpath is empty."));
+			fatalError(DomValidationException.atEndOf(currentPath, "Classpath is empty."));
 		}
 		
 		return rv;

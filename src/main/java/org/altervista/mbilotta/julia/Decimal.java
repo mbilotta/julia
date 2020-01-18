@@ -234,6 +234,20 @@ public final class Decimal extends PartialReal implements Serializable {
 		return exponent;
 	}
 
+	public boolean isFractional() {
+		if (exponentSignum < 0) {
+			return true;
+		}
+		if (exponentSignum == 0) {
+			return false;
+		}
+		try {
+			return mantissa.length() - 1 > Integer.parseInt(this.exponent);
+		} catch (NumberFormatException e) {
+			return false;
+		}
+	}
+
 	@Override
 	public int intValue() {
 		if (signum == 0 || exponentSignum < 0) {

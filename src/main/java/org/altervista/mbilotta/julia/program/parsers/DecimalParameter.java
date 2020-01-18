@@ -20,18 +20,23 @@
 
 package org.altervista.mbilotta.julia.program.parsers;
 
-import static org.altervista.mbilotta.julia.Utilities.readNonNullList;
-import static org.altervista.mbilotta.julia.Utilities.join;
-import static org.altervista.mbilotta.julia.Utilities.writeList;
 import static org.altervista.mbilotta.julia.program.parsers.Parser.println;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.lang.reflect.Method;
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.swing.JComponent;
 import javax.swing.JFormattedTextField;
@@ -41,99 +46,157 @@ import org.altervista.mbilotta.julia.Decimal;
 import org.altervista.mbilotta.julia.program.gui.JuliaFormattedTextField;
 import org.altervista.mbilotta.julia.program.gui.ParameterChangeListener;
 import org.altervista.mbilotta.julia.program.gui.PreviewUpdater;
-
 import org.w3c.dom.Element;
 
 
-class DecimalParameter extends Parameter<Decimal> {
+public class DecimalParameter extends Parameter<Decimal> {
 
 	private static final long serialVersionUID = 1L;
 
-	private Decimal min;
-	private Decimal max;
-	private boolean minInclusive;
-	private boolean maxInclusive;
-	private transient List<Decimal> exceptions = new LinkedList<>();
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target(ElementType.METHOD)
+	public static @interface Min {
+		String value();
+		boolean inclusive() default true;
+	}
+
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target(ElementType.METHOD)
+	public static @interface Max {
+		String value();
+		boolean inclusive() default true;
+	}
+
+	@Repeatable(ForbidValues.class)
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target(ElementType.METHOD)
+	public static @interface Forbid {
+		String value();
+	}
+
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target(ElementType.METHOD)
+	public static @interface ForbidValues {
+		Forbid[] value();
+	}
+
+	private transient Decimal min;
+	private transient Decimal max;
+	private transient boolean minInclusive;
+	private transient boolean maxInclusive;
+	private transient List<Decimal> exceptions;
+
+	@Override
+	void initConstraints() throws ClassValidationException {
+		Method setter = getSetterMethod();
+
+		Forbid[] forbidAnnotations = setter.getAnnotationsByType(Forbid.class);
+		exceptions = new ArrayList<>(forbidAnnotations.length);
+
+		Min minAnnotation = setter.getAnnotation(Min.class);
+		if (minAnnotation != null) {
+			try {
+				min = new Decimal(minAnnotation.value().trim());
+			} catch (NumberFormatException e) {
+				throw new ClassValidationException(this, "Invalid @Min = " + e.getMessage());
+			}
+
+			minInclusive = minAnnotation.inclusive();
+		}
+
+		Max maxAnnotation = setter.getAnnotation(Max.class);
+		if (maxAnnotation != null) {
+			try {
+				max = new Decimal(maxAnnotation.value().trim());
+			} catch (NumberFormatException e) {
+				throw new ClassValidationException(this, "Invalid @Max = " + e.getMessage());
+			}
+
+			maxInclusive = maxAnnotation.inclusive();
+		}
+
+		if (!hasValidRange()) {
+			String leftPar = minInclusive ? "[" : "(";
+			String rightPar = maxInclusive ? "]" : ")";
+			String message = "Invalid range " + leftPar + min + ", " + max + rightPar + ".";
+			max = null;
+			min = null;
+			throw new ClassValidationException(this, message);
+		}
+
+		for (int i = 0; i < forbidAnnotations.length; i++) {
+			try {
+				Decimal value = new Decimal(forbidAnnotations[i].value().trim());
+				if (isValueInsideDomain(value, min, max, minInclusive, maxInclusive, exceptions)) {
+					exceptions.add(value);
+				}
+			} catch (NumberFormatException e) {
+				throw new ClassValidationException(this, "Invalid @Forbid = " + e.getMessage());
+			}
+		}
+	}
 
 	class Validator extends Parameter<Decimal>.Validator {
 
 		public Validator(DescriptorParser descriptorParser,
 				XmlPath parameterPath,
-				Class<?> pluginType, Object pluginInstance) throws ValidationException {
+				Class<?> pluginType, Object pluginInstance) throws DomValidationException {
 			DecimalParameter.this.super(descriptorParser, parameterPath, pluginType, pluginInstance);
 		}
 
+		private void checkForbidRedundancy() throws ClassValidationException {
+			Forbid[] forbidAnnotations = getSetterMethod().getAnnotationsByType(Forbid.class);
+			if (exceptions.size() < forbidAnnotations.length) {
+				List<Decimal> redundantValues = Arrays.stream(forbidAnnotations)
+					.map(annotation -> new Decimal(annotation.value().trim()))
+					.collect(Collectors.toList());
+
+				exceptions.forEach(exception -> {
+					redundantValues.remove(exception);
+				});
+
+				for (Decimal value : redundantValues) {
+					descriptorParser.warning(new ClassValidationException(this,
+							"Value " + value + " already excluded from the domain."));
+				}
+			}
+		}
+
 		@Override
-		public void validate(Element node) throws ValidationException {
+		public void validate(Element node) throws DomValidationException, ClassValidationException {
 			XmlPath currentPath = parameterPath;
 			init(currentPath);
 
-			Element offset = node != null ? (Element) node.getFirstChild() : null;
-			if (offset!= null && offset.getLocalName().startsWith("min")) {
-				currentPath = parameterPath.getChild(offset);
-				min = descriptorParser.parseDecimal(offset);
-				println(currentPath, min);
-
-				if (offset.getLocalName().endsWith("Inclusive")) {
-					minInclusive = true;
-				}
-				
-				offset = (Element) offset.getNextSibling();
+			boolean hasValidConstraints = true;
+			try {
+				initConstraints();
+			} catch (ClassValidationException e) {
+				hasValidConstraints = false;
+				descriptorParser.fatalError(e);
 			}
 
-			if (offset != null && offset.getLocalName().startsWith("max")) {
-				currentPath = parameterPath.getChild(offset);
-				max = descriptorParser.parseDecimal(offset);
-				println(currentPath, max);
-
-				if (offset.getLocalName().endsWith("Inclusive")) {
-					maxInclusive = true;
-				}
-
-				offset = (Element) offset.getNextSibling();
-			}
-			
-			if (max != null && min != null &&
-				(max.compareTo(min) < 0 || (max.compareTo(min) == 0 && (!minInclusive || !maxInclusive)))) {
-				String leftPar = minInclusive ? "[" : "(";
-				String rightPar = maxInclusive ? "]" : ")";
-				String message = "Invalid range " + leftPar + min + ", " + max + rightPar + ".";
-				max = null;
-				min = null;
-				descriptorParser.fatalError(ValidationException.atEndOf(currentPath, message));
-			}
-			
-			for (int index = 1; offset != null && offset.getLocalName().equals("exception"); index++) {
-				currentPath = parameterPath.getChild(offset, index);
-				Decimal exception = descriptorParser.parseDecimal(offset);
-				println(currentPath, exception);
-				if (isValueInsideDomain(exception, min, max, minInclusive, maxInclusive, exceptions)) {
-					exceptions.add(exception);
-				} else {
-					descriptorParser.warning(ValidationException.atEndOf(
-							currentPath,
-							"Value " + exception + " already excluded from the domain."));
-				}
-
-				offset = (Element) offset.getNextSibling();
+			if (hasValidConstraints) {
+				checkForbidRedundancy();
 			}
 
 			if (getterHint != null &&
 					!isValueInsideDomain(getterHint, min, max, minInclusive, maxInclusive, exceptions)) {
 				String message = "Suggested value (from getter) " + getterHint + " lies outside domain."; 
 				getterHint = null;
-				descriptorParser.fatalError(ValidationException.atEndOf(currentPath, message));
+				descriptorParser.fatalError(new ClassValidationException(this, message));
 			} else {
 				getterHint = descriptorParser.replace(getterHint);
 			}
+
+			Element offset = node != null ? (Element) node.getFirstChild() : null;
 			validateHints(offset);
 		}
 
-		public Decimal validateHint(XmlPath hintPath, Element hint) throws ValidationException {
+		public Decimal validateHint(XmlPath hintPath, Element hint) throws DomValidationException {
 			Decimal value = descriptorParser.parseDecimal(hint);
 			println(hintPath, value);
 			if (!isValueInsideDomain(value, min, max, minInclusive, maxInclusive, exceptions)) {
-				descriptorParser.fatalError(ValidationException.atEndOf(
+				descriptorParser.fatalError(DomValidationException.atEndOf(
 						hintPath,
 						"Suggested value "+ value + " lies outside domain."));
 				return null;
@@ -163,7 +226,7 @@ class DecimalParameter extends Parameter<Decimal> {
 
 	Validator createValidator(DescriptorParser descriptorParser,
 			XmlPath parameterPath,
-			Class<?> pluginType, Object pluginInstance) throws ValidationException {
+			Class<?> pluginType, Object pluginInstance) throws DomValidationException {
 		return new Validator(descriptorParser, parameterPath, pluginType, pluginInstance);
 	}
 
@@ -243,6 +306,14 @@ class DecimalParameter extends Parameter<Decimal> {
 
 	public boolean isMaxInclusive() {
 		return maxInclusive;
+	}
+
+	public boolean hasValidRange() {
+		return !(
+			   max != null
+			&& min != null
+			&& (max.compareTo(min) < 0 || (max.compareTo(min) == 0 && !(minInclusive && maxInclusive)))
+		);
 	}
 
 	public List<Decimal> getExceptions() {
@@ -333,22 +404,12 @@ class DecimalParameter extends Parameter<Decimal> {
 	private void writeObject(ObjectOutputStream out)
 			throws IOException {
 		out.defaultWriteObject();
-		writeList(out, exceptions);
 		writeHints(out);
 	}
 
 	private void readObject(ObjectInputStream in)
 			throws IOException, ClassNotFoundException {
 		in.defaultReadObject();
-
-		if (max != null && min != null &&
-			(max.compareTo(min) < 0 || (max.compareTo(min) == 0 && (!minInclusive || !maxInclusive)))) {
-			String minString = minInclusive ? ".minInclusive=" : ".minExclusive=";
-			String maxString = maxInclusive ? ".maxInclusive=" : ".maxExclusive=";
-			throw newIOException('[' + getId() + minString + min + "; " + getId() + maxString + max + "] is not a valid range.");
-		}
-
-		exceptions = readNonNullList(in, join(getId(), ".exceptions"), Decimal.class);
 
 		setType(getType());
 		readHints(in);

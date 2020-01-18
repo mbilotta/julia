@@ -132,8 +132,6 @@
 		<xs:complexContent>
 			<xs:extension base="tns:parameterType">
 				<xs:sequence>
-					<xs:element name="min" type="xs:int" minOccurs="0"/>
-					<xs:element name="max" type="xs:int" minOccurs="0"/>
 					<xs:element name="hint" minOccurs="0" maxOccurs="unbounded">
 						<xs:complexType>
 							<xs:simpleContent>
@@ -152,15 +150,6 @@
 		<xs:complexContent>
 			<xs:extension base="tns:parameterType">
 				<xs:sequence>
-					<xs:choice minOccurs="0">
-						<xs:element name="minInclusive" type="tns:ieee754NotNaN"/>
-						<xs:element name="minExclusive" type="tns:ieee754NotNaN"/>
-					</xs:choice>
-					<xs:choice minOccurs="0">
-						<xs:element name="maxInclusive" type="tns:ieee754NotNaN"/>
-						<xs:element name="maxExclusive" type="tns:ieee754NotNaN"/>
-					</xs:choice>
-					<xs:element name="exception" type="tns:ieee754NotNaN" minOccurs="0" maxOccurs="unbounded"/>
 					<xs:element name="hint" minOccurs="0" maxOccurs="unbounded">
 						<xs:complexType>
 							<xs:simpleContent>
@@ -171,14 +160,6 @@
 						</xs:complexType>
 					</xs:element>
 				</xs:sequence>
-				<xs:attribute name="acceptsNaN">
-					<xs:simpleType>
-						<xs:restriction base="xs:token">
-							<xs:enumeration value="1"/>
-							<xs:enumeration value="true"/>
-						</xs:restriction>
-					</xs:simpleType>
-				</xs:attribute>
 			</xs:extension>
 		</xs:complexContent>
 	</xs:complexType>
@@ -187,15 +168,6 @@
 		<xs:complexContent>
 			<xs:extension base="tns:parameterType">
 				<xs:sequence>
-					<xs:choice minOccurs="0">
-						<xs:element name="minInclusive" type="tns:javaDecimal"/>
-						<xs:element name="minExclusive" type="tns:javaDecimal"/>
-					</xs:choice>
-					<xs:choice minOccurs="0">
-						<xs:element name="maxInclusive" type="tns:javaDecimal"/>
-						<xs:element name="maxExclusive" type="tns:javaDecimal"/>
-					</xs:choice>
-					<xs:element name="exception" type="tns:javaDecimal" minOccurs="0" maxOccurs="unbounded"/>
 					<xs:element name="hint" minOccurs="0" maxOccurs="unbounded">
 						<xs:complexType>
 							<xs:simpleContent>

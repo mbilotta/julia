@@ -20,8 +20,8 @@
 
 package org.altervista.mbilotta.julia.program.parsers;
 
-import static org.altervista.mbilotta.julia.Utilities.readNonNull;
 import static org.altervista.mbilotta.julia.Utilities.join;
+import static org.altervista.mbilotta.julia.Utilities.readNonNull;
 import static org.altervista.mbilotta.julia.program.parsers.Parser.getNodeValue;
 import static org.altervista.mbilotta.julia.program.parsers.Parser.println;
 
@@ -45,7 +45,6 @@ import org.altervista.mbilotta.julia.Utilities;
 import org.altervista.mbilotta.julia.program.gui.JuliaFormattedTextField;
 import org.altervista.mbilotta.julia.program.gui.ParameterChangeListener;
 import org.altervista.mbilotta.julia.program.gui.PreviewUpdater;
-
 import org.w3c.dom.Element;
 
 
@@ -80,29 +79,33 @@ final class AnyParameter extends Parameter<Object> {
 		return sb.toString();
 	}
 
+	@Override
+	void initConstraints() {
+	}
+
 	private class Validator extends Parameter<Object>.Validator {
 
 		public Validator(DescriptorParser descriptorParser,
 				XmlPath parameterPath,
-				Class<?> pluginType, Object pluginInstance) throws ValidationException {
+				Class<?> pluginType, Object pluginInstance) throws DomValidationException {
 			AnyParameter.this.super(descriptorParser, parameterPath, pluginType, pluginInstance);
 		}
 
 		@Override
-		Class<?> inspectType(XmlPath currentPath) throws ValidationException {
+		Class<?> inspectType(XmlPath currentPath) throws DomValidationException {
 			Class<?> rv = super.inspectType(currentPath);
 			if (rv != null) {
 				try {
 					initMethods(pluginType, rv, null);
 				} catch (NoSuchMethodException e) {
-					descriptorParser.fatalError(new ValidationException(currentPath, position, e.getMessage()));
+					descriptorParser.fatalError(new DomValidationException(currentPath, position, e.getMessage()));
 					rv = null;
 				}
 			}
 			return rv;
 		}
 
-		public Object validateHint(XmlPath hintPath, Element hint) throws ValidationException {
+		public Object validateHint(XmlPath hintPath, Element hint) throws DomValidationException {
 			String valueString = getNodeValue(hint);
 			Object value;
 			try {
@@ -118,16 +121,16 @@ final class AnyParameter extends Parameter<Object> {
 				if (value != null) {
 					if (acceptsMethod != null && !((Boolean) acceptsMethod.invoke(null, value))) {
 						value = null;
-						descriptorParser.fatalError(ValidationException.atEndOf(hintPath, "Suggested value " + valueString + " not accepted."));
+						descriptorParser.fatalError(DomValidationException.atEndOf(hintPath, "Suggested value " + valueString + " not accepted."));
 					}
 				} else {
 					valueString = "null";
-					descriptorParser.fatalError(ValidationException.atEndOf(hintPath, "Parse method " + parseMethod.getName() + " has returned null."));
+					descriptorParser.fatalError(DomValidationException.atEndOf(hintPath, "Parse method " + parseMethod.getName() + " has returned null."));
 				}
 			} catch (ReflectiveOperationException e) {
 				value = null;
 				valueString = "null";
-				descriptorParser.fatalError(ValidationException.atEndOf(hintPath, "Reflective invocation has failed.", e));
+				descriptorParser.fatalError(DomValidationException.atEndOf(hintPath, "Reflective invocation has failed.", e));
 			} finally {
 				println(hintPath, valueString);
 			}
@@ -135,7 +138,7 @@ final class AnyParameter extends Parameter<Object> {
 			return value;
 		}
 
-		public void validate(Element node) throws ValidationException {
+		public void validate(Element node) throws DomValidationException, ClassValidationException {
 			XmlPath currentPath = parameterPath;
 			init(currentPath);
 
@@ -150,12 +153,12 @@ final class AnyParameter extends Parameter<Object> {
 						valueString = null;
 					}
 					getterHint = null;
-					descriptorParser.fatalError(new ValidationException(currentPath, position,
-							"Suggested value (from getter) " + (valueString != null ? valueString : "") + " not accepted."));
+					descriptorParser.fatalError(new ClassValidationException(this,
+							"Suggested value (from getter) " + (valueString != null ? valueString : "null") + " not accepted."));
 				}
 			} catch (ReflectiveOperationException e) {
 				getterHint = null;
-				descriptorParser.fatalError(new ValidationException(currentPath, position, "Reflective invocation has failed.", e));
+				descriptorParser.fatalError(new ClassValidationException(this, "Reflective invocation has failed.", e));
 			}
 
 			Element offset = node != null ? (Element) node.getFirstChild() : null;
@@ -193,7 +196,7 @@ final class AnyParameter extends Parameter<Object> {
 
 	Validator createValidator(DescriptorParser descriptorParser,
 			XmlPath parameterPath,
-			Class<?> pluginType, Object pluginInstance) throws ValidationException {
+			Class<?> pluginType, Object pluginInstance) throws DomValidationException {
 		return new Validator(descriptorParser, parameterPath, pluginType, pluginInstance);
 	}
 	

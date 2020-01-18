@@ -51,16 +51,20 @@ final class GradientParameter extends Parameter<Gradient> {
 	 */
 	private static final long serialVersionUID = 1L;
 
+	@Override
+	void initConstraints() {
+	}
+
 	private class Validator extends Parameter<Gradient>.Validator {
 
 		public Validator(DescriptorParser descriptorParser,
 				XmlPath parameterPath,
-				Class<?> pluginType, Object pluginInstance) throws ValidationException {
+				Class<?> pluginType, Object pluginInstance) throws DomValidationException {
 			GradientParameter.this.super(descriptorParser, parameterPath, pluginType, pluginInstance);
 			getterHint = descriptorParser.replace(getterHint);
 		}
 
-		public Gradient validateHint(XmlPath hintPath, Element hint) throws ValidationException {
+		public Gradient validateHint(XmlPath hintPath, Element hint) throws DomValidationException {
 			boolean errorsEncountered = false;
 			NodeList children = hint.getChildNodes();
 			int numOfStops = children.getLength();
@@ -75,7 +79,7 @@ final class GradientParameter extends Parameter<Gradient> {
 				println(stopPath.getAttributeChild("location"), stop.getLocation());
 				if (previous != null) {
 					if (stop.getLocation() <= previous.getLocation()) {
-						descriptorParser.error(ValidationException.atStartOf(
+						descriptorParser.error(DomValidationException.atStartOf(
 								stopPath,
 								"Location values must appear in (strictly) increasing order: " +
 								stop.getLocation() + " <= " + previous.getLocation() + "."));
@@ -141,7 +145,7 @@ final class GradientParameter extends Parameter<Gradient> {
 	
 	Validator createValidator(DescriptorParser descriptorParser,
 			XmlPath parameterPath,
-			Class<?> pluginType, Object pluginInstance) throws ValidationException {
+			Class<?> pluginType, Object pluginInstance) throws DomValidationException {
 		return new Validator(descriptorParser, parameterPath, pluginType, pluginInstance);
 	}
 

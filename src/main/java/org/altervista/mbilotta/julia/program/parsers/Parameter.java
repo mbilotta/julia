@@ -54,7 +54,6 @@ import org.altervista.mbilotta.julia.Utilities;
 import org.altervista.mbilotta.julia.math.Real;
 import org.altervista.mbilotta.julia.program.gui.ParameterChangeListener;
 import org.altervista.mbilotta.julia.program.gui.PreviewUpdater;
-
 import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
 
@@ -101,25 +100,25 @@ public abstract class Parameter<T> implements Serializable {
 
 		public Validator(DescriptorParser descriptorParser,
 				XmlPath parameterPath,
-				Class<?> pluginType, Object pluginInstance) throws ValidationException {
+				Class<?> pluginType, Object pluginInstance) throws DomValidationException {
 			this.descriptorParser = descriptorParser;
 			this.parameterPath = parameterPath;
 			this.pluginType = pluginType;
 			this.pluginInstance = pluginInstance;
 			this.propertyDescriptor = descriptorParser.getPropertyMap().get(id);
-			this.position = parameterPath.isRoot() ? ValidationException.END_OF_ELEMENT : ValidationException.START_OF_ELEMENT;
+			this.position = parameterPath.isRoot() ? DomValidationException.END_OF_ELEMENT : DomValidationException.START_OF_ELEMENT;
 		}
 
-		public final void validate() throws ValidationException {
+		public final void validate() throws DomValidationException, ClassValidationException {
 			validate(null);
 		}
 
-		public void validate(Element node) throws ValidationException {
+		public void validate(Element node) throws DomValidationException, ClassValidationException {
 			init(parameterPath);
 			validateHints(node != null ? (Element) node.getFirstChild() : null);
 		}
 
-		public void validateHints(Element offset) throws ValidationException {
+		public void validateHints(Element offset) throws DomValidationException {
 			if (getterHint != null) {
 				hints.add(getterHint);
 			}
@@ -145,7 +144,7 @@ public abstract class Parameter<T> implements Serializable {
 						groupSet = new HashSet<>(groupList);
 					}
 					if (groupSet.size() < groupList.size()) {
-						descriptorParser.warning(ValidationException.atStartOf(
+						descriptorParser.warning(DomValidationException.atStartOf(
 								hintPath,
 								"Redundant group list."));
 					}
@@ -153,14 +152,14 @@ public abstract class Parameter<T> implements Serializable {
 						if (referencedGroups.containsKey(group)) {
 							T referencedValue = referencedGroups.get(group);
 							if (referencedValue == null || value == null || !referencedValue.equals(value)) {
-								descriptorParser.error(ValidationException.atEndOf(
+								descriptorParser.error(DomValidationException.atEndOf(
 										hintPath,
 										"Parameter " + id + " is already partecipating in group " + group +
 										" with a (possibly) different value."));
 								if (referencedValue != null)
 									referencedGroups.put(group, null);
 							} else {
-								descriptorParser.warning(ValidationException.atEndOf(
+								descriptorParser.warning(DomValidationException.atEndOf(
 										hintPath,
 										"Parameter " + id + " is already partecipating in group " + group +
 										" with the same value."));
@@ -176,7 +175,7 @@ public abstract class Parameter<T> implements Serializable {
 					if (!hints.contains(value)) {
 						hints.add(value);
 					} else {
-						descriptorParser.warning(ValidationException.atEndOf(
+						descriptorParser.warning(DomValidationException.atEndOf(
 								hintPath,
 								"Redundant hint for parameter " + id +  "."));
 					}
@@ -197,7 +196,7 @@ public abstract class Parameter<T> implements Serializable {
 			} else if (hints.size() > 0) {
 				referencedGroups.put("default", hints.get(0));
 			} else {
-				descriptorParser.fatalError(ValidationException.atEndOf(
+				descriptorParser.fatalError(DomValidationException.atEndOf(
 						parameterPath,
 						"No default value for parameter " + id + "."));
 			}
@@ -247,7 +246,7 @@ public abstract class Parameter<T> implements Serializable {
 			this.parameterDescription = parameterDescription;
 		}
 
-		public abstract T validateHint(XmlPath hintPath, Element hint) throws ValidationException;
+		public abstract T validateHint(XmlPath hintPath, Element hint) throws DomValidationException;
 
 		public abstract String getXMLParameterType();
 
@@ -257,43 +256,41 @@ public abstract class Parameter<T> implements Serializable {
 
 		public abstract void writeConstraintsToHTML(HTMLWriter out);
 		
-		Class<?> inspectType(XmlPath currentPath) throws ValidationException {
+		Class<?> inspectType(XmlPath currentPath) throws DomValidationException {
 			if (propertyDescriptor != null) {
 				return propertyDescriptor.getPropertyType();
 			}
 
-			descriptorParser.fatalError(new ValidationException(
+			descriptorParser.fatalError(new DomValidationException(
 					currentPath,
 					position,
 					"Could not find property \"" + id + "\" in class " + pluginType.getName()));
 			return null;
 		}
 
-		void init(XmlPath currentPath) throws ValidationException {
+		void init(XmlPath currentPath) throws DomValidationException, ClassValidationException {
 			if (pluginType != null) {
 				if (type == null) {
 					setDescriptorType(inspectType(currentPath));
 				}
 				
 				if (type != null) {
-					Method setter = findSetter(currentPath);
-					Method getter = findGetter(currentPath);
+					Method setter = findSetter();
+					Method getter = findGetter();
 					setSetterMethod(setter);
 					parameterPreviewable = setter.isAnnotationPresent(Previewable.class);
 					if (parameterPreviewable) {
 						if (Representation.class.isAssignableFrom(pluginType)) {
 							if (type == Real.class) {
-								descriptorParser.warning(new ValidationException(
-										currentPath,
-										position,
+								descriptorParser.warning(new ClassValidationException(
+										this,
 										"Previewable parameters of type \"real\" will not be passed to NumberFactory"));
 							} else {
 								println(currentPath.getAttributeChild("previewable"), true);
 							}
 						} else {
-							descriptorParser.error(new ValidationException(
-									currentPath,
-									position,
+							descriptorParser.error(new ClassValidationException(
+									this,
 									"Previewable parameters can be specified only when plugin type is \"representation\"."));
 						}
 					}
@@ -310,7 +307,7 @@ public abstract class Parameter<T> implements Serializable {
 									switch (groupList.size()) {
 									case 0:
 										getterGroupSet = Collections.emptySet();
-										descriptorParser.warning(new ValidationException(currentPath, position, "Empty group list from getter method annotation."));
+										descriptorParser.warning(new ClassValidationException(this, "Empty group list from getter method annotation."));
 										break;
 									case 1:
 										getterGroupSet = Collections.singleton(groupList.get(0));
@@ -319,23 +316,23 @@ public abstract class Parameter<T> implements Serializable {
 										getterGroupSet = new HashSet<>(groupList);
 									}
 									if (getterGroupSet.size() < groupList.size()) {
-										descriptorParser.warning(new ValidationException(currentPath, position, "Redundant group list from getter method annotation."));
+										descriptorParser.warning(new ClassValidationException(this, "Redundant group list from getter method annotation."));
 									}
 								}
 							} else {
 								String message = "Getter method " + getter.getName() + " has returned null.";
-								descriptorParser.warning(new ValidationException(currentPath, position, message));
+								descriptorParser.warning(new ClassValidationException(this, message));
 							}
 						} catch (ReflectiveOperationException e) {
 							String message = "Reflective invocation of getter method " + getter.getName() + " has failed.";
-							descriptorParser.error(new ValidationException(currentPath, position, message, e));
+							descriptorParser.error(new ClassValidationException(this, message, e));
 						}
 					}
 				}
 			}
 		}
 
-		private Method findSetter(XmlPath currentPath) throws ValidationException {
+		private Method findSetter() throws ClassValidationException {
 			Method rv;
 
 			if (propertyDescriptor != null) {
@@ -353,14 +350,14 @@ public abstract class Parameter<T> implements Serializable {
 			try {
 				rv = Parameter.findSetter(id, type, pluginType);
 			} catch (NoSuchMethodException e) {
-				descriptorParser.fatalError(new ValidationException(currentPath, position, e.getMessage()));
+				descriptorParser.fatalError(new ClassValidationException(this, e.getMessage()));
 				return null;
 			}
 
 			return rv;
 		}
 
-		private Method findGetter(XmlPath currentPath) throws ValidationException {
+		private Method findGetter() throws ClassValidationException {
 			Method rv;
 
 			if (propertyDescriptor != null) {
@@ -378,7 +375,7 @@ public abstract class Parameter<T> implements Serializable {
 			try {
 				rv = Parameter.findGetter(id, type, pluginType);
 			} catch (NoSuchMethodException e) {
-				descriptorParser.fatalError(new ValidationException(currentPath, position, e.getMessage()));
+				descriptorParser.fatalError(new ClassValidationException(this, e.getMessage()));
 				return null;
 			}
 
@@ -422,10 +419,12 @@ public abstract class Parameter<T> implements Serializable {
 	void setName(String name) {
 		this.name = name;
 	}
+
+	abstract void initConstraints() throws ClassValidationException;
 	
 	abstract Validator createValidator(DescriptorParser descriptorParser,
 			XmlPath parameterPath,
-			Class<?> pluginType, Object pluginInstance) throws ValidationException;
+			Class<?> pluginType, Object pluginInstance) throws DomValidationException;
 
 	public final String getId() {
 		return id;
@@ -687,13 +686,19 @@ public abstract class Parameter<T> implements Serializable {
 			throw newIOException('[' + id + ".hints.length=" + size + "] is negative");
 
 		hints = new ArrayList<>(size);
-		for (int k = 0; k < size; k++) {
-			Object value = Utilities.read(in, join(id, ".hints[", k, "]"));
+		for (int i = 0; i < size; i++) {
+			Object hint = Utilities.read(in, join(id, ".hints[", i, "]"));
+			addHint((T) hint);
+		}
+	}
 
-			if (acceptsValue(value)) {
-				addHint((T) value);
-			} else {
-				throw newIOException('[' + id + ".hints[" + k + "]=" + value + "] not accepted");
+	void validateHints() throws IOException {
+		List<T> hints = this.hints;
+		int size = hints.size();
+		for (int i = 0; i < size; i++) {
+			T hint = hints.get(i);
+			if (!acceptsValue(hint)) {
+				throw newIOException('[' + id + ".hints[" + i + "]=" + hint + "] not accepted");
 			}
 		}
 	}
