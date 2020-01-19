@@ -27,6 +27,15 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <excludes>
+          <exclude>src/main/resources/org/altervista/mbilotta/julia/program/gui/l4j-splash.bmp</exclude>
+        </excludes>
+      </resource>
+    </resources>
+
     <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
       <plugins>
         <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
@@ -83,9 +92,11 @@
           </archive>
         </configuration>
       </plugin>
+
       <plugin>
         <groupId>com.akathist.maven.plugins.launch4j</groupId>
         <artifactId>launch4j-maven-plugin</artifactId>
+        <version>1.7.25</version>
         <executions>
           <execution>
             <id>l4j-clui</id>
@@ -137,7 +148,15 @@
               </singleInstance>
               <jre>
                 <minVersion>1.8.0</minVersion>
+                <opts>
+                  <opt>-Dswing.defaultlaf=com.sun.java.swing.plaf.windows.WindowsLookAndFeel</opt>
+                </opts>
               </jre>
+              <splash>
+                <file>src/main/resources/org/altervista/mbilotta/julia/program/gui/l4j-splash.bmp</file>
+                <waitForWindow>true</waitForWindow>
+                <timeout>60</timeout>
+              </splash>
               <versionInfo>
                 <fileVersion>1.1.0.0</fileVersion>
                 <txtFileVersion>1.1.0</txtFileVersion>
@@ -149,6 +168,46 @@
                 <internalName>julia</internalName>
                 <originalFilename>julia.exe</originalFilename>
               </versionInfo>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>net.jsign</groupId>
+        <artifactId>jsign-maven-plugin</artifactId>
+        <version>3.0</version>
+        <executions>
+          <execution>
+            <id>sign-clui</id>
+            <phase>package</phase>
+            <goals>
+              <goal>sign</goal>
+            </goals>
+            <configuration>
+              <file>target/juliac.exe</file>
+              <name>Julia: The Fractal Generator</name>
+              <url>https://github.com/mbilotta/julia</url>
+              <keystore>${sign.keystore}</keystore>
+              <alias>${sign.alias}</alias>
+              <storepass>${sign.storepass}</storepass>
+              <tsaurl>http://timestamp.comodoca.com/authenticode</tsaurl>
+            </configuration>
+          </execution>
+          <execution>
+            <id>sign-gui</id>
+            <phase>package</phase>
+            <goals>
+              <goal>sign</goal>
+            </goals>
+            <configuration>
+              <file>target/julia.exe</file>
+              <name>Julia: The Fractal Generator</name>
+              <url>https://github.com/mbilotta/julia</url>
+              <keystore>${sign.keystore}</keystore>
+              <alias>${sign.alias}</alias>
+              <storepass>${sign.storepass}</storepass>
+              <tsaurl>http://timestamp.comodoca.com/authenticode</tsaurl>
             </configuration>
           </execution>
         </executions>
