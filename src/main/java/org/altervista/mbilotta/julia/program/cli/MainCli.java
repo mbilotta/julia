@@ -32,7 +32,7 @@ import picocli.CommandLine.ParameterException;
 import picocli.CommandLine.UnmatchedArgumentException;
 
 
-@Command(name = "juliafg",
+@Command(name = "juliac",
   header = {"Julia: The Fractal Generator", "Copyright (C) 2015 Maurizio Bilotta" },
   version = { "Julia: The Fractal Generator", "Version " + Application.VERSION, "Copyright (C) 2015 Maurizio Bilotta"},
   optionListHeading = "%nOptions:%n",
@@ -59,6 +59,9 @@ public class MainCli {
     }
   }
 
+  @Option(names = "--refresh-cache", description = "Force regeneration of cache and documentation for every installed plugin.")
+  boolean cacheRefreshRequested;
+  
   @Option(names = { "-h", "--help" }, usageHelp = true,
     description = "Print this help message and exit.")
   boolean helpRequested;
@@ -124,8 +127,12 @@ public class MainCli {
     return cliMode.profilePath;
   }
 
+  public boolean isCacheRefreshRequested() {
+    return cacheRefreshRequested;
+  }
+
   @Override
   public String toString() {
-    return "[cliMode=" + cliMode + ", helpRequested=" + helpRequested + ", versionRequested=" + versionRequested + "]";
+    return "[cliMode=" + cliMode + ", cacheRefreshRequested=" + cacheRefreshRequested + ", helpRequested=" + helpRequested + ", versionRequested=" + versionRequested + "]";
   }
 }

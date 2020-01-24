@@ -56,6 +56,7 @@ import org.altervista.mbilotta.julia.Gradient;
 import org.altervista.mbilotta.julia.Out;
 import org.altervista.mbilotta.julia.Utilities;
 import org.altervista.mbilotta.julia.program.LockedFile.CloseableHider;
+import org.altervista.mbilotta.julia.program.cli.MainCli;
 import org.altervista.mbilotta.julia.program.gui.MessagePane;
 import org.altervista.mbilotta.julia.program.gui.SplashScreen;
 import org.altervista.mbilotta.julia.program.parsers.Author;
@@ -85,12 +86,14 @@ class Loader extends SwingWorker<Void, String> {
 	private String parserOutput;
 	private int[] problemCount = new int[3];
 	private final JuliaExecutorService executorService;
+	private final boolean cacheRefreshRequested;
 
 	private SplashScreen splashScreen;
 
-	public Loader(Profile profile, JuliaExecutorService executorService) {
+	public Loader(Profile profile, JuliaExecutorService executorService, MainCli cli) {
 		this.profile = profile;
 		this.executorService = executorService;
+		this.cacheRefreshRequested = cli.isCacheRefreshRequested();
 		executorService.execute(this);
 	}
 
@@ -375,33 +378,37 @@ class Loader extends SwingWorker<Void, String> {
 			byte[] newChecksum = md.digest();
 			println("...success. ", buffer.size(), " bytes read. MD5 checksum is ", new Checksum(newChecksum), ".");
 
-			publish("Reading descriptor cache " + cacheFile + "...");
 			Plugin plugin = null;
-			try {
-				println("Reading descriptor cache ", cacheFile, "...");
-				ObjectInputStream ois = new JuliaObjectInputStream(cacheFile.readBytesFrom(),
-						classLoader,
-						authorCache, decimalCache, colorCache, gradientCache);
-				println("...reading cached checksum...");
-				byte[] oldChecksum = new byte[ois.readInt()];
-				ois.readFully(oldChecksum);
-				if (Arrays.equals(newChecksum, oldChecksum)) {
-					println("...checksums match! Continue reading...");
-					plugin = read(ois, "plugin", Plugin.class);
-					if (plugin != null) {
-						println("...success. Plugin successfully retrieved from descriptor cache: ", plugin, ".");
+			if (this.cacheRefreshRequested) {
+				println("Ignoring descriptor cache ", cacheFile, " because a refresh has been requested...");
+			} else {
+				publish("Reading descriptor cache " + cacheFile + "...");
+				try {
+					println("Reading descriptor cache ", cacheFile, "...");
+					ObjectInputStream ois = new JuliaObjectInputStream(cacheFile.readBytesFrom(),
+							classLoader,
+							authorCache, decimalCache, colorCache, gradientCache);
+					println("...reading cached checksum...");
+					byte[] oldChecksum = new byte[ois.readInt()];
+					ois.readFully(oldChecksum);
+					if (Arrays.equals(newChecksum, oldChecksum)) {
+						println("...checksums match! Continue reading...");
+						plugin = read(ois, "plugin", Plugin.class);
+						if (plugin != null) {
+							println("...success. Plugin successfully retrieved from descriptor cache: ", plugin, ".");
+						} else {
+							println("...descriptor was previously parsed with errors. Descriptor ", descriptor, " discarded.");
+							continue;
+						}
 					} else {
-						println("...descriptor was previously parsed with errors. Descriptor ", descriptor, " discarded.");
-						continue;
+						println("...checksums differ. Cached checksum is ", new Checksum(oldChecksum),
+								". Descriptor ", descriptor, " will be reparsed.");
 					}
-				} else {
-					println("...checksums differ. Cached checksum is ", new Checksum(oldChecksum),
-							". Descriptor ", descriptor, " will be reparsed.");
+				} catch (IOException | ClassNotFoundException e) {
+					print("...failure. Cause: ");
+					printStackTrace(e);
+					println("Descriptor ", descriptor, " will be reparsed.");
 				}
-			} catch (IOException | ClassNotFoundException e) {
-				print("...failure. Cause: ");
-				printStackTrace(e);
-				println("Descriptor ", descriptor, " will be reparsed.");
 			}
 			
 			if (plugin != null) {

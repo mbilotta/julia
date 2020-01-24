@@ -42,7 +42,7 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 
-@Command(name = "juliafg", 
+@Command(name = "juliac",
   header = { "Julia: The Fractal Generator", "Copyright (C) 2015 Maurizio Bilotta" },
   description = "Create a JUP archive containing one or more Julia plugins.",
   descriptionHeading = "%n",

@@ -2541,6 +2541,6 @@ public class Application {
 				new Profile(cli.getProfilePath());
 		
 		JuliaExecutorService executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
-		new Loader(profile, executorService);
+		new Loader(profile, executorService, cli);
 	}
 }
