@@ -66,6 +66,11 @@ public final class IntParameter extends Parameter<Integer> {
 	@Override
 	void initConstraints() throws ClassValidationException {
 		Method setter = getSetterMethod();
+		if (setter == null) {
+			min = Integer.MIN_VALUE;
+			max = Integer.MAX_VALUE;
+			return;
+		}
 
 		Min minAnnotation = setter.getAnnotation(Min.class);
 		if (minAnnotation != null) {

@@ -89,6 +89,10 @@ public class DecimalParameter extends Parameter<Decimal> {
 	@Override
 	void initConstraints() throws ClassValidationException {
 		Method setter = getSetterMethod();
+		if (setter == null) {
+			exceptions = Collections.emptyList();
+			return;
+		}
 
 		Forbid[] forbidAnnotations = setter.getAnnotationsByType(Forbid.class);
 		exceptions = new ArrayList<>(forbidAnnotations.length);
