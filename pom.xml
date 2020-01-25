@@ -27,6 +27,8 @@
   </dependencies>
 
   <build>
+    <finalName>${project.artifactId}</finalName>
+
     <resources>
       <resource>
         <directory>src/main/resources</directory>
@@ -117,7 +119,7 @@
                 <configuration>
                   <headerType>console</headerType>
                   <outfile>target/juliac.exe</outfile>
-                  <jar>target/julia-1.1-SNAPSHOT.jar</jar>
+                  <jar>target/julia.jar</jar>
                   <errTitle>Julia</errTitle>
                   <classPath>
                     <mainClass>org.altervista.mbilotta.julia.program.cli.MainCli</mainClass>
@@ -147,7 +149,7 @@
                 <configuration>
                   <headerType>gui</headerType>
                   <outfile>target/julia.exe</outfile>
-                  <jar>target/julia-1.1-SNAPSHOT.jar</jar>
+                  <jar>target/julia.jar</jar>
                   <errTitle>Julia</errTitle>
                   <classPath>
                     <mainClass>org.altervista.mbilotta.julia.program.cli.MainCli</mainClass>
