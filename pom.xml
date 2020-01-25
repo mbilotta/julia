@@ -6,7 +6,7 @@
 
   <groupId>org.altervista.mbilotta</groupId>
   <artifactId>julia</artifactId>
-  <version>1.1-SNAPSHOT</version>
+  <version>1.1</version>
 
   <name>julia</name>
   <url>https://github.com/mbilotta/julia</url>
