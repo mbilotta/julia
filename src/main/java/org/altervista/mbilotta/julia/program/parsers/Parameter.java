@@ -278,7 +278,7 @@ public abstract class Parameter<T> implements Serializable {
 					Method setter = findSetter();
 					Method getter = findGetter();
 					setSetterMethod(setter);
-					parameterPreviewable = setter.isAnnotationPresent(Previewable.class);
+					parameterPreviewable = setter != null && setter.isAnnotationPresent(Previewable.class);
 					if (parameterPreviewable) {
 						if (Representation.class.isAssignableFrom(pluginType)) {
 							if (type == Real.class) {
