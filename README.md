@@ -2,7 +2,9 @@
 
 # Julia: The Fractal Generator
 
-Julia is a fractal generator program completely written in Java. Please note that this project is very old. It started as a college work around 2010; some design choices I made at that time (e.g. multi-window UI) could look awful today.
+Julia is a fractal generator program completely written in Java. It started as a college work around 2010. Despite its age, this project is still fully functional. You can see a screenshot of Julia running on Windows 10 below.
+
+![Julia 1.1 running on Windows 10](https://imgur.com/MxmNfxX.png)
 
 Also note that this project focuses only on two-dimensional, escape-time fractals like the Mandelbrot set and the Julia set. A clear and concise definition of such a fractal is that given by [Tom Van Cutsem](http://soft.vub.ac.be/~tvcutsem/teaching/wpo/grafsys/ex5/les5.html):
 
@@ -42,12 +44,19 @@ Beside common formats like JPEG, PNG etc. (only available as outputs), Julia pro
 
 ## Running Julia
 
+### On Windows
+
+Windows users should just download and run `julia.exe` (latest release [here](https://github.com/mbilotta/julia/releases/latest)). SmartScreen may complain about the signature so youl'll have to click _More info_ and then _Run anyway_. If no JRE 1.8+ installation is found, a popup will give instructions to download and install the latest version of Java.
+
+### On other OSes
+
 You need JRE/JDK 1.8+ installed in your system. After installing Java, you should be able to run Julia simply double clicking on `julia.jar`. Alternatively, you can run Julia from the command line by typing:
 
-* `javaw -jar julia.jar` on Windows
-* `java -jar julia.jar` on Linux, MacOS X
+```
+java -jar julia.jar
+```
 
-provided you have placed `julia.jar` in your home directory. Windows users may need to add the `bin/` subdirectory of their Java installation to the `PATH` environment variable. Also note that the command line is not only accessible through terminal emulators/command prompt. Most OSes/desktops provide [Run dialogs](https://en.wikipedia.org/wiki/Run_command) that hide once you issued a command.
+provided you have placed `julia.jar` in your home directory. Also note that the command line is not only accessible through terminal emulators/command prompt. Most OSes/desktops provide [Run dialogs](https://en.wikipedia.org/wiki/Run_command) that hide once you issued a command.
 
 ### Missing plugins error
 
