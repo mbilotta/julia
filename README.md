@@ -2,7 +2,9 @@
 
 # Julia: The Fractal Generator
 
-Julia is a fractal generator program completely written in Java. Please note that this project is very old. It started as a college work around 2010; some design choices I made at that time (e.g. multi-window UI) could look awful today.
+Julia is a fractal generator program completely written in Java. It started as a college work around 2010. Despite its age, this project is still fully functional. You can see a screenshot of Julia running on Windows 10 below.
+
+![Julia 1.1 running on Windows 10](https://imgur.com/MxmNfxX.png)
 
 Also note that this project focuses only on two-dimensional, escape-time fractals like the Mandelbrot set and the Julia set. A clear and concise definition of such a fractal is that given by [Tom Van Cutsem](http://soft.vub.ac.be/~tvcutsem/teaching/wpo/grafsys/ex5/les5.html):
 
