@@ -44,12 +44,19 @@ Beside common formats like JPEG, PNG etc. (only available as outputs), Julia pro
 
 ## Running Julia
 
+### On Windows
+
+Windows users should just download and run `julia.exe`. If no JRE 1.8+ installation is found, a popup will give instructions to install the latest version of Java.
+
+### On other systems
+
 You need JRE/JDK 1.8+ installed in your system. After installing Java, you should be able to run Julia simply double clicking on `julia.jar`. Alternatively, you can run Julia from the command line by typing:
 
-* `javaw -jar julia.jar` on Windows
-* `java -jar julia.jar` on Linux, MacOS X
+```
+java -jar julia.jar
+```
 
-provided you have placed `julia.jar` in your home directory. Windows users may need to add the `bin/` subdirectory of their Java installation to the `PATH` environment variable. Also note that the command line is not only accessible through terminal emulators/command prompt. Most OSes/desktops provide [Run dialogs](https://en.wikipedia.org/wiki/Run_command) that hide once you issued a command.
+provided you have placed `julia.jar` in your home directory. Also note that the command line is not only accessible through terminal emulators/command prompt. Most OSes/desktops provide [Run dialogs](https://en.wikipedia.org/wiki/Run_command) that hide once you issued a command.
 
 ### Missing plugins error
 
