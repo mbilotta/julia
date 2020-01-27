@@ -53,7 +53,7 @@ public class JupCli implements Runnable {
 
   @Option(names = { "-j", "--jup" },
     required = true,
-    description = "Enable JUP command line mode.")
+    description = "Needed to enable JUP command line mode.")
   boolean jupCreationRequested;
 
   @Option(names = { "-l", "--license" }, paramLabel = "FILE",
@@ -80,7 +80,7 @@ public class JupCli implements Runnable {
   Path pluginPath;
 
   @Parameters(index = "1..*", arity = "1", paramLabel = "INPUT_PATH",
-    description = "Each INPUT_PATH can be a file or a directory. Files will be added to the right entry in the archive based on their extension: plugin descriptors must end with       \".xml\"; JARs must end with \".jar\"; files that are none of the two will be treated as documentation resources. When INPUT_PATH is a directory, its contents will be added to the archive following the same logic. Subdirectories will be ignored.")
+    description = "Each INPUT_PATH can be a file or a directory. Files will be added to the right entry in the archive based on their extension: plugin descriptors must end with \".xml\"; JARs must end with \".jar\"; files that are none of the two will be treated as documentation resources. When INPUT_PATH is a directory, its contents will be added to the archive following the same logic. Subdirectories will be ignored.")
   List<Path> inputPaths;
 
   @Override
