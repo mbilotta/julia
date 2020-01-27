@@ -2,11 +2,11 @@
 
 # Julia: The Fractal Generator
 
-Julia is a fractal generator program completely written in Java. It started as a college work around 2010. Despite its age, this project is still fully functional. You can see a screenshot of Julia running on Windows 10 below.
+Julia is a fractal generator program completely written in Java. It started as a college work around 2010. Despite its age, this project is still fully functional. Here is a screenshot of Julia running on Windows 10:
 
 ![Julia 1.1 running on Windows 10](https://imgur.com/MxmNfxX.png)
 
-Also note that this project focuses only on two-dimensional, escape-time fractals like the Mandelbrot set and the Julia set. A clear and concise definition of such a fractal is that given by [Tom Van Cutsem](http://soft.vub.ac.be/~tvcutsem/teaching/wpo/grafsys/ex5/les5.html):
+Please note that this project focuses only on two-dimensional, escape-time fractals like the Mandelbrot set and the Julia set. A clear and concise definition of such a fractal is that given by [Tom Van Cutsem](http://soft.vub.ac.be/~tvcutsem/teaching/wpo/grafsys/ex5/les5.html):
 
 > Such fractals are computed by repeatedly applying a transformation to a given point in the plane. The obtained series of transformed points is called the orbit of the initial point. An orbit diverges when its points grow further apart without bounds. A fractal can then be defined as the set of points whose orbit does not diverge.
 
