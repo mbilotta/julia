@@ -1172,7 +1172,7 @@ public class ControlWindow extends JFrame {
 				c.gridx = c.gridy = 0;
 				c.weightx = 1;
 				c.insets.bottom = SPACING * 4;
-				container.add(new JLabel("None"), c);
+				container.add(new JLabel("No parameters"), c);
 			} else {
 				for (int i = 0; i < numOfParameters; i++) {
 					Parameter<?> parameter = plugin.getParameter(i);
