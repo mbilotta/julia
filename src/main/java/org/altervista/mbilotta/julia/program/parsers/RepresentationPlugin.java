@@ -20,16 +20,10 @@
 
 package org.altervista.mbilotta.julia.program.parsers;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.List;
 
 import org.altervista.mbilotta.julia.Decimal;
 import org.altervista.mbilotta.julia.NumberFactory;
-import org.altervista.mbilotta.julia.Previewable;
 
 
 public final class RepresentationPlugin extends Plugin {
@@ -39,8 +33,6 @@ public final class RepresentationPlugin extends Plugin {
 	 */
 	private static final long serialVersionUID = 1L;
 
-	private transient boolean[] previewables;
-
 	public RepresentationPlugin(String id, Class<?> type) {
 		super(id, type);
 	}
@@ -49,27 +41,12 @@ public final class RepresentationPlugin extends Plugin {
 		return PluginFamily.representation;
 	}
 
-	@Override
-	void setParameters(List<Parameter<?>.Validator> domParsers) /* throws NoSuchMethodException */ {
-		super.setParameters(domParsers);
-
-		int i = 0;
-		previewables = new boolean[domParsers.size()];
-		for (Parameter<?>.Validator domParser : domParsers) {
-			previewables[i++] = domParser.isParameterPreviewable();
-		}
-	}
-
-	public boolean isPreviewable(Parameter<?> parameter) {
-		assert parameter.getPlugin() == this;
-		return previewables[parameter.getIndex()];
-	}
-
 	public boolean hasPreviewableParameters() {
 		int numOfParams = getNumOfParameters();
 		for (int i = 0; i < numOfParams; i++) {
-			if (previewables[i])
+			if (getParameter(i).isPreviewable()) {
 				return true;
+			}
 		}
 		return false;
 	}
@@ -82,27 +59,10 @@ public final class RepresentationPlugin extends Plugin {
 			Parameter<?> parameter = getParameter(i);
 			Method setter = parameter.getSetterMethod();
 			Object argument = parameterValues[i];
-			if (parameter instanceof RealParameter && !previewables[i]) {
+			if (parameter instanceof RealParameter && !parameter.isPreviewable()) {
 				argument = numberFactory.valueOf((Decimal) argument);
 			}
 			setter.invoke(target, argument);
-		}
-	}
-
-	public String toString() {
-		return toStringBuilder()
-				.append(", previewables=").append(Arrays.toString(previewables))
-				.append(']').toString();
-	}
-
-	private void readObject(ObjectInputStream in)
-			throws ClassNotFoundException, IOException {
-		in.defaultReadObject();
-
-		int numOfParams = getNumOfParameters();
-		previewables = new boolean[numOfParams];
-		for (int i = 0; i < numOfParams; i++) {
-			previewables[i] = getParameter(i).getSetterMethod().isAnnotationPresent(Previewable.class);
 		}
 	}
 }

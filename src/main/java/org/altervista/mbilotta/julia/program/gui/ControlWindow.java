@@ -1100,7 +1100,7 @@ public class ControlWindow extends JFrame {
 				parameter.addParameterChangeListener(this, editors[i]);
 				editors[i].addFocusListener(FOCUS_TRACKER);
 				editors[i].addMouseListener(new PopClickListener(parameter));
-				if (isRepresentation && ((RepresentationPlugin) plugin).isPreviewable(parameter)) {
+				if (parameter.isPreviewable()) {
 					hasPreviewableParameters = true;
 					parameter.setPreviewUpdater(this, editors[i]);
 				}
@@ -1113,7 +1113,7 @@ public class ControlWindow extends JFrame {
 						if (backupInstance != instance) {
 							RepresentationPlugin representationPlugin = (RepresentationPlugin) plugin;
 							for (Parameter<?> parameter : representationPlugin.getParameters()) {
-								if (representationPlugin.isPreviewable(parameter)) {
+								if (parameter.isPreviewable()) {
 									representationPreviewInstance.setParameterValue(parameter, instance.getParameterValue(parameter));
 								}
 							}
@@ -1148,7 +1148,7 @@ public class ControlWindow extends JFrame {
 				parameter.addParameterChangeListener(this, editors[i]);
 				editors[i].addFocusListener(FOCUS_TRACKER);
 				editors[i].addMouseListener(new PopClickListener(parameter));
-				if (plugin.getFamily() == PluginFamily.representation && ((RepresentationPlugin) plugin).isPreviewable(parameter)) {
+				if (parameter.isPreviewable()) {
 					hasPreviewableParameters = true;
 					parameter.setPreviewUpdater(this, editors[i]);
 				}
@@ -1278,7 +1278,7 @@ public class ControlWindow extends JFrame {
 				RepresentationPlugin representationPlugin = (RepresentationPlugin) plugin;
 				boolean hasPreviewableParametetrs = false;
 				for (Parameter<?> parameter : representationPlugin.getParameters()) {
-					if (!representationPlugin.isPreviewable(parameter)) {
+					if (!parameter.isPreviewable()) {
 						representationPreviewInstance.setParameterValue(
 								parameter,
 								pluginInstance.getParameterValue(parameter));
@@ -1299,7 +1299,7 @@ public class ControlWindow extends JFrame {
 					RepresentationPlugin representationPlugin = (RepresentationPlugin) plugin;
 					boolean hasPreviewableParametetrs = false;
 					for (Parameter<?> parameter : representationPlugin.getParameters()) {
-						if (!representationPlugin.isPreviewable(parameter)) {
+						if (!parameter.isPreviewable()) {
 							representationPreviewInstance.setParameterValue(
 									parameter,
 									backupInstance.getParameterValue(parameter));

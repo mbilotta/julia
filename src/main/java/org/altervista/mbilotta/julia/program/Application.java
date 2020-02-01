@@ -918,7 +918,7 @@ public class Application {
 		assert cw != null;
 		RepresentationPlugin plugin = getRepresentation();
 		if (previewOwner == cw && plugin == previewOwner.getRepresentation()) {
-			assert plugin.isPreviewable(parameter);
+			assert parameter.isPreviewable();
 			Method setter = parameter.getSetterMethod();
 			try {
 				setter.invoke(representation, value);
@@ -1044,7 +1044,7 @@ public class Application {
 
 	private static boolean mustUpdatePreview(PluginInstance<RepresentationPlugin> oldPreview, PluginInstance<RepresentationPlugin> newPreview) {
 		for (Parameter<?> parameter : oldPreview.getPlugin().getParameters()) {
-			if (oldPreview.getPlugin().isPreviewable(parameter) &&
+			if (parameter.isPreviewable() &&
 				!oldPreview.getParameterValue(parameter).equals(newPreview.getParameterValue(parameter))) {
 				return true;
 			}
@@ -1272,7 +1272,7 @@ public class Application {
 		PluginInstance<RepresentationPlugin> currentInstance = getRepresentationInstance();
 		for (Parameter<?> parameter : plugin.getParameters()) {
 			Object currentValue = currentInstance.getParameterValue(parameter);
-			if (!plugin.isPreviewable(parameter) &&
+			if (!parameter.isPreviewable() &&
 					!currentValue.equals(representationInstance.getParameterValue(parameter)))
 				return true;
 		}
@@ -1357,7 +1357,7 @@ public class Application {
 				representationPreviewInstance = new PluginInstance<>(representationPreviewInstance);
 				RepresentationPlugin plugin = representationInstance.getPlugin();
 				for (Parameter<?> parameter : plugin.getParameters()) {
-					if (!plugin.isPreviewable(parameter)) {
+					if (!parameter.isPreviewable()) {
 						representationPreviewInstance.setParameterValue(
 								parameter,
 								representationInstance.getParameterValue(parameter));
@@ -1588,7 +1588,7 @@ public class Application {
 				representationPreviewInstance = new PluginInstance<>(representationPreviewInstance);
 				RepresentationPlugin plugin = representationInstance.getPlugin();
 				for (Parameter<?> parameter : plugin.getParameters()) {
-					if (!plugin.isPreviewable(parameter)) {
+					if (!parameter.isPreviewable()) {
 						representationPreviewInstance.setParameterValue(
 								parameter,
 								representationInstance.getParameterValue(parameter));

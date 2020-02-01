@@ -64,6 +64,7 @@ public abstract class Parameter<T> implements Serializable {
 
 	private final String id;
 	private transient int index;
+	private transient boolean previewable;
 	private transient Plugin plugin;
 	private transient Class<? super T> type;
 	private transient Method setterMethod;
@@ -88,7 +89,6 @@ public abstract class Parameter<T> implements Serializable {
 	abstract class Validator {
 		final DescriptorParser descriptorParser;
 		final XmlPath parameterPath;
-		boolean parameterPreviewable;
 		final Class<?> pluginType;
 		final Object pluginInstance;
 		T getterHint;
@@ -211,7 +211,7 @@ public abstract class Parameter<T> implements Serializable {
 		}
 
 		public boolean isParameterPreviewable() {
-			return parameterPreviewable;
+			return isPreviewable();
 		}
 
 		public Map<String, T> getReferencedGroups() {
@@ -278,19 +278,18 @@ public abstract class Parameter<T> implements Serializable {
 					Method setter = findSetter();
 					Method getter = findGetter();
 					setSetterMethod(setter);
-					parameterPreviewable = setter != null && setter.isAnnotationPresent(Previewable.class);
-					if (parameterPreviewable) {
-						if (Representation.class.isAssignableFrom(pluginType)) {
-							if (type == Real.class) {
-								descriptorParser.warning(new ClassValidationException(
-										this,
-										"Previewable parameters of type \"real\" will not be passed to NumberFactory"));
-							}
-						} else {
-							descriptorParser.error(new ClassValidationException(
+					boolean parameterPreviewable = setter != null && setter.isAnnotationPresent(Previewable.class);
+					if (Representation.class.isAssignableFrom(pluginType)) {
+						setPreviewable(parameterPreviewable);
+						if (parameterPreviewable && type == Real.class) {
+							descriptorParser.warning(new ClassValidationException(
 									this,
-									"Previewable parameters can be specified only when plugin type is \"representation\"."));
+									"Previewable parameters of type \"real\" will not be passed to NumberFactory"));
 						}
+					} else if (parameterPreviewable) {
+						descriptorParser.error(new ClassValidationException(
+								this,
+								"Previewable parameters can be specified only when plugin type is \"representation\"."));
 					}
 					if (pluginInstance != null && getter != null) {
 						try {
@@ -397,6 +396,10 @@ public abstract class Parameter<T> implements Serializable {
 		this.index = index;
 	}
 
+	void setPreviewable(boolean previewable) {
+		this.previewable = previewable;
+	}
+
 	void setPlugin(Plugin plugin) {
 		this.plugin = plugin;
 	}
@@ -419,6 +422,15 @@ public abstract class Parameter<T> implements Serializable {
 	}
 
 	abstract void initConstraints() throws ClassValidationException;
+
+	void initPreviewability() throws ClassValidationException {
+		boolean parameterPreviewable = setterMethod.isAnnotationPresent(Previewable.class);
+		if (Representation.class.isAssignableFrom(getPlugin().getType())) {
+			setPreviewable(parameterPreviewable);
+		} else if (parameterPreviewable) {
+			throw new ClassValidationException(this, "Previewable parameters can be specified only when plugin type is \"representation\".");
+		}
+	}
 	
 	abstract Validator createValidator(DescriptorParser descriptorParser,
 			XmlPath parameterPath,
@@ -430,6 +442,10 @@ public abstract class Parameter<T> implements Serializable {
 
 	public final int getIndex() {
 		return index;
+	}
+
+	public final boolean isPreviewable() {
+		return previewable;
 	}
 
 	public final Plugin getPlugin() {

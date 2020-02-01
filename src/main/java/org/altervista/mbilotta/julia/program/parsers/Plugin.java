@@ -28,7 +28,6 @@ import static org.altervista.mbilotta.julia.Utilities.writeList;
 import static org.altervista.mbilotta.julia.program.parsers.Parameter.findConstructor;
 import static org.altervista.mbilotta.julia.program.parsers.Parameter.findGetter;
 import static org.altervista.mbilotta.julia.program.parsers.Parameter.findSetter;
-import static org.altervista.mbilotta.julia.program.parsers.Parameter.getMethodString;
 import static org.altervista.mbilotta.julia.program.parsers.Parameter.newIOException;
 
 import java.io.IOException;
@@ -280,6 +279,7 @@ public abstract class Plugin implements Serializable {
 			try {
 				Method setter = findSetter(p.getId(), p.getType(), type);
 				p.setSetterMethod(setter);
+				p.initPreviewability();
 				p.initConstraints();
 				p.validateHints();
 			} catch (NoSuchMethodException e) {

@@ -26,18 +26,13 @@ import static org.altervista.mbilotta.julia.Utilities.readNonNull;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.lang.reflect.Method;
 import java.util.Arrays;
 
 import javax.swing.JComponent;
 
-import org.altervista.mbilotta.julia.Decimal;
-import org.altervista.mbilotta.julia.Formula;
 import org.altervista.mbilotta.julia.NumberFactory;
 import org.altervista.mbilotta.julia.Out;
 import org.altervista.mbilotta.julia.Printer;
-import org.altervista.mbilotta.julia.Representation;
-import org.altervista.mbilotta.julia.math.Real;
 import org.altervista.mbilotta.julia.program.parsers.FormulaPlugin;
 import org.altervista.mbilotta.julia.program.parsers.NumberFactoryPlugin;
 import org.altervista.mbilotta.julia.program.parsers.Parameter;
@@ -330,7 +325,7 @@ public final class PluginInstance<P extends Plugin> implements Cloneable {
 							parameterValues[index] = value; 
 						} else {
 							errorOutput.print("- ", entryName);
-							if (representation.isPreviewable(parameter)) {
+							if (parameter.isPreviewable()) {
 								errorOutput.print(" (error)");
 								ec++;
 							} else {
@@ -362,7 +357,7 @@ public final class PluginInstance<P extends Plugin> implements Cloneable {
 				Parameter<?> parameter = representation.getParameter(i);
 				if (parameterValues[i] == null) {
 					errorOutput.print("- ", entryName);
-					if (representation.isPreviewable(parameter)) {
+					if (parameter.isPreviewable()) {
 						errorOutput.print(" (error)");
 						ec++;
 					} else {
