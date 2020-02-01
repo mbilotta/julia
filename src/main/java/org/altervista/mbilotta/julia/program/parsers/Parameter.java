@@ -285,8 +285,6 @@ public abstract class Parameter<T> implements Serializable {
 								descriptorParser.warning(new ClassValidationException(
 										this,
 										"Previewable parameters of type \"real\" will not be passed to NumberFactory"));
-							} else {
-								println(currentPath.getAttributeChild("previewable"), true);
 							}
 						} else {
 							descriptorParser.error(new ClassValidationException(
