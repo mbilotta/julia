@@ -24,9 +24,9 @@ package org.altervista.mbilotta.julia.program;
 
 public interface ExecutionObserver {
 
-	void executionStarting(Runnable target);
-	void executionFinished(Runnable target);
-	void executionFinished(Runnable target, Throwable cause);
-	void executionCancelled(Runnable target);
+	default void executionStarting(Runnable target) { }
+	default void executionFinished(Runnable target) { }
+	default void executionFinished(Runnable target, Throwable cause) { }
+	default void executionCancelled(Runnable target) { }
 
 }
