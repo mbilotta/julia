@@ -34,6 +34,7 @@ import javax.swing.JComponent;
 import javax.swing.JMenuItem;
 
 import org.altervista.mbilotta.julia.Gradient;
+import org.altervista.mbilotta.julia.GradientBuilder;
 import org.altervista.mbilotta.julia.Gradient.Stop;
 import org.altervista.mbilotta.julia.program.gui.GradientIcon;
 import org.altervista.mbilotta.julia.program.gui.GradientParameterEditor;
@@ -147,6 +148,23 @@ final class GradientParameter extends Parameter<Gradient> {
 			XmlPath parameterPath,
 			Class<?> pluginType, Object pluginInstance) throws DomValidationException {
 		return new Validator(descriptorParser, parameterPath, pluginType, pluginInstance);
+	}
+
+	@Override
+	public Gradient parseValue(String s) {
+		GradientBuilder builder = new GradientBuilder();
+		String[] stops = s.split("\\^");
+		for (String stop : stops) {
+			String[] components = stop.split("@");
+			String[] color = components[0].split(",");
+			int r = Integer.parseInt(color[0]);
+			int g = Integer.parseInt(color[1]);
+			int b = Integer.parseInt(color[2]);
+			int a = color.length > 3 ? Integer.parseInt(color[3]) : 255;
+			float location = Float.parseFloat(components[1]);
+			builder.withStop(r, g, b, a, location);
+		}
+		return builder.build();
 	}
 
 	public JComponent createEditor(Object initialValue) {

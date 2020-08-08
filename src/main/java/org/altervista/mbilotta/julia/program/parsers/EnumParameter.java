@@ -43,7 +43,7 @@ import org.altervista.mbilotta.julia.program.gui.ParameterChangeListener;
 import org.altervista.mbilotta.julia.program.gui.PreviewUpdater;
 import org.w3c.dom.Element;
 
-
+@SuppressWarnings({"unchecked", "rawtypes"})
 final class EnumParameter extends Parameter<Enum<?>> {
 	
 	/**
@@ -113,6 +113,11 @@ final class EnumParameter extends Parameter<Enum<?>> {
 			XmlPath parameterPath,
 			Class<?> pluginType, Object pluginInstance) throws DomValidationException {
 		return new Validator(descriptorParser, parameterPath, pluginType, pluginInstance);
+	}
+
+	@Override
+	public Enum<?> parseValue(String s) {
+		return Enum.valueOf((Class) getType(), s);
 	}
 
 	public JComponent createEditor(Object initialValue) {

@@ -256,6 +256,17 @@ final class AnyParameter extends Parameter<Object> {
 		super(id);
 	}
 
+	@Override
+	public Object parseValue(String s) {
+		try {
+			return parseValueImpl(s);
+		} catch (InvocationTargetException e) {
+			throw new IllegalArgumentException(s, e);
+		} catch (ReflectiveOperationException e) {
+			throw new AssertionError(e);
+		}
+	}
+
 	public JComponent createEditor(Object initialValue) {
 		return new JuliaFormattedTextField(new Formatter(), initialValue, this);
 	}
@@ -352,6 +363,13 @@ final class AnyParameter extends Parameter<Object> {
 		}
 	}
 
+	private Object parseValueImpl(String text) throws InvocationTargetException, ReflectiveOperationException {
+		if (getType().equals(String.class)) {
+			return text;
+		}
+		return parseMethod == null ? constructor.newInstance(text) : parseMethod.invoke(null, text);
+	}
+
 	private class Formatter extends DefaultFormatter {
 		public Formatter() {
 			setAllowsInvalid(true);
@@ -363,11 +381,7 @@ final class AnyParameter extends Parameter<Object> {
 		public Object stringToValue(String text) throws ParseException {
 			Object value;
 			try {
-				if (getType().equals(String.class)) {
-					value = text;
-				} else {
-					value = parseMethod == null ? constructor.newInstance(text) : parseMethod.invoke(null, text);
-				}
+				value = parseValueImpl(text);
 			} catch (InvocationTargetException e) {
 				throw new ParseException("Value could not be parsed.", 0);
 			} catch (ReflectiveOperationException e) {

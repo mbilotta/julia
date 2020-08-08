@@ -81,6 +81,11 @@ final class BooleanParameter extends Parameter<Boolean> {
 			Class<?> pluginType, Object pluginInstance) throws DomValidationException {
 		return new Validator(descriptorParser, parameterPath, pluginType, pluginInstance);
 	}
+
+	@Override
+	public Boolean parseValue(String s) {
+		return Boolean.valueOf(s);
+	}
 	
 	public JComponent createEditor(Object initialValue) {
 		JCheckBox checkBox = new JCheckBox();

@@ -1,13 +1,14 @@
 package org.altervista.mbilotta.julia.program.cli;
 
 import java.nio.file.Path;
-import java.util.Map;
+import java.util.List;
 
 import org.altervista.mbilotta.julia.Decimal;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
 
 @Command(name = "juliac",
     header = { "Julia: The Fractal Generator", "Copyright (C) 2015 Maurizio Bilotta" },
@@ -41,8 +42,8 @@ public class ImageGenerationCli implements Runnable {
     @Option(names = {"-r", "--rectangle"}, split = ",", arity = "4")
     Decimal[] rectangle;
 
-    @Option(names = {"-S", "--set-parameter"})
-    Map<String, String> parameters;
+    @Parameters
+    List<String> parameters;
 
     @Option(names = { "-o", "--output" }, paramLabel = "OUTPUT_PATH", required = true,
         description = "Output file path.")

@@ -101,6 +101,16 @@ final class ColorParameter extends Parameter<Color> {
 		return new Validator(descriptorParser, parameterPath, pluginType, pluginInstance);
 	}
 
+	@Override
+	public Color parseValue(String s) {
+		String[] components = s.split(",");
+		int r = Integer.parseInt(components[0]);
+		int g = Integer.parseInt(components[1]);
+		int b = Integer.parseInt(components[2]);
+		int a = components.length > 3 ? Integer.parseInt(components[3]) : 255;
+		return new Color(r, g, b, a);
+	}
+
 	public JComponent createEditor(Object initialValue) {
 		return new ColorParameterEditor(this, (Color) initialValue, false);
 	}

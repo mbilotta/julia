@@ -254,6 +254,11 @@ public class DecimalParameter extends Parameter<Decimal> {
 			return false;
 	}
 
+	@Override
+	public Decimal parseValue(String s) {
+		return new Decimal(s);
+	}
+
 	public JComponent createEditor(Object initialValue) {
 		return new JuliaFormattedTextField(new Formatter(), initialValue, this);
 	}

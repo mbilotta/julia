@@ -245,6 +245,11 @@ public final class DoubleParameter extends Parameter<Double> {
 		return false;
 	}
 
+	@Override
+	public Double parseValue(String s) {
+		return Double.valueOf(s);
+	}
+
 	public JComponent createEditor(Object initialValue) {
 		return new JuliaFormattedTextField(new Formatter(), initialValue, this);
 	}

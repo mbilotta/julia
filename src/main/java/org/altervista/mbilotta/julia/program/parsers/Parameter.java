@@ -493,6 +493,7 @@ public abstract class Parameter<T> implements Serializable {
 		return createEditor(getEditorValue(editor));
 	}
 
+	public abstract T parseValue(String s);
 	public abstract JComponent createEditor(Object initialValue);
 	public abstract void disposeEditor(JComponent editor);
 	public abstract Object getEditorValue(JComponent editor);

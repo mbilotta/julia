@@ -155,6 +155,11 @@ public final class IntParameter extends Parameter<Integer> {
 		return new Validator(descriptorParser, parameterPath, pluginType, pluginInstance);
 	}
 
+	@Override
+	public Integer parseValue(String s) {
+		return Integer.valueOf(s);
+	}
+
 	public JComponent createEditor(Object initialValue) {
 		return new IntParameterEditor((Integer) initialValue,
 				min,
