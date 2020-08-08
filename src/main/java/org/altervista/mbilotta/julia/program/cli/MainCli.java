@@ -33,106 +33,114 @@ import picocli.CommandLine.UnmatchedArgumentException;
 
 
 @Command(name = "juliac",
-  header = {"Julia: The Fractal Generator", "Copyright (C) 2015 Maurizio Bilotta" },
-  version = { "Julia: The Fractal Generator", "Version " + Application.VERSION, "Copyright (C) 2015 Maurizio Bilotta"},
-  optionListHeading = "%nOptions:%n",
-  sortOptions = false)
+	header = {"Julia: The Fractal Generator", "Copyright (C) 2015 Maurizio Bilotta" },
+	version = { "Julia: The Fractal Generator", "Version " + Application.VERSION, "Copyright (C) 2015 Maurizio Bilotta"},
+	optionListHeading = "%nOptions:%n",
+	sortOptions = false)
 public class MainCli {
 
-  @ArgGroup(exclusive = true, multiplicity = "0..1")
-  CliMode cliMode = new CliMode();
+	@ArgGroup(exclusive = true, multiplicity = "0..1")
+	CliMode cliMode = new CliMode();
 
-  static class CliMode {
+	static class CliMode {
+		@Option(names = { "-j", "--jup" }, required = true,
+			description = "Create a plugin archive. Add --help to read more about this option.")
+		boolean jupCreationRequested = false;
 
-    @Option(names = { "-j", "--jup" }, required = true,
-      description = "Create a plugin archive. Add --help to read more about this option.")
-    boolean jupCreationRequested = false;
+		@Option(names = { "-g", "--generate" }, required = true,
+        	description = "Generate an image. Add --help to read more about this option.")
+    	boolean imageGenerationRequested;
 
-    @Option(names = { "-p", "--profile" }, paramLabel = "PATH",
-      required = true,
-      description = "Run Julia using PATH as profile directory. Use this option to override the default profile (~/.juliafg). A new profile will be created if PATH is empty or nonexistent.")
-    Path profilePath;
+		@Override
+		public String toString() {
+			return "[jupCreationRequested=" + jupCreationRequested + ", imageGenerationRequested=" + imageGenerationRequested + "]";
+		}
+	}
 
-    @Override
-    public String toString() {
-      return "[jupCreationRequested=" + jupCreationRequested + ", profilePath=" + profilePath + "]";
-    }
-  }
+	@Option(names = { "-p", "--profile" }, paramLabel = "PATH",
+		description = "Run Julia using PATH as profile directory. Use this option to override the default profile (~/.juliafg). A new profile will be created if PATH is empty or nonexistent.")
+	Path profilePath;
 
-  @Option(names = "--refresh-cache", description = "Force regeneration of cache and documentation for every installed plugin.")
-  boolean cacheRefreshRequested;
-  
-  @Option(names = { "-h", "--help" }, usageHelp = true,
-    description = "Print this help message and exit.")
-  boolean helpRequested;
+	@Option(names = "--refresh-cache", description = "Force regeneration of cache and documentation for every installed plugin.")
+	boolean cacheRefreshRequested;
+	
+	@Option(names = { "-h", "--help" }, usageHelp = true,
+		description = "Print this help message and exit.")
+	boolean helpRequested;
 
-  @Option(names = { "-v", "--version" }, versionHelp = true,
-    description = "Print version information and exit.")
-  boolean versionRequested;
+	@Option(names = { "-v", "--version" }, versionHelp = true,
+		description = "Print version information and exit.")
+	boolean versionRequested;
 
-  public Integer execute(String[] args) {
-    CommandLine cmd = new CommandLine(this);
-    try {
-      cmd.parseArgs(args);
+	public Integer execute(String[] args) {
+		CommandLine cmd = new CommandLine(this);
+		try {
+			cmd.parseArgs(args);
 
-      // Did user request usage help (--help)?
-      if (cmd.isUsageHelpRequested()) {
-        if (cliMode.jupCreationRequested) {
-          return new JupCli().execute(args);
-        }
-        cmd.usage(cmd.getOut());
-        return cmd.getCommandSpec().exitCodeOnUsageHelp();
+			// Did user request usage help (--help)?
+			if (cmd.isUsageHelpRequested()) {
+				if (cliMode.jupCreationRequested) {
+					return new JupCli().execute(args);
+				}
+				if (cliMode.imageGenerationRequested) {
+					return new ImageGenerationCli().execute(args);
+				}
+				cmd.usage(cmd.getOut());
+				return cmd.getCommandSpec().exitCodeOnUsageHelp();
 
-        // Did user request version help (--version)?
-      } else if (cmd.isVersionHelpRequested()) {
-        cmd.printVersionHelp(cmd.getOut());
-        return cmd.getCommandSpec().exitCodeOnVersionHelp();
-      }
+				// Did user request version help (--version)?
+			} else if (cmd.isVersionHelpRequested()) {
+				cmd.printVersionHelp(cmd.getOut());
+				return cmd.getCommandSpec().exitCodeOnVersionHelp();
+			}
 
-      // invoke the business logic
-      if (cliMode.jupCreationRequested) {
-        return new JupCli().execute(args);
-      }
-      Application.run(this);
-      return null;
+			// invoke the business logic
+			if (cliMode.jupCreationRequested) {
+				return new JupCli().execute(args);
+			}
+			if (cliMode.imageGenerationRequested) {
+				return new ImageGenerationCli().execute(args);
+			}
+			Application.run(this);
+			return null;
 
-      // invalid user input: print error message and usage help
-    } catch (ParameterException ex) {
-      if (ex instanceof UnmatchedArgumentException) {
-        if (cliMode.jupCreationRequested) {
-          return new JupCli().execute(args);
-        }
-      }
-      cmd.getErr().println(ex.getMessage());
-      if (!UnmatchedArgumentException.printSuggestions(ex, cmd.getErr())) {
-        ex.getCommandLine().usage(cmd.getErr());
-      }
-      return cmd.getCommandSpec().exitCodeOnInvalidInput();
+			// invalid user input: print error message and usage help
+		} catch (ParameterException ex) {
+			if (ex instanceof UnmatchedArgumentException) {
+				if (cliMode.jupCreationRequested) {
+					return new JupCli().execute(args);
+				}
+			}
+			cmd.getErr().println(ex.getMessage());
+			if (!UnmatchedArgumentException.printSuggestions(ex, cmd.getErr())) {
+				ex.getCommandLine().usage(cmd.getErr());
+			}
+			return cmd.getCommandSpec().exitCodeOnInvalidInput();
 
-      // exception occurred in business logic
-    } catch (Exception ex) {
-      ex.printStackTrace(cmd.getErr());
-      return cmd.getCommandSpec().exitCodeOnExecutionException();
-    }
-  }
+			// exception occurred in business logic
+		} catch (Exception ex) {
+			ex.printStackTrace(cmd.getErr());
+			return cmd.getCommandSpec().exitCodeOnExecutionException();
+		}
+	}
 
-  public static void main(String[] args) {
-    Integer exitCode = new MainCli().execute(args);
-    if (exitCode != null) {
-      System.exit(exitCode);
-    }
-  }
+	public static void main(String[] args) {
+		Integer exitCode = new MainCli().execute(args);
+		if (exitCode != null) {
+			System.exit(exitCode);
+		}
+	}
 
-  public Path getProfilePath() {
-    return cliMode.profilePath;
-  }
+	public Path getProfilePath() {
+		return profilePath;
+	}
 
-  public boolean isCacheRefreshRequested() {
-    return cacheRefreshRequested;
-  }
+	public boolean isCacheRefreshRequested() {
+		return cacheRefreshRequested;
+	}
 
-  @Override
-  public String toString() {
-    return "[cliMode=" + cliMode + ", cacheRefreshRequested=" + cacheRefreshRequested + ", helpRequested=" + helpRequested + ", versionRequested=" + versionRequested + "]";
-  }
+	@Override
+	public String toString() {
+		return "[cliMode=" + cliMode + ", cacheRefreshRequested=" + cacheRefreshRequested + ", helpRequested=" + helpRequested + ", versionRequested=" + versionRequested + "]";
+	}
 }
