@@ -139,6 +139,10 @@ public class MainCli {
 		return cacheRefreshRequested;
 	}
 
+	public boolean isGuiRunning() {
+		return !(cliMode.imageGenerationRequested || cliMode.jupCreationRequested || helpRequested || versionRequested);
+	}
+
 	@Override
 	public String toString() {
 		return "[cliMode=" + cliMode + ", cacheRefreshRequested=" + cacheRefreshRequested + ", helpRequested=" + helpRequested + ", versionRequested=" + versionRequested + "]";

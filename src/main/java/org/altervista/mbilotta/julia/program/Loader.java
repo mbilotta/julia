@@ -87,13 +87,16 @@ class Loader extends SwingWorker<Void, String> {
 	private int[] problemCount = new int[3];
 	private final JuliaExecutorService executorService;
 	private final boolean cacheRefreshRequested;
+	private final boolean guiRunning;
 
 	private SplashScreen splashScreen;
 
-	public Loader(Profile profile, JuliaExecutorService executorService, MainCli cli) {
-		this.profile = profile;
+	public Loader(JuliaExecutorService executorService, MainCli cli) {
+		this.profile = cli.getProfilePath() == null ?
+			Profile.getDefaultProfile() : new Profile(cli.getProfilePath());
 		this.executorService = executorService;
 		this.cacheRefreshRequested = cli.isCacheRefreshRequested();
+		this.guiRunning = cli.isGuiRunning();
 		executorService.execute(this);
 	}
 
@@ -102,7 +105,7 @@ class Loader extends SwingWorker<Void, String> {
 		dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 		println("[On ", dateFormat.format(new Date()), "]");
 
-		publish("Scanning profile...");
+		mayPublish("Scanning profile...");
 		println("Scanning profile ", profile.getRootDirectory(), "...");
 
 		Out<Boolean> failure = Out.newOut(false);
@@ -115,7 +118,7 @@ class Loader extends SwingWorker<Void, String> {
 			}
 
 			try {
-				publish("Reading preferences...");
+				mayPublish("Reading preferences...");
 				println("Reading preferences from ", profile.getPreferencesFile(), "...");
 				preferencesFile = new LockedFile(profile.getPreferencesFile(), true);
 				preferences = readNonNull(preferencesFile.readObjectsFrom(),
@@ -150,7 +153,7 @@ class Loader extends SwingWorker<Void, String> {
 				println("...success.");
 			}
 
-			publish("Locking profile...");
+			mayPublish("Locking profile...");
 			println("Locking profile ", profile.getRootDirectory(), "...");
 
 			lockProfile(profile.getPreferencesFile(),
@@ -160,7 +163,7 @@ class Loader extends SwingWorker<Void, String> {
 			println("...success.");
 		}
 		
-		publish("Loading user interface...");
+		mayPublish("Loading user interface...");
 
 		return null;
 	}
@@ -217,6 +220,12 @@ class Loader extends SwingWorker<Void, String> {
 		}
 	}
 
+	private void mayPublish(String status) {
+		if (guiRunning) {
+			publish(status);
+		}
+	}
+
 	private void lockProfile(Path preferencesFile,
 			List<Path> otherFiles,
 			Set<Path> descriptors) throws FileAlreadyLockedException, Exception {
@@ -263,7 +272,7 @@ class Loader extends SwingWorker<Void, String> {
 	private Classpath parseClasspathFile() throws IOException, InterruptedException {
 		try (LockedFile classpathFile = new LockedFile(profile.getClasspathFile(), true)) {
 			try {
-				publish("Parsing classpath...");
+				mayPublish("Parsing classpath...");
 				println("Constructing classpath parser...");
 				Parser<Classpath> parser = new ClasspathParser(profile);
 				println("...success.");
@@ -330,7 +339,7 @@ class Loader extends SwingWorker<Void, String> {
 			classpath = profile.createDefaultClasspath(descriptors);
 		}
 
-		publish("Inspecting classpath...");
+		mayPublish("Inspecting classpath...");
 		println("Inspecting classpath...");
 		Out<Boolean> failure = Out.newOut(false);
 		ClassLoader classLoader = classpath.createClassLoader(profile, Utilities.out, failure);
@@ -364,7 +373,7 @@ class Loader extends SwingWorker<Void, String> {
 			LockedFile cacheFile = cacheFiles.get(k);
 			LockedFile documentationFile = documentationFiles.get(k);
 
-			publish("Reading descriptor " + descriptor + "...");
+			mayPublish("Reading descriptor " + descriptor + "...");
 			try {
 				println("Reading descriptor ", descriptor, "...");
 				buffer = Buffer.readFully(descriptor, buffer, md);
@@ -382,7 +391,7 @@ class Loader extends SwingWorker<Void, String> {
 			if (this.cacheRefreshRequested) {
 				println("Ignoring descriptor cache ", cacheFile, " because a refresh has been requested...");
 			} else {
-				publish("Reading descriptor cache " + cacheFile + "...");
+				mayPublish("Reading descriptor cache " + cacheFile + "...");
 				try {
 					println("Reading descriptor cache ", cacheFile, "...");
 					ObjectInputStream ois = new JuliaObjectInputStream(cacheFile.readBytesFrom(),
@@ -417,7 +426,7 @@ class Loader extends SwingWorker<Void, String> {
 				println("Descriptor ", descriptor, " discarded because there is no parser.");
 			} else {
 				if (parser == null) {
-					publish("Reading localization preferences...");
+					mayPublish("Reading localization preferences...");
 					try {
 						println("Reading localization preferences from ", localizationPreferencesFile, "...");
 						localizationPreferences = readNonNull(localizationPreferencesFile.readObjectsFrom(),
@@ -436,7 +445,7 @@ class Loader extends SwingWorker<Void, String> {
 						println("Empty localization preferences will be used.");
 					}
 
-					publish("Constructing parser...");
+					mayPublish("Constructing parser...");
 					try {
 						println("Constructing parser...");
 						parser = new DescriptorParser(profile,
@@ -455,7 +464,7 @@ class Loader extends SwingWorker<Void, String> {
 					}
 				}
 
-				publish("Parsing descriptor " + descriptor + "...");
+				mayPublish("Parsing descriptor " + descriptor + "...");
 				boolean noExceptionsThrown = true;
 				try {
 					println("Parsing descriptor ", descriptor, "...");
@@ -475,7 +484,7 @@ class Loader extends SwingWorker<Void, String> {
 					println("...success. Plugin successfully retrieved after descriptor parsing: ", plugin, ".");
 					addAvailablePlugin(plugin);
 
-					publish("Writing documentation to " + documentationFile + "...");
+					mayPublish("Writing documentation to " + documentationFile + "...");
 					DocumentationWriter documentationWriter = parser.getDocumentationWriter();
 					try {
 						println("Writing documentation to ", documentationFile, "...");
@@ -489,7 +498,7 @@ class Loader extends SwingWorker<Void, String> {
 					println("...failure. Descriptor contains errors. Descriptor discarded.");
 				}
 
-				publish("Writing descriptor cache " + cacheFile + "...");
+				mayPublish("Writing descriptor cache " + cacheFile + "...");
 				try {
 					println("Writing descriptor cache ", cacheFile, "...");
 					ObjectOutputStream oos = cacheFile.writeObjectsTo();
@@ -507,7 +516,7 @@ class Loader extends SwingWorker<Void, String> {
 
 		if (parser != null && parser.localizationPreferencesChanged()) {
 			assert localizationPreferences != null;
-			publish("Writing localization preferences...");
+			mayPublish("Writing localization preferences...");
 			try {
 				println("Writing localization preferences to ", localizationPreferencesFile, "...");
 				ObjectOutputStream oos = localizationPreferencesFile.writeObjectsTo();
@@ -521,7 +530,7 @@ class Loader extends SwingWorker<Void, String> {
 		}
 
 		if (parserOutputBuilder != null) {
-			publish("Writing parser output...");
+			mayPublish("Writing parser output...");
 			parserOutput = parserOutputBuilder.toString();
 			try {
 				println("Writing parser output to ", parserOutputFile, "...");
@@ -537,7 +546,7 @@ class Loader extends SwingWorker<Void, String> {
 		}
 		
 		try {
-			publish("Ensuring existence of julia.css...");
+			mayPublish("Ensuring existence of julia.css...");
 			println("Ensuring existence of julia.css...");
 			boolean fileWritten = profile.installCss();
 			if (fileWritten) {
@@ -551,7 +560,7 @@ class Loader extends SwingWorker<Void, String> {
 		}
 
 		try {
-			publish("Reading preferences...");
+			mayPublish("Reading preferences...");
 			println("Reading preferences from ", preferencesFile, "...");
 			preferences = readNonNull(preferencesFile.readObjectsFrom(),
 					"preferences",
@@ -569,7 +578,7 @@ class Loader extends SwingWorker<Void, String> {
 		trimToSize(availableRepresentations);
 
 		setProgress(100);
-		publish("Releasing profile...");
+		mayPublish("Releasing profile...");
 		println("Releasing profile ", profile.getRootDirectory(), "...");
 	}
 

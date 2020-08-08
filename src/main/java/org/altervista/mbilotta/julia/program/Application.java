@@ -2536,11 +2536,7 @@ public class Application {
 			}
 		});
 		
-		Profile profile = cli.getProfilePath() == null ?
-				Profile.getDefaultProfile() :
-				new Profile(cli.getProfilePath());
-		
 		JuliaExecutorService executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
-		new Loader(profile, executorService, cli);
+		new Loader(executorService, cli);
 	}
 }
