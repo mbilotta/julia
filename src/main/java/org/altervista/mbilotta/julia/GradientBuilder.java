@@ -66,8 +66,7 @@ public final class GradientBuilder {
     }
 
     public GradientBuilder makeCircular() {
-        Gradient.Stop firstStop = stops.get(0);
-        stops.add(new Gradient.Stop(1f, firstStop.getColor()));
+        stops.add(new Gradient.Stop(1f, stops.get(0).getColor()));
         return this;
     }
 
