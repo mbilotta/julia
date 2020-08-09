@@ -83,7 +83,7 @@ public class MainCli {
 					return new JupCli().execute(args);
 				}
 				if (cliMode.imageGenerationRequested) {
-					return new ImageGenerationCli().execute(args);
+					return new ImageGenerationCli(this).execute(args);
 				}
 				cmd.usage(cmd.getOut());
 				return cmd.getCommandSpec().exitCodeOnUsageHelp();
@@ -99,7 +99,7 @@ public class MainCli {
 				return new JupCli().execute(args);
 			}
 			if (cliMode.imageGenerationRequested) {
-				return new ImageGenerationCli().execute(args);
+				return new ImageGenerationCli(this).execute(args);
 			}
 			Application.run(this);
 			return null;

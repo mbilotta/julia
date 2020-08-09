@@ -60,11 +60,11 @@ public class JupCli implements Runnable {
     description = "License file for this JUP archive.")
   Path licensePath;
 
-  @Option(names = { "-o", "--out" }, paramLabel = "OUTPUT_PATH",
+  @Option(names = { "-o", "--output" }, paramLabel = "OUTPUT_PATH",
     description = "Output file path. If this option is absent, a .jup file named as the last segment of PLUGIN_PATH will be created in the current directory. If OUTPUT_PATH is a directory, such file will be created there. If OUTPUT_PATH ends with \".jup\", OUTPUT_PATH will be the output file.")
   Path outputPath;
 
-  @Option(names = { "-r", "--replace-existing" },
+  @Option(names = { "-x", "--replace-existing" },
     description = "Use this flag to eventually replace an already existing file at output path.")
   boolean replaceExisting;
 
