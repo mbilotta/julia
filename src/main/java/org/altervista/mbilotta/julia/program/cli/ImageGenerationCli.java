@@ -2,6 +2,11 @@ package org.altervista.mbilotta.julia.program.cli;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
+
+import org.altervista.mbilotta.julia.program.JuliaExecutorService;
+import org.altervista.mbilotta.julia.program.Loader;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -61,8 +66,16 @@ public class ImageGenerationCli implements Runnable {
 
     @Override
     public void run() {
-        // TODO Auto-generated method stub
-        
+        JuliaExecutorService executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
+        // Attempt to prevent the EDT from starting
+        FutureTask<Loader> loadTask = new FutureTask<Loader>(() -> new Loader(mainCli).doInBackground()) {
+            @Override
+            protected void done() {
+                // TODO Auto-generated method stub
+                super.done();
+            }
+        };
+        // TODO       
     }
 
     public int execute(String[] args) {

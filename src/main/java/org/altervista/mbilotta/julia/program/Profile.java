@@ -81,9 +81,9 @@ public class Profile {
 		documentationRoot = rootDirectory.resolve("doc");
 		preferences = rootDirectory.resolve("preferences");
 		localizationPreferences = rootDirectory.resolve("localization-preferences");
-		descriptorParserOutput = descriptorRoot.resolve("parser.log");
+		descriptorParserOutput = rootDirectory.resolve("parser.log");
 		classpath = rootDirectory.resolve("classpath.xml");
-		classpathParserOutput = rootDirectory.resolve("parser.log");
+		classpathParserOutput = rootDirectory.resolve("classpath-parser.log");
 		installerOutput = rootDirectory.resolve("installer.log");
 	}
 

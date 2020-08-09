@@ -2537,6 +2537,6 @@ public class Application {
 		});
 		
 		JuliaExecutorService executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
-		new Loader(executorService, cli);
+		new Loader(cli, executorService).loadGui();
 	}
 }
