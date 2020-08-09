@@ -227,6 +227,12 @@ public class Loader extends SwingWorker<Loader, String> {
 		}
 	}
 
+	private void mayUpdateSplashScreen(int progress) {
+		if (guiRunning) {
+			setProgress(progress);
+		}
+	}
+
 	private void mayUpdateSplashScreen(String status) {
 		if (guiRunning) {
 			publish(status);
@@ -374,7 +380,7 @@ public class Loader extends SwingWorker<Loader, String> {
 		
 		for (int k = 0; k < numOfDescriptors; k++) {
 			int progress = (int) (k * 100f / numOfDescriptors);
-			setProgress(progress > 100 ? 100 : progress);
+			mayUpdateSplashScreen(progress > 100 ? 100 : progress);
 
 			LockedFile descriptor = descriptors.get(k);
 			LockedFile cacheFile = cacheFiles.get(k);
@@ -584,7 +590,7 @@ public class Loader extends SwingWorker<Loader, String> {
 		trimToSize(availableFormulas);
 		trimToSize(availableRepresentations);
 
-		setProgress(100);
+		mayUpdateSplashScreen(100);
 		mayUpdateSplashScreen("Releasing profile...");
 		println("Releasing profile ", profile.getRootDirectory(), "...");
 	}
