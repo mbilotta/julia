@@ -4,9 +4,15 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import java.util.prefs.Preferences;
 
 import org.altervista.mbilotta.julia.program.JuliaExecutorService;
 import org.altervista.mbilotta.julia.program.Loader;
+import org.altervista.mbilotta.julia.program.LockedFile;
+import org.altervista.mbilotta.julia.program.Profile;
+import org.altervista.mbilotta.julia.program.parsers.FormulaPlugin;
+import org.altervista.mbilotta.julia.program.parsers.NumberFactoryPlugin;
+import org.altervista.mbilotta.julia.program.parsers.RepresentationPlugin;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -59,6 +65,14 @@ public class ImageGenerationCli implements Runnable {
 
     @Parameters
     List<String> parameters;
+
+    private Profile profile;
+	private Preferences preferences;
+	private LockedFile preferencesFile;
+
+	private List<NumberFactoryPlugin> numberFactories;
+	private List<FormulaPlugin> formulas;
+	private List<RepresentationPlugin> representations;
 
     public ImageGenerationCli(MainCli mainCli) {
         this.mainCli = mainCli;
