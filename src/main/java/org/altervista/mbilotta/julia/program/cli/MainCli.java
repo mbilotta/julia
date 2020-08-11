@@ -110,6 +110,9 @@ public class MainCli {
 				if (cliMode.jupCreationRequested) {
 					return new JupCli().execute(args);
 				}
+				if (cliMode.imageGenerationRequested) {
+					return new ImageGenerationCli(this).execute(args);
+				}
 			}
 			cmd.getErr().println(ex.getMessage());
 			if (!UnmatchedArgumentException.printSuggestions(ex, cmd.getErr())) {

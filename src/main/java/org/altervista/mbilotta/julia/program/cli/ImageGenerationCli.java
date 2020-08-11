@@ -35,10 +35,10 @@ public class ImageGenerationCli implements Runnable {
         description = "Needed to enable image generation CLI mode.")
     boolean imageGenerationRequested;
 
-    @Option(names = { "-w", "--width" })
+    @Option(names = { "-W", "--width" })
     int width;
 
-    @Option(names = { "-h", "--height" })
+    @Option(names = { "-H", "--height" })
     int height;
 
     @Option(names = {"-n", "--number-factory"})
@@ -80,16 +80,27 @@ public class ImageGenerationCli implements Runnable {
 
     @Override
     public void run() {
-        JuliaExecutorService executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
-        // Attempt to prevent the EDT from starting
-        FutureTask<Loader> loadTask = new FutureTask<Loader>(() -> new Loader(mainCli).doInBackground()) {
-            @Override
-            protected void done() {
-                // TODO Auto-generated method stub
-                super.done();
-            }
-        };
-        // TODO       
+        try {
+            Loader loader = new Loader(mainCli);
+            loader.doInBackground();
+
+            // List number factories
+            loader.getAvailableNumberFactories().forEach(nf -> {
+                System.out.println(nf.getId());
+            });
+
+            // List formulas
+            loader.getAvailableFormulas().forEach(f -> {
+                System.out.println(f.getId());
+            });
+
+            // List representations
+            loader.getAvailableRepresentations().forEach(r -> {
+                System.out.println(r.getId());
+            });
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 
     public int execute(String[] args) {
