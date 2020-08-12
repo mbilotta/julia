@@ -3,15 +3,17 @@ package org.altervista.mbilotta.julia.program.cli;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.altervista.mbilotta.julia.Utilities;
 import org.altervista.mbilotta.julia.program.JuliaExecutorService;
+import org.altervista.mbilotta.julia.program.JuliaSetPoint;
 import org.altervista.mbilotta.julia.program.Loader;
-import org.altervista.mbilotta.julia.program.LockedFile;
+import org.altervista.mbilotta.julia.program.PluginInstance;
 import org.altervista.mbilotta.julia.program.Preferences;
-import org.altervista.mbilotta.julia.program.Profile;
+import org.altervista.mbilotta.julia.program.Rectangle;
 import org.altervista.mbilotta.julia.program.parsers.DescriptorParser;
 import org.altervista.mbilotta.julia.program.parsers.FormulaPlugin;
 import org.altervista.mbilotta.julia.program.parsers.NumberFactoryPlugin;
@@ -40,18 +42,21 @@ public class ImageGenerationCli implements Runnable {
     boolean imageGenerationRequested;
 
     @Option(names = { "-W", "--width" })
-    int width;
+    Integer width;
 
     @Option(names = { "-H", "--height" })
-    int height;
+    Integer height;
 
-    @Option(names = {"-n", "--number-factory"})
+    @Option(names = { "-q", "--force-equal-scales" })
+    boolean forceEqualScales;
+
+    @Option(names = { "-n", "--number-factory" })
     String numberFactoryId;
 
-    @Option(names = {"-f", "--formula"})
+    @Option(names = { "-f", "--formula" })
     String formulaId;
 
-    @Option(names = {"-r", "--representation"})
+    @Option(names = { "-r", "--representation" })
     String representationId;
 
     @Option(names = { "-o", "--output" }, paramLabel = "OUTPUT_PATH", required = true,
@@ -70,13 +75,11 @@ public class ImageGenerationCli implements Runnable {
     @Parameters
     List<String> parameters;
 
-    private Profile profile;
-	private Preferences preferences;
-	private LockedFile preferencesFile;
-
-	private List<NumberFactoryPlugin> numberFactories;
-	private List<FormulaPlugin> formulas;
-	private List<RepresentationPlugin> representations;
+    private PluginInstance<NumberFactoryPlugin> numberFactoryInstance;
+    private PluginInstance<FormulaPlugin> formulaInstance;
+    private PluginInstance<RepresentationPlugin> representationInstance;
+    private Rectangle rectangle;
+    private JuliaSetPoint juliaSetPoint;
 
     public ImageGenerationCli(MainCli mainCli) {
         this.mainCli = mainCli;
@@ -87,6 +90,8 @@ public class ImageGenerationCli implements Runnable {
         try {
             Loader loader = new Loader(mainCli);
             loader.loadProfile();
+            // I can't see the need of keeping this lock active
+            loader.getPreferencesFile().close();
 
             warnForParsingProblems(loader);
 
@@ -95,12 +100,7 @@ public class ImageGenerationCli implements Runnable {
                 return;
             }
 
-            Preferences preferences = loader.getPreferences();
-
             // Find matching number factory
-            if (numberFactoryId == null) {
-                numberFactoryId = preferences.getStartupNumberFactory();
-            }
             List<NumberFactoryPlugin> matchingNumberFactories = findMatchingPlugins(loader.getAvailableNumberFactories(), numberFactoryId);
             if (matchingNumberFactories.isEmpty()) {
                 warnForMatchNotFound("number factory", numberFactoryId);
@@ -112,9 +112,6 @@ public class ImageGenerationCli implements Runnable {
             }
 
             // Find matching formula
-            if (formulaId == null) {
-                formulaId = preferences.getStartupFormula();
-            }
             List<FormulaPlugin> matchingFormulas = findMatchingPlugins(loader.getAvailableFormulas(), formulaId);
             if (matchingFormulas.isEmpty()) {
                 warnForMatchNotFound("formula", formulaId);
@@ -126,9 +123,6 @@ public class ImageGenerationCli implements Runnable {
             }
 
             // Find matching representation
-            if (representationId == null) {
-                representationId = preferences.getStartupRepresentation();
-            }
             List<RepresentationPlugin> matchingRepresentations = findMatchingPlugins(loader.getAvailableRepresentations(), representationId);
             if (matchingRepresentations.isEmpty()) {
                 warnForMatchNotFound("representation", representationId);
@@ -138,6 +132,18 @@ public class ImageGenerationCli implements Runnable {
                 warnForMultipleMatches(matchingRepresentations, "representations", representationId);
                 return;
             }
+
+            Preferences preferences = loader.getPreferences();
+            if (width == null) {
+                width = preferences.getImageWidth();
+            }
+            if (height == null) {
+                height = preferences.getImageHeight();
+            }
+
+            numberFactoryInstance = new PluginInstance<NumberFactoryPlugin>(matchingNumberFactories.get(0));
+            formulaInstance = new PluginInstance<FormulaPlugin>(matchingFormulas.get(0));
+            representationInstance = new PluginInstance<RepresentationPlugin>(matchingRepresentations.get(0));
 
             // TBC
         } catch (Exception ex) {
@@ -150,6 +156,10 @@ public class ImageGenerationCli implements Runnable {
     }
 
     private static <P extends Plugin> List<P> findMatchingPlugins(List<P> plugins, String searchString) {
+        if (searchString == null || searchString.isEmpty()) {
+            return plugins;
+        }
+
         List<P> matches = plugins.stream()
             .filter(p -> p.getId().contains(searchString))
             .collect(Collectors.toList());
@@ -185,11 +195,11 @@ public class ImageGenerationCli implements Runnable {
     }
 
     private static void warnForMatchNotFound(String pluginName, String searchString) {
-        Utilities.println("Error: cannot find ", pluginName, " matching search string \"", searchString, "\".");
+        Utilities.println("Error: cannot find ", pluginName, " matching search string \"", Objects.toString(searchString, ""), "\".");
     }
 
     private static void warnForMultipleMatches(List<? extends Plugin> matches, String pluginName, String searchString) {
-        Utilities.println("Error: multiple ", pluginName, " matching search string \"", searchString, "\":");
+        Utilities.println("Error: multiple ", pluginName, " matching search string \"", Objects.toString(searchString, ""), "\":");
         matches.forEach(p -> {
             Utilities.println("- ", p.getId());
         });
