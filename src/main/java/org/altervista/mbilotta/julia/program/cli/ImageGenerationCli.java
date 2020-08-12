@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.altervista.mbilotta.julia.Decimal;
 import org.altervista.mbilotta.julia.Utilities;
 import org.altervista.mbilotta.julia.program.JuliaExecutorService;
 import org.altervista.mbilotta.julia.program.JuliaSetPoint;
@@ -153,6 +154,41 @@ public class ImageGenerationCli implements Runnable {
 
     public int execute(String[] args) {
         return new CommandLine(this).execute(args);
+    }
+
+    private boolean parseParameters() {
+        for (String token : parameters) {
+            String lSide = token.substring(0, token.indexOf("="));
+            String rSide = token.substring(lSide.length());
+            if (lSide.equals("rectangle")) {
+                parseRectangle(rSide);
+            } else if (lSide.equals("c") || lSide.equals("C") || lSide.equals("juliaSetPoint")) {
+                parseJuliaSetPoint(rSide);
+            } else {
+
+            }
+        }
+        return true;
+    }
+
+    private void parseRectangle(String rectangleString) {
+        String[] components = rectangleString.split(",", 4);
+        Decimal re0 = new Decimal(components[0]);
+        Decimal im0 = new Decimal(components[1]);
+        Decimal re1 = new Decimal(components[2]);
+        Decimal im1 = new Decimal(components[3]);
+        rectangle = new Rectangle(re0, im0, re1, im1);
+    }
+
+    private void parseJuliaSetPoint(String juliaSetPointString) {
+        if (juliaSetPointString.equals("default")) {
+            juliaSetPoint = formulaInstance.getPlugin().getDefaultJuliaSetPoint();
+        } else {
+            String[] components = juliaSetPointString.split(",", 2);
+            Decimal re = new Decimal(components[0]);
+            Decimal im = new Decimal(components[1]);
+            juliaSetPoint = new JuliaSetPoint(re, im);
+        }
     }
 
     private static <P extends Plugin> List<P> findMatchingPlugins(List<P> plugins, String searchString) {

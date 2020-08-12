@@ -155,8 +155,8 @@ final class GradientParameter extends Parameter<Gradient> {
 		GradientBuilder builder = new GradientBuilder();
 		String[] stops = s.split("\\^");
 		for (String stop : stops) {
-			String[] components = stop.split("@");
-			String[] color = components[0].split(",");
+			String[] components = stop.split("@", 2);
+			String[] color = components[0].split(",", 4);
 			int r = Integer.parseInt(color[0]);
 			int g = Integer.parseInt(color[1]);
 			int b = Integer.parseInt(color[2]);
