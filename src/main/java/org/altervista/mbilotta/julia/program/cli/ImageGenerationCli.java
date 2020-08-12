@@ -158,8 +158,9 @@ public class ImageGenerationCli implements Runnable {
 
     private boolean parseParameters() {
         for (String token : parameters) {
-            String lSide = token.substring(0, token.indexOf("="));
-            String rSide = token.substring(lSide.length());
+            String[] sides = token.split("=", 2);
+            String lSide = sides[0];
+            String rSide = sides[1];
             if (lSide.equals("rectangle")) {
                 parseRectangle(rSide);
             } else if (lSide.equals("c") || lSide.equals("C") || lSide.equals("juliaSetPoint")) {
