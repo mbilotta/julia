@@ -74,7 +74,7 @@ import org.altervista.mbilotta.julia.program.parsers.DomValidationException;
 import org.xml.sax.SAXException;
 
 
-public class Loader extends SwingWorker<Loader, String> {
+public class Loader extends SwingWorker<Void, String> {
 
 	protected final Profile profile;
 	private LockedFile preferencesFile;
@@ -103,12 +103,23 @@ public class Loader extends SwingWorker<Loader, String> {
 		this.guiRunning = cli.isGuiRunning();
 	}
 
+	public boolean hasMinimalSetOfPlugins() {
+		return availableNumberFactories != null && !availableFormulas.isEmpty()
+			&& availableFormulas != null && !availableFormulas.isEmpty()
+			&& availableRepresentations != null && !availableRepresentations.isEmpty();
+	}
+
 	public void loadGui() {
 		executorService.execute(this);
 	}
 
 	@Override
-	public final Loader doInBackground() throws Exception {
+	protected Void doInBackground() throws Exception {
+		this.loadProfile();
+		return null;
+	}
+
+	public final void loadProfile() throws Exception {
 		dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 		println("[On ", dateFormat.format(new Date()), "]");
 
@@ -171,8 +182,6 @@ public class Loader extends SwingWorker<Loader, String> {
 		}
 		
 		mayUpdateSplashScreen("Loading user interface...");
-
-		return this;
 	}
 
 	@Override
