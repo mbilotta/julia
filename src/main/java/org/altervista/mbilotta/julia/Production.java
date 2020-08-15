@@ -131,6 +131,10 @@ public abstract class Production {
 		return numberFactory;
 	}
 
+	public final Producer createProducer(int index) {
+		return createProducer(iimg.getProgressOf(index));
+	}
+
 	public abstract Producer createProducer(Progress progress);
 
 	public final IntermediateImage getIntermediateImage() {

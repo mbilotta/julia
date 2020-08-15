@@ -20,14 +20,21 @@
 
 package org.altervista.mbilotta.julia.program.cli;
 
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import javax.imageio.ImageIO;
+
+import org.altervista.mbilotta.julia.Consumer;
 import org.altervista.mbilotta.julia.Decimal;
 import org.altervista.mbilotta.julia.Formula;
 import org.altervista.mbilotta.julia.IntermediateImage;
@@ -36,6 +43,7 @@ import org.altervista.mbilotta.julia.Production;
 import org.altervista.mbilotta.julia.Representation;
 import org.altervista.mbilotta.julia.Utilities;
 import org.altervista.mbilotta.julia.math.CoordinateTransform;
+import org.altervista.mbilotta.julia.program.ExecutionObserver;
 import org.altervista.mbilotta.julia.program.JuliaExecutorService;
 import org.altervista.mbilotta.julia.program.JuliaSetPoint;
 import org.altervista.mbilotta.julia.program.Loader;
@@ -206,9 +214,46 @@ public class ImageGenerationCli implements Runnable {
                 intermediateImage, numberFactory, formula,
                 coordinateTransform,
                 juliaSetPoint != null ? juliaSetPoint.toComplex(numberFactory) : null);
-            
 
-            // TBC
+            // Run computation
+            JuliaExecutorService executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
+            CountDownLatch done = new CountDownLatch(numOfProducers);
+            for (int i = 0; i < numOfProducers; i++) {
+                Production.Producer producer = production.createProducer(i);
+                executorService.submitAndObserve(producer, new ExecutionObserver() {
+                    @Override
+                    public void executionCancelled(Runnable target) {
+                        done.countDown();
+                    }
+
+                    @Override
+                    public void executionFinished(Runnable target) {
+                        done.countDown();
+                    }
+                });
+            }
+            done.await();
+
+            if (intermediateImage.isComplete()) {
+                // Instantiate Consumer
+                Consumer consumer = representation.createConsumer(intermediateImage);
+
+                // Compute final image
+                BufferedImage finalImage = consumer.createFinalImage();
+                consumer.consume(finalImage);
+
+                // Write to file
+                File outputFile = outputPath.toFile();
+                if (!replaceExisting) {
+                    if (!outputFile.createNewFile()) {
+                        Utilities.println("Error: cannot write to ", outputPath.toAbsolutePath(), " because a file already exists at that location. Add --replace-existing to overwrite that file.");
+                        return;
+                    }
+                }
+                String fileName = outputFile.getName();
+                String format = fileName.substring(fileName.lastIndexOf('.'));
+                ImageIO.write(finalImage, format, outputFile);
+            }
         } catch (Exception ex) {
             ex.printStackTrace();
         }

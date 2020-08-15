@@ -45,4 +45,9 @@ public abstract class Consumer implements Transparency {
 	public final int getNumOfProducers() {
 		return iimg.getNumOfProducers();
 	}
+
+	public BufferedImage createFinalImage() {
+		int imageType = getTransparency() == Transparency.OPAQUE ? BufferedImage.TYPE_INT_RGB : BufferedImage.TYPE_INT_ARGB;
+		return new BufferedImage(iimg.getWidth(), iimg.getHeight(), imageType);
+	}
 }
