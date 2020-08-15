@@ -225,6 +225,7 @@ public class ImageGenerationCli implements Runnable {
             ", forceEqualScales=" + forceEqualScales +
             ", numberFactoryId=" + numberFactoryId +
             ", formulaId=" + formulaId +
+            ", representationId=" + representationId +
             ", outputPath=" + outputPath +
             ", replaceExisting=" + replaceExisting +
             ", helpRequested=" + helpRequested +
@@ -233,20 +234,22 @@ public class ImageGenerationCli implements Runnable {
     }
 
     private void parseParameters() {
-        for (String parameter : parameters) {
-            String[] sides = parameter.split("=", 2);
-            String lSide = sides[0];
-            String rSide = sides[1];
-            switch (lSide) {
-                case "r":
-                case "rect":
-                case "rectangle": parseRectangle(rSide); break;
-                case "c":
-                case "julia":
-                case "juliaSet":
-                case "juliaSetPoint": parseJuliaSetPoint(rSide); break;
-                default: if (!parseAssignment(lSide, rSide)) throw new IllegalArgumentException(parameter); break;
-            }
+        if (parameters != null) {
+            for (String parameter : parameters) {
+                String[] sides = parameter.split("=", 2);
+                String lSide = sides[0];
+                String rSide = sides[1];
+                switch (lSide) {
+                    case "r":
+                    case "rect":
+                    case "rectangle": parseRectangle(rSide); break;
+                    case "c":
+                    case "julia":
+                    case "juliaSet":
+                    case "juliaSetPoint": parseJuliaSetPoint(rSide); break;
+                    default: if (!parseAssignment(lSide, rSide)) throw new IllegalArgumentException(parameter); break;
+                }
+            }    
         }
     }
 
