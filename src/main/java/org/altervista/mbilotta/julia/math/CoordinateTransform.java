@@ -20,6 +20,8 @@
 
 package org.altervista.mbilotta.julia.math;
 
+import org.altervista.mbilotta.julia.NumberFactory;
+import org.altervista.mbilotta.julia.program.Rectangle;
 
 public final class CoordinateTransform {
 
@@ -27,6 +29,47 @@ public final class CoordinateTransform {
 	private final Real x0, y0;
 	private final Real scaleRe;
 	private final Real scaleIm;
+
+	public static CoordinateTransform createCoordinateTransform(int imgWidth, int imgHeight,
+			Rectangle rectangle, boolean forceEqualScales,
+			NumberFactory nf) {
+		Rectangle rect = rectangle.normalize();
+		if (forceEqualScales) {
+			Real re0 = nf.valueOf(rect.getRe0());
+			Real im0 = nf.valueOf(rect.getIm0());
+			Real re1 = nf.valueOf(rect.getRe1());
+			Real im1 = nf.valueOf(rect.getIm1());
+			Real width = re1.minus(re0);
+			Real height = im0.minus(im1);
+			Real srcRatio = height.dividedBy(width);
+			Real dstRatio = nf.valueOf(imgHeight).dividedBy(imgWidth);
+			Real scaleRe, scaleIm;
+			int result = srcRatio.compareTo(dstRatio);
+			if (result > 0) {
+				scaleRe = height.dividedBy(imgHeight);
+				scaleIm = scaleRe.negate();
+				Real centerRe = re0.plus(re1).dividedBy(2);
+				re0 = centerRe.minus(scaleRe.times((imgWidth - 1) / 2));
+			} else if (result < 0) {
+				scaleRe = width.dividedBy(imgWidth);
+				scaleIm = scaleRe.negate();
+				Real centerIm = im0.plus(im1).dividedBy(2);
+				im0 = centerIm.minus(scaleIm.times((imgHeight - 1) / 2));
+			} else {
+				scaleRe = width.dividedBy(imgWidth);
+				scaleIm = scaleRe.negate();
+			}
+
+			return new CoordinateTransform(re0, im0,
+					nf.zero(), nf.zero(),
+					scaleRe, scaleIm);
+		}
+		
+		return new CoordinateTransform(nf.valueOf(rect.getRe0()), nf.valueOf(rect.getIm0()),
+				nf.valueOf(rect.getRe1()), nf.valueOf(rect.getIm1()),
+				nf.zero(), nf.zero(),
+				nf.valueOf(imgWidth), nf.valueOf(imgHeight));
+	}
 
 	public CoordinateTransform(Real re0, Real im0, Real re1, Real im1,
 			Real x0, Real y0, Real x1, Real y1) {

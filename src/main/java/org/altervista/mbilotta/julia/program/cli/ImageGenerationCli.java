@@ -29,7 +29,12 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.altervista.mbilotta.julia.Decimal;
+import org.altervista.mbilotta.julia.Formula;
+import org.altervista.mbilotta.julia.IntermediateImage;
+import org.altervista.mbilotta.julia.NumberFactory;
+import org.altervista.mbilotta.julia.Representation;
 import org.altervista.mbilotta.julia.Utilities;
+import org.altervista.mbilotta.julia.math.CoordinateTransform;
 import org.altervista.mbilotta.julia.program.JuliaExecutorService;
 import org.altervista.mbilotta.julia.program.JuliaSetPoint;
 import org.altervista.mbilotta.julia.program.Loader;
@@ -70,8 +75,11 @@ public class ImageGenerationCli implements Runnable {
     @Option(names = { "-H", "--height" })
     Integer height;
 
+    @Option(names = { "-t", "--producer-threads" })
+    Integer numOfProducers;
+
     @Option(names = { "-q", "--force-equal-scales" })
-    boolean forceEqualScales;
+    boolean forceEqualScales = true;
 
     @Option(names = { "-n", "--number-factory" })
     String numberFactoryId;
@@ -163,6 +171,9 @@ public class ImageGenerationCli implements Runnable {
             if (height == null) {
                 height = preferences.getImageHeight();
             }
+            if (numOfProducers == null) {
+                numOfProducers = preferences.getNumOfProducerThreads();
+            }
 
             numberFactoryInstance = new PluginInstance<NumberFactoryPlugin>(matchingNumberFactories.get(0));
             formulaInstance = new PluginInstance<FormulaPlugin>(matchingFormulas.get(0));
@@ -179,6 +190,21 @@ public class ImageGenerationCli implements Runnable {
                 }
             }
 
+            // Instantiate NumberFactory
+            NumberFactory numberFactory = (NumberFactory) numberFactoryInstance.create();
+            // Instantiate Formula
+            Formula formula = (Formula) formulaInstance.create(numberFactory);
+            // Instantiate Representation
+            Representation representation = (Representation) representationInstance.create(numberFactory);
+
+            // Instantiate CoordinateTransform
+            CoordinateTransform transform = CoordinateTransform.createCoordinateTransform(width, height, rectangle, forceEqualScales, numberFactory);
+
+            // Instantiate IntermediateImage
+            IntermediateImage iimg = representation.createIntermediateImage(width, height, numOfProducers);
+
+            Utilities.println(toString());
+
             // TBC
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -187,6 +213,23 @@ public class ImageGenerationCli implements Runnable {
 
     public int execute(String[] args) {
         return new CommandLine(this).execute(args);
+    }
+
+    @Override
+    public String toString() {
+        return "[" +
+            "imageGenerationRequested=" + imageGenerationRequested +
+            ", width=" + width +
+            ", height=" + height +
+            ", numOfProducers=" + numOfProducers +
+            ", forceEqualScales=" + forceEqualScales +
+            ", numberFactoryId=" + numberFactoryId +
+            ", formulaId=" + formulaId +
+            ", outputPath=" + outputPath +
+            ", replaceExisting=" + replaceExisting +
+            ", helpRequested=" + helpRequested +
+            ", parameters=" + parameters +
+            "]";
     }
 
     private void parseParameters() {
