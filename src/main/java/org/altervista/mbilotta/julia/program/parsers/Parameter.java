@@ -472,6 +472,10 @@ public abstract class Parameter<T> implements Serializable {
 		return Collections.unmodifiableList(hints);
 	}
 
+	public final boolean hasHint(int index) {
+		return index >= 0 && index < getNumOfHints();
+	}
+
 	public final String getName() {
 		return name;
 	}

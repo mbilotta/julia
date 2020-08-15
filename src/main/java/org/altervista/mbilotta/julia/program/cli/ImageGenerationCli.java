@@ -1,6 +1,7 @@
 package org.altervista.mbilotta.julia.program.cli;
 
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -18,6 +19,7 @@ import org.altervista.mbilotta.julia.program.Rectangle;
 import org.altervista.mbilotta.julia.program.parsers.DescriptorParser;
 import org.altervista.mbilotta.julia.program.parsers.FormulaPlugin;
 import org.altervista.mbilotta.julia.program.parsers.NumberFactoryPlugin;
+import org.altervista.mbilotta.julia.program.parsers.Parameter;
 import org.altervista.mbilotta.julia.program.parsers.Plugin;
 import org.altervista.mbilotta.julia.program.parsers.RepresentationPlugin;
 
@@ -146,6 +148,8 @@ public class ImageGenerationCli implements Runnable {
             formulaInstance = new PluginInstance<FormulaPlugin>(matchingFormulas.get(0));
             representationInstance = new PluginInstance<RepresentationPlugin>(matchingRepresentations.get(0));
 
+            parseParameters();
+
             // TBC
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -156,29 +160,35 @@ public class ImageGenerationCli implements Runnable {
         return new CommandLine(this).execute(args);
     }
 
-    private boolean parseParameters() {
-        for (String token : parameters) {
-            String[] sides = token.split("=", 2);
+    private void parseParameters() {
+        for (String parameter : parameters) {
+            String[] sides = parameter.split("=", 2);
             String lSide = sides[0];
             String rSide = sides[1];
-            if (lSide.equals("rectangle")) {
-                parseRectangle(rSide);
-            } else if (lSide.equals("c") || lSide.equals("C") || lSide.equals("juliaSetPoint")) {
-                parseJuliaSetPoint(rSide);
-            } else {
-
+            switch (lSide) {
+                case "r":
+                case "rect":
+                case "rectangle": parseRectangle(rSide); break;
+                case "c":
+                case "julia":
+                case "juliaSet":
+                case "juliaSetPoint": parseJuliaSetPoint(rSide); break;
+                default: if (!parseAssignment(lSide, rSide)) throw new IllegalArgumentException(parameter); break;
             }
         }
-        return true;
     }
 
     private void parseRectangle(String rectangleString) {
-        String[] components = rectangleString.split(",", 4);
-        Decimal re0 = new Decimal(components[0]);
-        Decimal im0 = new Decimal(components[1]);
-        Decimal re1 = new Decimal(components[2]);
-        Decimal im1 = new Decimal(components[3]);
-        rectangle = new Rectangle(re0, im0, re1, im1);
+        if (rectangleString.equals("default")) {
+            rectangle = null;
+        } else {
+            String[] components = rectangleString.split(",", 4);
+            Decimal re0 = new Decimal(components[0]);
+            Decimal im0 = new Decimal(components[1]);
+            Decimal re1 = new Decimal(components[2]);
+            Decimal im1 = new Decimal(components[3]);
+            rectangle = new Rectangle(re0, im0, re1, im1);    
+        }
     }
 
     private void parseJuliaSetPoint(String juliaSetPointString) {
@@ -190,6 +200,126 @@ public class ImageGenerationCli implements Runnable {
             Decimal im = new Decimal(components[1]);
             juliaSetPoint = new JuliaSetPoint(re, im);
         }
+    }
+
+    private boolean parseAssignment(String lSide, String rSide) {
+        String[] path = lSide.split("\\.", 2);
+        List<PluginInstance<?>> targetInstances;
+        String targetInstanceId = path[0];
+        String targetParameterId = path[1];
+        switch (targetInstanceId) {
+            case "n":
+            case "nf":
+            case "numFact":
+            case "numberFactory": targetInstances = Arrays.asList(numberFactoryInstance); break;
+            case "f":
+            case "formula": targetInstances = Arrays.asList(formulaInstance); break;
+            case "r":
+            case "repr":
+            case "representation": targetInstances = Arrays.asList(representationInstance); break;
+            case "*": targetInstances = Arrays.asList(numberFactoryInstance, formulaInstance, representationInstance); break;
+            default: Utilities.println("Error: cannot parse token \"", targetInstanceId, "\"."); return false;
+        }
+        return assignTo(targetInstances, targetParameterId, rSide);
+    }
+
+    private boolean assignTo(List<PluginInstance<?>> targetInstances, String targetParameterId, String valueString) {
+        String[] path = targetParameterId.split("\\.", 2);
+        if (path.length == 2 && path[0].equals("hint")) {
+            if (path[1].equals("*")) {
+                return targetInstances.stream()
+                    .map(targetInstance -> assignHintGroupTo(targetInstance, valueString))
+                    .reduce(false, (rv, targetInstanceAssigned) -> rv || targetInstanceAssigned);
+            } else if (!path[1].isEmpty()) {
+                return targetInstances.stream()
+                    .map(targetInstance -> assignHintToParameter(targetInstance, path[1], valueString))
+                    .reduce(false, (rv, targetInstanceAssigned) -> rv || targetInstanceAssigned);
+            }
+        } else if (path.length == 1 && !path[0].isEmpty()) {
+            return targetInstances.stream()
+                .map(targetInstance -> assignToParameter(targetInstance, path[0], valueString))
+                .reduce(false, (rv, targetInstanceAssigned) -> rv || targetInstanceAssigned);
+        }
+        Utilities.println("Error: cannot parse token \"", targetParameterId, "\".");
+        return false;
+    }
+
+    private boolean assignToParameter(PluginInstance<?> targetInstance, String targetParameterId, String valueString) {
+        Plugin plugin = targetInstance.getPlugin();
+        Parameter<?> targetParameter = plugin.getParameter(targetParameterId);
+        if (targetParameter == null) {
+            Utilities.println("Warning: parameter ", plugin.getFamily(), ".", targetParameterId, " does not exists.");
+            return false;
+        }
+        Object value = targetParameter.parseValue(valueString);
+        if (!targetParameter.acceptsValue(value)) {
+            throw new IllegalArgumentException(plugin.getFamily() + "." + targetParameterId + " does not permit value " + valueString);
+        }
+        targetInstance.setParameterValue(targetParameter, value);
+        return true;
+    }
+
+    private boolean assignHintToParameter(PluginInstance<?> targetInstance, String targetParameterId, String hintGroupName) {
+        Plugin plugin = targetInstance.getPlugin();
+        Parameter<?> targetParameter = plugin.getParameter(targetParameterId);
+        if (targetParameter == null) {
+            Utilities.println("Warning: parameter ", plugin.getFamily(), ".", targetParameterId, " does not exists.");
+            return false;
+        }
+        List<Object> hintGroup = plugin.getHintGroup(hintGroupName);
+        if (hintGroup == null) {
+            if (hintGroupName.matches("[0-9]+")) {
+                int hintIndex = Integer.valueOf(hintGroupName);
+                if (targetParameter.hasHint(hintIndex)) {
+                    Object value = targetParameter.getHint(hintIndex);
+                    targetInstance.setParameterValue(targetParameter, value);
+                    return true;
+                }
+                Utilities.println("Warning: parameter ", plugin.getFamily(), ".", targetParameterId, " has no hint at index ", hintIndex, ".");
+            } else {
+                Utilities.println("Warning: ", plugin.getFamily(), " has no hint group named ", hintGroupName, ".");
+            }
+            return false;
+        }
+        Object value = hintGroup.get(targetParameter.getIndex());
+        if (value != null) {
+            targetInstance.setParameterValue(targetParameter, value);
+            return true;
+        }
+        Utilities.println("Warning: parameter ", plugin.getFamily(), ".", targetParameterId, " is not touched by hint group named ", hintGroupName, ".");
+        return false;
+    }
+
+    private boolean assignHintGroupTo(PluginInstance<?> targetInstance, String hintGroupName) {
+        Plugin plugin = targetInstance.getPlugin();
+        List<Parameter<?>> parameters = plugin.getParameters();
+        List<Object> hintGroup = plugin.getHintGroup(hintGroupName);
+        if (hintGroup == null) {
+            if (hintGroupName.matches("[0-9]+")) {
+                int hintIndex = Integer.valueOf(hintGroupName);
+                boolean hintFound = false;
+                for (Parameter<?> parameter : parameters) {
+                    if (parameter.hasHint(hintIndex)) {
+                        targetInstance.setParameterValue(parameter, parameter.getHint(hintIndex));
+                        hintFound = true;
+                    }
+                }
+                if (!hintFound) {
+                    Utilities.println("Warning: no parameter of ", plugin.getFamily(), " has a hint at index ", hintIndex, ".");
+                }
+                return hintFound;
+            } else {
+                Utilities.println("Warning: ", plugin.getFamily(), " has no hint group named ", hintGroupName, ".");
+            }
+            return false;
+        }
+        for (Parameter<?> parameter : parameters) {
+            Object hint = hintGroup.get(parameter.getIndex());
+            if (hint != null) {
+                targetInstance.setParameterValue(parameter, hint);
+            }
+        }
+        return true;
     }
 
     private static <P extends Plugin> List<P> findMatchingPlugins(List<P> plugins, String searchString) {

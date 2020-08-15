@@ -128,7 +128,11 @@ public abstract class Plugin implements Serializable {
 	}
 
 	public final List<Object> getHintGroup(String name) {
-		return Collections.unmodifiableList(hintGroups.get(name));
+		List<Object> hintGroup = hintGroups.get(name);
+		if (hintGroup != null) {
+			return Collections.unmodifiableList(hintGroup);
+		}
+		return null;
 	}
 
 	public final JComponent[] createEditors() {
