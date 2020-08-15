@@ -154,9 +154,18 @@ final class GradientParameter extends Parameter<Gradient> {
 	public Gradient parseValue(String s) {
 		GradientBuilder builder = new GradientBuilder();
 		String[] stops = s.split("\\^");
+		if (stops.length < 2) {
+			throw new IllegalArgumentException(s);
+		}
 		for (String stop : stops) {
 			String[] components = stop.split("@", 2);
+			if (components.length < 2) {
+				throw new IllegalArgumentException(s);
+			}
 			String[] color = components[0].split(",", 4);
+			if (color.length < 3) {
+				throw new IllegalArgumentException(s);
+			}
 			int r = Integer.parseInt(color[0]);
 			int g = Integer.parseInt(color[1]);
 			int b = Integer.parseInt(color[2]);

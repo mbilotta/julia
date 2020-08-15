@@ -104,6 +104,9 @@ final class ColorParameter extends Parameter<Color> {
 	@Override
 	public Color parseValue(String s) {
 		String[] components = s.split(",", 4);
+		if (components.length < 3) {
+			throw new IllegalArgumentException(s);
+		}
 		int r = Integer.parseInt(components[0]);
 		int g = Integer.parseInt(components[1]);
 		int b = Integer.parseInt(components[2]);
