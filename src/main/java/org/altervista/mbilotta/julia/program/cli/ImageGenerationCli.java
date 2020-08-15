@@ -32,6 +32,7 @@ import org.altervista.mbilotta.julia.Decimal;
 import org.altervista.mbilotta.julia.Formula;
 import org.altervista.mbilotta.julia.IntermediateImage;
 import org.altervista.mbilotta.julia.NumberFactory;
+import org.altervista.mbilotta.julia.Production;
 import org.altervista.mbilotta.julia.Representation;
 import org.altervista.mbilotta.julia.Utilities;
 import org.altervista.mbilotta.julia.math.CoordinateTransform;
@@ -196,14 +197,16 @@ public class ImageGenerationCli implements Runnable {
             Formula formula = (Formula) formulaInstance.create(numberFactory);
             // Instantiate Representation
             Representation representation = (Representation) representationInstance.create(numberFactory);
-
             // Instantiate CoordinateTransform
-            CoordinateTransform transform = CoordinateTransform.createCoordinateTransform(width, height, rectangle, forceEqualScales, numberFactory);
-
+            CoordinateTransform coordinateTransform = rectangle.createCoordinateTransform(width, height, forceEqualScales, numberFactory);
             // Instantiate IntermediateImage
-            IntermediateImage iimg = representation.createIntermediateImage(width, height, numOfProducers);
-
-            Utilities.println(toString());
+            IntermediateImage intermediateImage = representation.createIntermediateImage(width, height, numOfProducers);
+            // Instantiate Production
+            Production production = representation.createProduction(
+                intermediateImage, numberFactory, formula,
+                coordinateTransform,
+                juliaSetPoint != null ? juliaSetPoint.toComplex(numberFactory) : null);
+            
 
             // TBC
         } catch (Exception ex) {

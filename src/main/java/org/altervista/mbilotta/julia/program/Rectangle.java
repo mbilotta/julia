@@ -26,6 +26,9 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 
 import org.altervista.mbilotta.julia.Decimal;
+import org.altervista.mbilotta.julia.NumberFactory;
+import org.altervista.mbilotta.julia.math.CoordinateTransform;
+import org.altervista.mbilotta.julia.math.Real;
 
 
 public final class Rectangle implements Serializable {
@@ -73,6 +76,45 @@ public final class Rectangle implements Serializable {
 		Decimal[] re = sortAscending(re0, re1);
 		Decimal[] im = sortDescending(im0, im1);
 		return new Rectangle(re[0], im[0], re[1], im[1]);
+	}
+
+	public CoordinateTransform createCoordinateTransform(int imageWidth, int imageHeight, boolean forceEqualScales, NumberFactory nf) {
+		Rectangle rectangle = normalize();
+		if (forceEqualScales) {
+			Real re0 = nf.valueOf(rectangle.getRe0());
+			Real im0 = nf.valueOf(rectangle.getIm0());
+			Real re1 = nf.valueOf(rectangle.getRe1());
+			Real im1 = nf.valueOf(rectangle.getIm1());
+			Real width = re1.minus(re0);
+			Real height = im0.minus(im1);
+			Real srcRatio = height.dividedBy(width);
+			Real dstRatio = nf.valueOf(imageHeight).dividedBy(imageWidth);
+			Real scaleRe, scaleIm;
+			int result = srcRatio.compareTo(dstRatio);
+			if (result > 0) {
+				scaleRe = height.dividedBy(imageHeight);
+				scaleIm = scaleRe.negate();
+				Real centerRe = re0.plus(re1).dividedBy(2);
+				re0 = centerRe.minus(scaleRe.times((imageWidth - 1) / 2));
+			} else if (result < 0) {
+				scaleRe = width.dividedBy(imageWidth);
+				scaleIm = scaleRe.negate();
+				Real centerIm = im0.plus(im1).dividedBy(2);
+				im0 = centerIm.minus(scaleIm.times((imageHeight - 1) / 2));
+			} else {
+				scaleRe = width.dividedBy(imageWidth);
+				scaleIm = scaleRe.negate();
+			}
+
+			return new CoordinateTransform(re0, im0,
+					nf.zero(), nf.zero(),
+					scaleRe, scaleIm);
+		}
+		
+		return new CoordinateTransform(nf.valueOf(rectangle.getRe0()), nf.valueOf(rectangle.getIm0()),
+				nf.valueOf(rectangle.getRe1()), nf.valueOf(rectangle.getIm1()),
+				nf.zero(), nf.zero(),
+				nf.valueOf(imageWidth), nf.valueOf(imageHeight));
 	}
 
 	public boolean equals(Object o) {

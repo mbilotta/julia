@@ -1307,7 +1307,7 @@ public class Application {
 	private static CoordinateTransform createCoordinateTransform(int imgWidth, int imgHeight,
 			Image header,
 			NumberFactory nf) {
-		return CoordinateTransform.createCoordinateTransform(imgWidth, imgHeight, header.getRectangle(), header.getForceEqualScales(), nf);
+		return header.getRectangle().createCoordinateTransform(imgWidth, imgHeight, header.getForceEqualScales(), nf);
 	}
 
 	private void load(Image header, IntermediateImage iimg, boolean runProduction) {

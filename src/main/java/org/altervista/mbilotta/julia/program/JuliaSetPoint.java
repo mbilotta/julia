@@ -26,6 +26,8 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 
 import org.altervista.mbilotta.julia.Decimal;
+import org.altervista.mbilotta.julia.NumberFactory;
+import org.altervista.mbilotta.julia.math.Complex;
 
 
 public final class JuliaSetPoint implements Serializable {
@@ -50,6 +52,10 @@ public final class JuliaSetPoint implements Serializable {
 
 	public Decimal getIm() {
 		return im;
+	}
+
+	public Complex toComplex(NumberFactory nf) {
+		return nf.valueOf(re, im);
 	}
 
 	@Override
