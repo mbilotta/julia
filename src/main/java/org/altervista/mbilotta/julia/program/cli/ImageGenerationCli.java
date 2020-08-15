@@ -170,6 +170,15 @@ public class ImageGenerationCli implements Runnable {
 
             parseParameters();
 
+            // Assign default rectangle
+            if (rectangle == null) {
+                if (juliaSetPoint == null) {
+                    rectangle = formulaInstance.getPlugin().getDefaultMandelbrotSetRectangle();
+                } else {
+                    rectangle = formulaInstance.getPlugin().getDefaultJuliaSetRectangle();
+                }
+            }
+
             // TBC
         } catch (Exception ex) {
             ex.printStackTrace();
