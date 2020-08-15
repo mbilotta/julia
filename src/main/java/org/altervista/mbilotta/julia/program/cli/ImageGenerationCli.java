@@ -251,7 +251,8 @@ public class ImageGenerationCli implements Runnable {
                     }
                 }
                 String fileName = outputFile.getName();
-                String format = fileName.substring(fileName.lastIndexOf('.'));
+                String extension = fileName.substring(fileName.lastIndexOf('.'));
+                String format = extension.substring(1);
                 ImageIO.write(finalImage, format, outputFile);
             }
         } catch (Exception ex) {
