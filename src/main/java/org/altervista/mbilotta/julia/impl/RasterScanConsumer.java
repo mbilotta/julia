@@ -77,8 +77,8 @@ public class RasterScanConsumer extends Consumer {
 
 	private int mergeOffsets(int[] percentagesRv) {
 		int numOfProducers = iimg.getNumOfProducers();
-		assert percentagesRv != null;
-		assert numOfProducers == percentagesRv.length;
+		assert percentagesRv == null || percentagesRv.length == numOfProducers;
+
 		int min = Integer.MAX_VALUE;
 		for (int i = 0; i < numOfProducers; i++) {
 			Progress progress = iimg.getProgressOf(i);
@@ -89,8 +89,10 @@ public class RasterScanConsumer extends Consumer {
 				min = offset;
 			}
 
-			int percentage = (100 * (offset - initialOffset)) / (finalOffset - initialOffset);
-			percentagesRv[i] = percentage;
+			if (percentagesRv != null) {
+				int percentage = (100 * (offset - initialOffset)) / (finalOffset - initialOffset);
+				percentagesRv[i] = percentage;
+			}
 		}
 		return min;
 	}

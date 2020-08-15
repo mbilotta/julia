@@ -108,8 +108,7 @@ public class ProgressiveRefinementConsumer extends Consumer {
 
 	private ProgressValue mergeProgressValues(int[] percentagesRv) {
 		int numOfProducers = iimg.getNumOfProducers();
-		assert percentagesRv != null;
-		assert numOfProducers == percentagesRv.length;
+		assert percentagesRv == null || percentagesRv.length == numOfProducers;
 
 		int numOfPasses = Integer.numberOfTrailingZeros(getInitialChunkSize(iimg)) + 1;
 		long passLength = (long)iimg.getWidth() * iimg.getHeight();
@@ -121,9 +120,11 @@ public class ProgressiveRefinementConsumer extends Consumer {
 				min = value;
 			}
 
-			int currentPass = numOfPasses - Integer.numberOfTrailingZeros(value.getChunkSize()) - 1;
-			long currentProgress = currentPass * passLength + computeStepProgress(value);
-			percentagesRv[i] = (int)((100 * currentProgress) / fullLength);
+			if (percentagesRv != null) {
+				int currentPass = numOfPasses - Integer.numberOfTrailingZeros(value.getChunkSize()) - 1;
+				long currentProgress = currentPass * passLength + computeStepProgress(value);
+				percentagesRv[i] = (int)((100 * currentProgress) / fullLength);
+			}
 		}
 
 		return min;

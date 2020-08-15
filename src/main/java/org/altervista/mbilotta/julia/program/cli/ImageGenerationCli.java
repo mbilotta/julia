@@ -240,7 +240,7 @@ public class ImageGenerationCli implements Runnable {
 
                 // Compute final image
                 BufferedImage finalImage = consumer.createFinalImage();
-                consumer.consume(finalImage);
+                consumer.consume(finalImage, null);
 
                 // Write to file
                 File outputFile = outputPath.toFile();
