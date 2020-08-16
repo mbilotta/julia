@@ -238,7 +238,7 @@ public abstract class Parser<T> {
 	}
 
 	public static void println(XmlPath path, Object value) {
-		Utilities.println(path, " = ", value);
+		Utilities.debug.println(path, " = ", value);
 	}
 
 	public static String getNodeValue(Node node) {
