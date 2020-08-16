@@ -30,6 +30,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.imageio.ImageIO;
@@ -359,21 +360,22 @@ public class ImageGenerationCli implements Runnable {
     }
 
     private boolean assignTo(List<PluginInstance<?>> targetInstances, String targetParameterId, String valueString) {
+        final Predicate<? super Boolean> IDENTITY = a -> a;
         String[] path = targetParameterId.split("\\.", 2);
         if (path.length == 2 && path[0].equals("hint")) {
             if (path[1].equals("*")) {
                 return targetInstances.stream()
                     .map(targetInstance -> assignHintGroupTo(targetInstance, valueString))
-                    .reduce(false, (rv, targetInstanceAssigned) -> rv || targetInstanceAssigned);
+                    .anyMatch(IDENTITY);
             } else if (!path[1].isEmpty()) {
                 return targetInstances.stream()
                     .map(targetInstance -> assignHintToParameter(targetInstance, path[1], valueString))
-                    .reduce(false, (rv, targetInstanceAssigned) -> rv || targetInstanceAssigned);
+                    .anyMatch(IDENTITY);
             }
         } else if (path.length == 1 && !path[0].isEmpty()) {
             return targetInstances.stream()
                 .map(targetInstance -> assignToParameter(targetInstance, path[0], valueString))
-                .reduce(false, (rv, targetInstanceAssigned) -> rv || targetInstanceAssigned);
+                .anyMatch(IDENTITY);
         }
         Utilities.println("Error: cannot parse token \"", targetParameterId, "\".");
         return false;
