@@ -114,6 +114,8 @@ public class MainCli {
 			// invalid user input: print error message and usage help
 		} catch (ParameterException ex) {
 			if (ex instanceof UnmatchedArgumentException) {
+				Utilities.debug.setEnabled(debug);
+
 				if (cliMode.jupCreationRequested) {
 					return new JupCli().execute(args);
 				}

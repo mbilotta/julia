@@ -128,6 +128,7 @@ public class ImageGenerationCli implements Runnable {
     @Override
     public void run() {
         try {
+            Utilities.println("Loading profile...");
             Loader loader = new Loader(mainCli);
             loader.loadProfile();
             // I can't see the need of keeping this lock active
@@ -216,6 +217,7 @@ public class ImageGenerationCli implements Runnable {
                 juliaSetPoint != null ? juliaSetPoint.toComplex(numberFactory) : null);
 
             // Run computation
+            Utilities.println("Rendering intermediate image...");
             JuliaExecutorService executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
             CountDownLatch done = new CountDownLatch(numOfProducers);
             for (int i = 0; i < numOfProducers; i++) {
@@ -235,6 +237,8 @@ public class ImageGenerationCli implements Runnable {
             done.await();
 
             if (intermediateImage.isComplete()) {
+                Utilities.println("Rendering final image...");
+
                 // Instantiate Consumer
                 Consumer consumer = representation.createConsumer(intermediateImage);
 
@@ -243,6 +247,7 @@ public class ImageGenerationCli implements Runnable {
                 consumer.consume(finalImage, null);
 
                 // Write to file
+                Utilities.println("Writing to output file...");
                 File outputFile = outputPath.toFile();
                 if (!replaceExisting) {
                     if (!outputFile.createNewFile()) {
