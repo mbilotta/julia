@@ -324,7 +324,7 @@ public class ImageGenerationCli implements Runnable {
         } else {
             String[] components = juliaSetPointString.split(",", 2);
             if (components.length < 2) {
-                throw new IllegalArgumentException("cannot parse julia set point \"" + juliaSetPointString + "\"");
+                throw new IllegalArgumentException("cannot parse Julia set point \"" + juliaSetPointString + "\"");
             }
             Decimal re = new Decimal(components[0]);
             Decimal im = new Decimal(components[1]);
