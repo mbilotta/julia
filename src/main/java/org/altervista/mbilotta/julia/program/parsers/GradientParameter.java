@@ -155,16 +155,16 @@ final class GradientParameter extends Parameter<Gradient> {
 		GradientBuilder builder = new GradientBuilder();
 		String[] stops = s.split("\\^");
 		if (stops.length < 2) {
-			throw new IllegalArgumentException(s);
+			throw new IllegalArgumentException("cannot parse gradient \"" + s + "\"");
 		}
 		for (String stop : stops) {
 			String[] components = stop.split("@", 2);
 			if (components.length < 2) {
-				throw new IllegalArgumentException(s);
+				throw new IllegalArgumentException("cannot parse token \"" + stop + "\" of \"" + s + "\"");
 			}
 			String[] color = components[0].split(",", 4);
 			if (color.length < 3) {
-				throw new IllegalArgumentException(s);
+				throw new IllegalArgumentException("cannot parse token \"" + components[0] + "\" of \"" + s + "\"");
 			}
 			int r = Integer.parseInt(color[0]);
 			int g = Integer.parseInt(color[1]);
