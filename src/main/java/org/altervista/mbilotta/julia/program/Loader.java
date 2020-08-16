@@ -21,10 +21,7 @@
 package org.altervista.mbilotta.julia.program;
 
 import static org.altervista.mbilotta.julia.Utilities.append;
-import static org.altervista.mbilotta.julia.Utilities.out;
-import static org.altervista.mbilotta.julia.Utilities.print;
-import static org.altervista.mbilotta.julia.Utilities.printStackTrace;
-import static org.altervista.mbilotta.julia.Utilities.println;
+import static org.altervista.mbilotta.julia.Utilities.debug;
 import static org.altervista.mbilotta.julia.Utilities.read;
 import static org.altervista.mbilotta.julia.Utilities.readNonNull;
 import static org.altervista.mbilotta.julia.Utilities.toHexString;
@@ -121,33 +118,33 @@ public class Loader extends SwingWorker<Void, String> {
 
 	public final void loadProfile() throws Exception {
 		dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-		println("[On ", dateFormat.format(new Date()), "]");
+		debug.println("[On ", dateFormat.format(new Date()), "]");
 
 		mayUpdateSplashScreen("Scanning profile...");
-		println("Scanning profile ", profile.getRootDirectory(), "...");
+		debug.println("Scanning profile ", profile.getRootDirectory(), "...");
 
 		Out<Boolean> failure = Out.newOut(false);
-		List<Path> descriptors = profile.scanForDescriptors(out, failure);
+		List<Path> descriptors = profile.scanForDescriptors(debug, failure);
 		if (descriptors.isEmpty()) {
 			if (failure.get()) {
-				println("...failure. Some descriptors may got discarded.");
+				debug.println("...failure. Some descriptors may got discarded.");
 			} else {
-				println("...success.");
+				debug.println("...success.");
 			}
 
 			try {
 				mayUpdateSplashScreen("Reading preferences...");
-				println("Reading preferences from ", profile.getPreferencesFile(), "...");
+				debug.println("Reading preferences from ", profile.getPreferencesFile(), "...");
 				preferencesFile = new LockedFile(profile.getPreferencesFile(), true);
 				preferences = readNonNull(preferencesFile.readObjectsFrom(),
 						"preferences",
 						Preferences.class);
-				println("...success: ", preferences);
+				debug.println("...success: ", preferences);
 			} catch (IOException | ClassNotFoundException e) {
 				preferences = new Preferences();
-				print("...failure. Cause: ");
-				printStackTrace(e);
-				println("Default preferences will be used.");
+				debug.print("...failure. Cause: ");
+				debug.printStackTrace(e);
+				debug.println("Default preferences will be used.");
 			}
 		} else {
 			List<Path> otherFiles = new ArrayList<>(2 + descriptors.size() * 3);
@@ -166,19 +163,19 @@ public class Loader extends SwingWorker<Void, String> {
 			descriptorSet.addAll(descriptors);
 
 			if (failure.get()) {
-				println("...failure. Some descriptors may got discarded.");
+				debug.println("...failure. Some descriptors may got discarded.");
 			} else {
-				println("...success.");
+				debug.println("...success.");
 			}
 
 			mayUpdateSplashScreen("Locking profile...");
-			println("Locking profile ", profile.getRootDirectory(), "...");
+			debug.println("Locking profile ", profile.getRootDirectory(), "...");
 
 			lockProfile(profile.getPreferencesFile(),
 					otherFiles,
 					descriptorSet);
 
-			println("...success.");
+			debug.println("...success.");
 		}
 		
 		mayUpdateSplashScreen("Loading user interface...");
@@ -295,47 +292,47 @@ public class Loader extends SwingWorker<Void, String> {
 		try (LockedFile classpathFile = new LockedFile(profile.getClasspathFile(), true)) {
 			try {
 				mayUpdateSplashScreen("Parsing classpath...");
-				println("Constructing classpath parser...");
+				debug.println("Constructing classpath parser...");
 				Parser<Classpath> parser = new ClasspathParser(profile);
-				println("...success.");
+				debug.println("...success.");
 
 				StringBuilder parserOutputBuilder = new StringBuilder();
 				append(parserOutputBuilder, "[On ", dateFormat.format(new Date()), "]", System.lineSeparator());
 				try {
-					println("Parsing classpath...");
+					debug.println("Parsing classpath...");
 					Classpath rv = parser.parse(classpathFile, parserOutputBuilder);
 					if (rv == null) {
-						println("...failure. Classpath contains errors. Default classpath will be used.");
+						debug.println("...failure. Classpath contains errors. Default classpath will be used.");
 					} else if (parser.getErrorCount() > 0) {
-						println("...failure. Classpath contains errors. Some entries were discarded.");
+						debug.println("...failure. Classpath contains errors. Some entries were discarded.");
 					} else {
-						println("...success.");
+						debug.println("...success.");
 					}
 					return rv;
 				} catch (SAXException | IOException | DomValidationException | ClassValidationException e) {
-					print("...failure. Cause: ");
-					printStackTrace(e);
-					println("Default classpath will be used.");
+					debug.print("...failure. Cause: ");
+					debug.printStackTrace(e);
+					debug.println("Default classpath will be used.");
 					return null;
 				} finally {
 					try (LockedFile parserOutputFile = new LockedFile(profile.getClasspathParserOutputFile(), false)) {
 						try {
-							println("Writing classpath parser output to ", parserOutputFile, "...");
+							debug.println("Writing classpath parser output to ", parserOutputFile, "...");
 							Writer w = parserOutputFile.writeCharsTo(true);
 							w.write(parserOutputBuilder.toString());
 							w.write(System.lineSeparator());
 							w.flush();
-							println("...success.");
+							debug.println("...success.");
 						} catch (IOException e) {
-							print("...failure. Cause: ");
-							printStackTrace(e);
+							debug.print("...failure. Cause: ");
+							debug.printStackTrace(e);
 						}
 					}
 				}
 			} catch (SAXException | ParserConfigurationException e) {
-				print("...failure. Cause: ");
-				printStackTrace(e);
-				println("Default classpath will be used.");
+				debug.print("...failure. Cause: ");
+				debug.printStackTrace(e);
+				debug.println("Default classpath will be used.");
 				return null;
 			}
 		} catch (NoSuchFileException e) {
@@ -344,7 +341,7 @@ public class Loader extends SwingWorker<Void, String> {
 	}
 
 	private void loadLockedProfile(List<LockedFile> lockedProfile) throws Exception {
-		println("...success.");
+		debug.println("...success.");
 
 		int offset = 0;
 		preferencesFile = lockedProfile.get(offset++);
@@ -362,13 +359,13 @@ public class Loader extends SwingWorker<Void, String> {
 		}
 
 		mayUpdateSplashScreen("Inspecting classpath...");
-		println("Inspecting classpath...");
+		debug.println("Inspecting classpath...");
 		Out<Boolean> failure = Out.newOut(false);
 		ClassLoader classLoader = classpath.createClassLoader(profile, Utilities.out, failure);
 		if (failure.get()) {
-			println("...failure. Some paths may got discarded.");
+			debug.println("...failure. Some paths may got discarded.");
 		} else {
-			println("...success.");
+			debug.println("...success.");
 		}
 
 		StringBuilder parserOutputBuilder = null;
@@ -397,94 +394,94 @@ public class Loader extends SwingWorker<Void, String> {
 
 			mayUpdateSplashScreen("Reading descriptor " + descriptor + "...");
 			try {
-				println("Reading descriptor ", descriptor, "...");
+				debug.println("Reading descriptor ", descriptor, "...");
 				buffer = Buffer.readFully(descriptor, buffer, md);
 			} catch (IOException e) {
-				print("...failure. Cause: ");
-				printStackTrace(e);
-				println("Descriptor ", descriptor, " discarded.");
+				debug.print("...failure. Cause: ");
+				debug.printStackTrace(e);
+				debug.println("Descriptor ", descriptor, " discarded.");
 				continue;
 			}
 
 			byte[] newChecksum = md.digest();
-			println("...success. ", buffer.size(), " bytes read. MD5 checksum is ", new Checksum(newChecksum), ".");
+			debug.println("...success. ", buffer.size(), " bytes read. MD5 checksum is ", new Checksum(newChecksum), ".");
 
 			Plugin plugin = null;
 			if (this.cacheRefreshRequested) {
-				println("Ignoring descriptor cache ", cacheFile, " because a refresh has been requested...");
+				debug.println("Ignoring descriptor cache ", cacheFile, " because a refresh has been requested...");
 			} else if (guiRunning && documentationFile.isEmpty()) {
-				println("Ignoring descriptor cache ", cacheFile, " because the documentation file is empty...");
+				debug.println("Ignoring descriptor cache ", cacheFile, " because the documentation file is empty...");
 			} else {
 				mayUpdateSplashScreen("Reading descriptor cache " + cacheFile + "...");
 				try {
-					println("Reading descriptor cache ", cacheFile, "...");
+					debug.println("Reading descriptor cache ", cacheFile, "...");
 					ObjectInputStream ois = new JuliaObjectInputStream(cacheFile.readBytesFrom(),
 							classLoader,
 							authorCache, decimalCache, colorCache, gradientCache);
-					println("...reading cached checksum...");
+					debug.println("...reading cached checksum...");
 					byte[] oldChecksum = new byte[ois.readInt()];
 					ois.readFully(oldChecksum);
 					if (Arrays.equals(newChecksum, oldChecksum)) {
-						println("...checksums match! Continue reading...");
+						debug.println("...checksums match! Continue reading...");
 						plugin = read(ois, "plugin", Plugin.class);
 						if (plugin != null) {
-							println("...success. Plugin successfully retrieved from descriptor cache: ", plugin, ".");
+							debug.println("...success. Plugin successfully retrieved from descriptor cache: ", plugin, ".");
 						} else {
-							println("...descriptor was previously parsed with errors. Descriptor ", descriptor, " discarded.");
+							debug.println("...descriptor was previously parsed with errors. Descriptor ", descriptor, " discarded.");
 							continue;
 						}
 					} else {
-						println("...checksums differ. Cached checksum is ", new Checksum(oldChecksum),
+						debug.println("...checksums differ. Cached checksum is ", new Checksum(oldChecksum),
 								". Descriptor ", descriptor, " will be reparsed.");
 					}
 				} catch (IOException | ClassNotFoundException e) {
-					print("...failure. Cause: ");
-					printStackTrace(e);
-					println("Descriptor ", descriptor, " will be reparsed.");
+					debug.print("...failure. Cause: ");
+					debug.printStackTrace(e);
+					debug.println("Descriptor ", descriptor, " will be reparsed.");
 				}
 			}
 			
 			if (plugin != null) {
 				addAvailablePlugin(plugin);
 			} else if (parserInstantiationFailed) {
-				println("Descriptor ", descriptor, " discarded because there is no parser.");
+				debug.println("Descriptor ", descriptor, " discarded because there is no parser.");
 			} else {
 				if (parser == null) {
 					mayUpdateSplashScreen("Reading localization preferences...");
 					try {
-						println("Reading localization preferences from ", localizationPreferencesFile, "...");
+						debug.println("Reading localization preferences from ", localizationPreferencesFile, "...");
 						localizationPreferences = readNonNull(localizationPreferencesFile.readObjectsFrom(),
 								"localizationPreferences",
 								BinaryRelation.class);
 						if (localizationPreferences.hasElementType(String.class)) {
-							println("...success: ", localizationPreferences);
+							debug.println("...success: ", localizationPreferences);
 						} else {
 							localizationPreferences = new BinaryRelation<>();
-							println("...failure. Localization preferences broken. Empty preferences will be used.");
+							debug.println("...failure. Localization preferences broken. Empty preferences will be used.");
 						}
 					} catch (IOException | ClassNotFoundException e) {
 						localizationPreferences = new BinaryRelation<>();
-						print("...failure. Cause: ");
-						printStackTrace(e);
-						println("Empty localization preferences will be used.");
+						debug.print("...failure. Cause: ");
+						debug.printStackTrace(e);
+						debug.println("Empty localization preferences will be used.");
 					}
 
 					mayUpdateSplashScreen("Constructing parser...");
 					try {
-						println("Constructing parser...");
+						debug.println("Constructing parser...");
 						parser = new DescriptorParser(profile,
 								classLoader,
 								localizationPreferences,
 								authorCache, decimalCache, colorCache, gradientCache,
 								guiRunning);
-						println("...success.");
+						debug.println("...success.");
 						parserOutputBuilder = new StringBuilder();
 						append(parserOutputBuilder, "[On ", dateFormat.format(new Date()), "]", System.lineSeparator());
 					} catch (SAXException | ParserConfigurationException e) {
 						parserInstantiationFailed = true;
-						print("...failure. Cause: ");
-						printStackTrace(e);
-						println("Descriptor ", descriptor, " discarded because there is no parser.");
+						debug.print("...failure. Cause: ");
+						debug.printStackTrace(e);
+						debug.println("Descriptor ", descriptor, " discarded because there is no parser.");
 						continue;
 					}
 				}
@@ -492,13 +489,13 @@ public class Loader extends SwingWorker<Void, String> {
 				mayUpdateSplashScreen("Parsing descriptor " + descriptor + "...");
 				boolean noExceptionsThrown = true;
 				try {
-					println("Parsing descriptor ", descriptor, "...");
+					debug.println("Parsing descriptor ", descriptor, "...");
 					plugin = parser.parse(buffer, descriptor.getPath(), parserOutputBuilder);
 				} catch (SAXException | DomValidationException e) {
 					noExceptionsThrown = false;
-					print("...failure. Cause: ");
-					printStackTrace(e);
-					println("Descriptor discarded.");
+					debug.print("...failure. Cause: ");
+					debug.printStackTrace(e);
+					debug.println("Descriptor discarded.");
 				}
 
 				problemCount[DescriptorParser.Problem.WARNING] += parser.getWarningCount();
@@ -506,37 +503,37 @@ public class Loader extends SwingWorker<Void, String> {
 				problemCount[DescriptorParser.Problem.FATAL_ERROR] += parser.getFatalErrorCount();
 
 				if (plugin != null) {
-					println("...success. Plugin successfully retrieved after descriptor parsing: ", plugin, ".");
+					debug.println("...success. Plugin successfully retrieved after descriptor parsing: ", plugin, ".");
 					addAvailablePlugin(plugin);
 
 					if (guiRunning || parser.getDocumentationLanguage() != null) {
 						mayUpdateSplashScreen("Writing documentation to " + documentationFile + "...");
 						DocumentationWriter documentationWriter = parser.getDocumentationWriter();
 						try {
-							println("Writing documentation to ", documentationFile, "...");
+							debug.println("Writing documentation to ", documentationFile, "...");
 							boolean success = documentationWriter.writeTo(documentationFile);
-							println(success ? "...success." : "...failure.");
+							debug.println(success ? "...success." : "...failure.");
 						} catch (IOException e) {
-							print("...failure. Cause: ");
-							printStackTrace(e);
+							debug.print("...failure. Cause: ");
+							debug.printStackTrace(e);
 						}
 					}
 				} else if (noExceptionsThrown) {
-					println("...failure. Descriptor contains errors. Descriptor discarded.");
+					debug.println("...failure. Descriptor contains errors. Descriptor discarded.");
 				}
 
 				mayUpdateSplashScreen("Writing descriptor cache " + cacheFile + "...");
 				try {
-					println("Writing descriptor cache ", cacheFile, "...");
+					debug.println("Writing descriptor cache ", cacheFile, "...");
 					ObjectOutputStream oos = cacheFile.writeObjectsTo();
 					oos.writeInt(newChecksum.length);
 					oos.write(newChecksum);
 					oos.writeObject(plugin);
 					oos.flush();
-					println("...success.");
+					debug.println("...success.");
 				} catch (IOException e) {
-					print("...failure. Cause: ");
-					printStackTrace(e);
+					debug.print("...failure. Cause: ");
+					debug.printStackTrace(e);
 				}
 			}
 		}
@@ -545,14 +542,14 @@ public class Loader extends SwingWorker<Void, String> {
 			assert localizationPreferences != null;
 			mayUpdateSplashScreen("Writing localization preferences...");
 			try {
-				println("Writing localization preferences to ", localizationPreferencesFile, "...");
+				debug.println("Writing localization preferences to ", localizationPreferencesFile, "...");
 				ObjectOutputStream oos = localizationPreferencesFile.writeObjectsTo();
 				oos.writeObject(localizationPreferences);
 				oos.flush();
-				println("...success.");
+				debug.println("...success.");
 			} catch (IOException e) {
-				print("...failure. Cause: ");
-				printStackTrace(e);
+				debug.print("...failure. Cause: ");
+				debug.printStackTrace(e);
 			}
 		}
 
@@ -560,44 +557,44 @@ public class Loader extends SwingWorker<Void, String> {
 			mayUpdateSplashScreen("Writing parser output...");
 			parserOutput = parserOutputBuilder.toString();
 			try {
-				println("Writing parser output to ", parserOutputFile, "...");
+				debug.println("Writing parser output to ", parserOutputFile, "...");
 				Writer w = parserOutputFile.writeCharsTo(true);
 				w.write(parserOutput);
 				w.write(System.lineSeparator());
 				w.flush();
-				println("...success.");
+				debug.println("...success.");
 			} catch (IOException e) {
-				print("...failure. Cause: ");
-				printStackTrace(e);
+				debug.print("...failure. Cause: ");
+				debug.printStackTrace(e);
 			}
 		}
 		
 		try {
 			mayUpdateSplashScreen("Ensuring existence of julia.css...");
-			println("Ensuring existence of julia.css...");
+			debug.println("Ensuring existence of julia.css...");
 			boolean fileWritten = profile.installCss();
 			if (fileWritten) {
-				println("...success. File written.");
+				debug.println("...success. File written.");
 			} else {
-				println("...success. File already existent.");
+				debug.println("...success. File already existent.");
 			}
 		} catch (IOException e) {
-			print("...failure. Cause: ");
-			printStackTrace(e);
+			debug.print("...failure. Cause: ");
+			debug.printStackTrace(e);
 		}
 
 		try {
 			mayUpdateSplashScreen("Reading preferences...");
-			println("Reading preferences from ", preferencesFile, "...");
+			debug.println("Reading preferences from ", preferencesFile, "...");
 			preferences = readNonNull(preferencesFile.readObjectsFrom(),
 					"preferences",
 					Preferences.class);
-			println("...success: ", preferences);
+			debug.println("...success: ", preferences);
 		} catch (IOException | ClassNotFoundException e) {
 			preferences = new Preferences();
-			print("...failure. Cause: ");
-			printStackTrace(e);
-			println("Default preferences will be used.");
+			debug.print("...failure. Cause: ");
+			debug.printStackTrace(e);
+			debug.println("Default preferences will be used.");
 		}
 
 		trimToSize(availableNumberFactories);
@@ -606,7 +603,7 @@ public class Loader extends SwingWorker<Void, String> {
 
 		mayUpdateSplashScreen(100);
 		mayUpdateSplashScreen("Releasing profile...");
-		println("Releasing profile ", profile.getRootDirectory(), "...");
+		debug.println("Releasing profile ", profile.getRootDirectory(), "...");
 	}
 
 	private static final class Checksum {
