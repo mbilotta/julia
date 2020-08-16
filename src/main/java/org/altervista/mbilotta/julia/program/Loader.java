@@ -361,7 +361,7 @@ public class Loader extends SwingWorker<Void, String> {
 		mayUpdateSplashScreen("Inspecting classpath...");
 		debug.println("Inspecting classpath...");
 		Out<Boolean> failure = Out.newOut(false);
-		ClassLoader classLoader = classpath.createClassLoader(profile, Utilities.out, failure);
+		ClassLoader classLoader = classpath.createClassLoader(profile, debug, failure);
 		if (failure.get()) {
 			debug.println("...failure. Some paths may got discarded.");
 		} else {

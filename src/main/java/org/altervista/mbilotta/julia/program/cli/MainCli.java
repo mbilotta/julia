@@ -22,6 +22,7 @@ package org.altervista.mbilotta.julia.program.cli;
 
 import java.nio.file.Path;
 
+import org.altervista.mbilotta.julia.Utilities;
 import org.altervista.mbilotta.julia.program.Application;
 
 import picocli.CommandLine;
@@ -57,6 +58,10 @@ public class MainCli {
 		}
 	}
 
+	@Option(names = { "-d", "--debug" },
+		description = "Enable debug console output")
+	boolean debug;
+
 	@Option(names = { "-p", "--profile" }, paramLabel = "PATH",
 		description = "Run Julia using PATH as profile directory. Use this option to override the default profile (~/.juliafg). A new profile will be created if PATH is empty or nonexistent.")
 	Path profilePath;
@@ -76,6 +81,8 @@ public class MainCli {
 		CommandLine cmd = new CommandLine(this);
 		try {
 			cmd.parseArgs(args);
+
+			Utilities.debug.setEnabled(debug);
 
 			// Did user request usage help (--help)?
 			if (cmd.isUsageHelpRequested()) {
