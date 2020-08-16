@@ -372,7 +372,7 @@ public class ImageGenerationCli implements Runnable {
         Plugin plugin = targetInstance.getPlugin();
         Parameter<?> targetParameter = plugin.getParameter(targetParameterId);
         if (targetParameter == null) {
-            Utilities.println("Warning: parameter ", plugin.getFamily(), ".", targetParameterId, " does not exists.");
+            Utilities.println("Warning: parameter ", plugin.getFamily(), ".", targetParameterId, " does not exist.");
             return false;
         }
         Object value = targetParameter.parseValue(valueString);
@@ -387,7 +387,7 @@ public class ImageGenerationCli implements Runnable {
         Plugin plugin = targetInstance.getPlugin();
         Parameter<?> targetParameter = plugin.getParameter(targetParameterId);
         if (targetParameter == null) {
-            Utilities.println("Warning: parameter ", plugin.getFamily(), ".", targetParameterId, " does not exists.");
+            Utilities.println("Warning: parameter ", plugin.getFamily(), ".", targetParameterId, " does not exist.");
             return false;
         }
         List<Object> hintGroup = plugin.getHintGroup(hintGroupName);
