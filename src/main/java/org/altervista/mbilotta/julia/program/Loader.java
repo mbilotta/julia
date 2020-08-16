@@ -268,7 +268,7 @@ public class Loader extends SwingWorker<Void, String> {
 			List<LockedFile> lockedProfile) throws Exception {
 
 		if (otherFiles.isEmpty()) {
-			loadProfile(lockedProfile);
+			loadLockedProfile(lockedProfile);
 			return;
 		}
 
@@ -343,7 +343,7 @@ public class Loader extends SwingWorker<Void, String> {
 		}
 	}
 
-	private void loadProfile(List<LockedFile> lockedProfile) throws Exception {
+	private void loadLockedProfile(List<LockedFile> lockedProfile) throws Exception {
 		println("...success.");
 
 		int offset = 0;
@@ -412,6 +412,8 @@ public class Loader extends SwingWorker<Void, String> {
 			Plugin plugin = null;
 			if (this.cacheRefreshRequested) {
 				println("Ignoring descriptor cache ", cacheFile, " because a refresh has been requested...");
+			} else if (guiRunning && documentationFile.isEmpty()) {
+				println("Ignoring descriptor cache ", cacheFile, " because the documentation file is empty...");
 			} else {
 				mayUpdateSplashScreen("Reading descriptor cache " + cacheFile + "...");
 				try {
@@ -473,7 +475,8 @@ public class Loader extends SwingWorker<Void, String> {
 						parser = new DescriptorParser(profile,
 								classLoader,
 								localizationPreferences,
-								authorCache, decimalCache, colorCache, gradientCache);
+								authorCache, decimalCache, colorCache, gradientCache,
+								guiRunning);
 						println("...success.");
 						parserOutputBuilder = new StringBuilder();
 						append(parserOutputBuilder, "[On ", dateFormat.format(new Date()), "]", System.lineSeparator());
@@ -506,15 +509,17 @@ public class Loader extends SwingWorker<Void, String> {
 					println("...success. Plugin successfully retrieved after descriptor parsing: ", plugin, ".");
 					addAvailablePlugin(plugin);
 
-					mayUpdateSplashScreen("Writing documentation to " + documentationFile + "...");
-					DocumentationWriter documentationWriter = parser.getDocumentationWriter();
-					try {
-						println("Writing documentation to ", documentationFile, "...");
-						boolean success = documentationWriter.writeTo(documentationFile);
-						println(success ? "...success." : "...failure.");
-					} catch (IOException e) {
-						print("...failure. Cause: ");
-						printStackTrace(e);
+					if (guiRunning || parser.getDocumentationLanguage() != null) {
+						mayUpdateSplashScreen("Writing documentation to " + documentationFile + "...");
+						DocumentationWriter documentationWriter = parser.getDocumentationWriter();
+						try {
+							println("Writing documentation to ", documentationFile, "...");
+							boolean success = documentationWriter.writeTo(documentationFile);
+							println(success ? "...success." : "...failure.");
+						} catch (IOException e) {
+							print("...failure. Cause: ");
+							printStackTrace(e);
+						}
 					}
 				} else if (noExceptionsThrown) {
 					println("...failure. Descriptor contains errors. Descriptor discarded.");

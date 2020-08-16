@@ -71,7 +71,9 @@ public class DescriptorParser extends Parser<Plugin> {
 	private final Cache<Decimal> decimalCache;
 	private final Cache<Color> colorCache;
 	private final Cache<Gradient> gradientCache;
+	private final boolean guiRunning;
 
+	private String documentationLanguage;
 	private DocumentationWriter documentationWriter;
 	private boolean localizationPreferencesChanged = false;
 	
@@ -83,7 +85,8 @@ public class DescriptorParser extends Parser<Plugin> {
 			Cache<Author> authorCache,
 			Cache<Decimal> decimalCache,
 			Cache<Color> colorCache,
-			Cache<Gradient> gradientCache) throws SAXException, ParserConfigurationException {
+			Cache<Gradient> gradientCache,
+			boolean guiRunning) throws SAXException, ParserConfigurationException {
 		super("descriptor.xsd");
 		this.profile = profile;
 		this.classLoader = classLoader;
@@ -92,6 +95,7 @@ public class DescriptorParser extends Parser<Plugin> {
 		this.decimalCache = decimalCache;
 		this.colorCache = colorCache;
 		this.gradientCache = gradientCache;
+		this.guiRunning = guiRunning;
 	}
 
 	@Override
@@ -247,12 +251,12 @@ public class DescriptorParser extends Parser<Plugin> {
 
 		String description = "";
 		if (!languageTags.isEmpty()) {
-			String languageTag = askUserWhichLanguageToUse(languageTags);
-			if (languageTag != null) {
+			documentationLanguage = askUserWhichLanguageToUse(languageTags);
+			if (documentationLanguage != null) {
 				offset = presentationOffset;
 				Attr langAttr = offset.getAttributeNodeNS(XMLConstants.XML_NS_URI, "lang");
 				XmlPath presentationPath = currentPath.getChild(offset, langAttr);
-				while (offset != null && !languageTag.equals(langAttr.getValue())) {
+				while (offset != null && !documentationLanguage.equals(langAttr.getValue())) {
 					offset = (Element) offset.getNextSibling();
 					langAttr = offset.getAttributeNodeNS(XMLConstants.XML_NS_URI, "lang");
 					presentationPath = currentPath.getChild(offset, langAttr);
@@ -327,6 +331,10 @@ public class DescriptorParser extends Parser<Plugin> {
 		return localizationPreferencesChanged;
 	}
 
+	public String getDocumentationLanguage() {
+		return documentationLanguage;
+	}
+
 	private String getPluginId() {
 		Path relativeParent = profile.relativizeDescriptor(getCurrentFile().getParent());
 		String fileName = getCurrentFile().getFileName().toString();
@@ -340,43 +348,47 @@ public class DescriptorParser extends Parser<Plugin> {
 		if (languages.size() > 1) {
 			final List<String> reduction = localizationPreferences.reduce(languages);
 			if (reduction.size() > 1) {
-				try {
-					String choice = Utilities.callSynchronously(new Callable<String>() {
-						@Override
-						public String call() throws Exception {
-							SplashScreen splashScreen = Application.getSplashScreen();
-							if (splashScreen != null) {
-								splashScreen.setIndeterminate(true);
+				if (guiRunning) {
+					try {
+						String choice = Utilities.callSynchronously(new Callable<String>() {
+							@Override
+							public String call() throws Exception {
+								SplashScreen splashScreen = Application.getSplashScreen();
+								if (splashScreen != null) {
+									splashScreen.setIndeterminate(true);
+								}
+	
+								String rv = (String) JOptionPane.showInputDialog(
+										splashScreen,
+										"Choose a language between those available in " + getCurrentFile().getFileName(),
+										"Julia",
+										JOptionPane.PLAIN_MESSAGE,
+										null,
+										reduction.toArray(),
+										reduction.get(0));
+	
+								if (splashScreen != null) {
+									splashScreen.setIndeterminate(false);
+								}
+	
+								return rv;
 							}
-
-							String rv = (String) JOptionPane.showInputDialog(
-									splashScreen,
-									"Choose a language between those available in " + getCurrentFile().getFileName(),
-									"Julia",
-									JOptionPane.PLAIN_MESSAGE,
-									null,
-									reduction.toArray(),
-									reduction.get(0));
-
-							if (splashScreen != null) {
-								splashScreen.setIndeterminate(false);
-							}
-
-							return rv;
+						});
+	
+						if (choice != null) {
+							reduction.remove(choice);
+							localizationPreferences.put(choice, reduction);
+							localizationPreferences.complete();
+							localizationPreferencesChanged = true;
 						}
-					});
-
-					if (choice != null) {
-						reduction.remove(choice);
-						localizationPreferences.put(choice, reduction);
-						localizationPreferences.complete();
-						localizationPreferencesChanged = true;
+	
+						return choice;
+					} catch (ExecutionException e) {
+						throw new AssertionError(e);
 					}
-
-					return choice;
-				} catch (ExecutionException e) {
-					throw new AssertionError(e);
 				}
+
+				return null;
 			}
 			
 			return reduction.get(0);

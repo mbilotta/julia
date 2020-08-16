@@ -82,6 +82,10 @@ public class LockedFile implements Closeable {
 		return lock.isShared();
 	}
 
+	public boolean isEmpty() throws IOException {
+		return getSize() == 0;
+	}
+
 	public ObjectInputStream readObjectsFrom() throws IOException {
 		return new ObjectInputStream(readBytesFrom());
 	}

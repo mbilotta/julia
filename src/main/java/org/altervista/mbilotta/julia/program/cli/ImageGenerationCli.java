@@ -473,7 +473,7 @@ public class ImageGenerationCli implements Runnable {
             } else if (loader.getProblemCount(DescriptorParser.Problem.WARNING) > 0) {
                 Utilities.print("one or more plugin descriptors were parsed with warnings.");
             }
-            Utilities.println("See ", loader.getProfile().getDescriptorParserOutputFile(), " for details.");
+            Utilities.println(" See ", loader.getProfile().getDescriptorParserOutputFile(), " for details.");
         }
     }
 
