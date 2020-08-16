@@ -296,7 +296,7 @@ public class ImageGenerationCli implements Runnable {
                     case "julia":
                     case "juliaSet":
                     case "juliaSetPoint": parseJuliaSetPoint(rSide); break;
-                    default: if (!parseAssignment(lSide, rSide)) throw new IllegalArgumentException(parameter); break;
+                    default: if (!parseAssignment(lSide, rSide)) throw new IllegalArgumentException("cannot perform assignment " + parameter); break;
                 }
             }    
         }
@@ -307,6 +307,9 @@ public class ImageGenerationCli implements Runnable {
             rectangle = null;
         } else {
             String[] components = rectangleString.split(",", 4);
+            if (components.length < 4) {
+                throw new IllegalArgumentException("cannot parse rectangle \"" + rectangleString + "\"");
+            }
             Decimal re0 = new Decimal(components[0]);
             Decimal im0 = new Decimal(components[1]);
             Decimal re1 = new Decimal(components[2]);
@@ -320,6 +323,9 @@ public class ImageGenerationCli implements Runnable {
             juliaSetPoint = formulaInstance.getPlugin().getDefaultJuliaSetPoint();
         } else {
             String[] components = juliaSetPointString.split(",", 2);
+            if (components.length < 2) {
+                throw new IllegalArgumentException("cannot parse julia set point \"" + juliaSetPointString + "\"");
+            }
             Decimal re = new Decimal(components[0]);
             Decimal im = new Decimal(components[1]);
             juliaSetPoint = new JuliaSetPoint(re, im);
