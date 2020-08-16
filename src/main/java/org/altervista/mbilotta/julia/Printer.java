@@ -342,6 +342,10 @@ public abstract class Printer implements Flushable, Closeable {
 		return System.lineSeparator();
 	}
 
+	public static Printer wrapPrinter(Printer printer) {
+		return new WrappedPrinter(printer);
+	}
+
 	public static Object lateToString(final boolean[] a) {
 		return new Object() {
 			@Override

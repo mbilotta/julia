@@ -79,6 +79,8 @@ public class Utilities {
 
 	public static final Printer out = Printer.newStandardOutput();
 
+	public static final Printer debug = Printer.wrapPrinter(out);
+
 	// Don't let anyone instantiate this class
 	private Utilities() {
 	}
