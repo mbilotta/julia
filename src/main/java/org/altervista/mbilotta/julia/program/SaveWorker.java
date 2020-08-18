@@ -53,61 +53,64 @@ public class SaveWorker extends BlockingSwingWorker<Void> {
 		return file;
 	}
 
-	@Override
-	protected Void doInBackground() throws Exception {
+	public void writeJimFile() throws IOException, ReflectiveOperationException {
 		try (FileOutputStream fos = new FileOutputStream(file);
 				BufferedOutputStream bos = new BufferedOutputStream(fos, 2048);
 				ZipOutputStream zos = new ZipOutputStream(bos)) {
-			publish("number factory...");
+			publishToGui("number factory...");
 			zos.putNextEntry(new ZipEntry("numberFactory"));
 			writeEntry(zos, metadata.getNumberFactoryInstance());
-			if (isCancelled()) return null;
-			setProgress(12);
+			if (isCancelled()) return;
+			setGuiProgress(12);
 
-			publish("formula...");
+			publishToGui("formula...");
 			zos.putNextEntry(new ZipEntry("formula"));
 			writeEntry(zos, metadata.getFormulaInstance());
-			if (isCancelled()) return null;
-			setProgress(24);
+			if (isCancelled()) return;
+			setGuiProgress(24);
 
-			publish("representation...");
+			publishToGui("representation...");
 			zos.putNextEntry(new ZipEntry("representation"));
 			writeEntry(zos, metadata.getRepresentationInstance());
-			if (isCancelled()) return null;
-			setProgress(36);
+			if (isCancelled()) return;
+			setGuiProgress(36);
 
-			publish("rectangle...");
+			publishToGui("rectangle...");
 			zos.putNextEntry(new ZipEntry("rectangle"));
 			ObjectOutputStream oos = new ObjectOutputStream(zos);
 			oos.writeObject(metadata.getRectangle());
 			oos.writeBoolean(metadata.getForceEqualScales());
 			oos.flush();
-			if (isCancelled()) return null;
-			setProgress(48);
+			if (isCancelled()) return;
+			setGuiProgress(48);
 
 			JuliaSetPoint juliaSetPoint = metadata.getJuliaSetPoint();
 			if (juliaSetPoint != null) {
-				publish("julia set point...");
+				publishToGui("julia set point...");
 				zos.putNextEntry(new ZipEntry("juliaSetPoint"));
 				oos = new ObjectOutputStream(zos);
 				oos.writeObject(juliaSetPoint);
 				oos.flush();
-				if (isCancelled()) return null;
+				if (isCancelled()) return;
 			}
-			setProgress(60);
+			setGuiProgress(60);
 			
 			if (iimg != null) {
-				publish("intermediate image...");
+				publishToGui("intermediate image...");
 				Representation representation = (Representation) metadata.getRepresentationInstance().create();
 				zos.putNextEntry(new ZipEntry("intermediateImage"));
 				oos = new ObjectOutputStream(zos);
 				representation.writeIntermediateImage(iimg, oos);
 				oos.flush();
-				if (isCancelled()) return null;
+				if (isCancelled()) return;
 			}
-			setProgress(100);
+			setGuiProgress(100);
 		}
-		
+	}
+
+	@Override
+	protected Void doInBackground() throws Exception {
+		writeJimFile();
 		return null;
 	}
 

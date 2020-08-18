@@ -48,6 +48,8 @@ public abstract class BlockingSwingWorker<T> extends SwingWorker<T, String> {
 	private JProgressBar progressBar;
 	private JDialog dialog;
 
+	private boolean guiRunning = true;
+
 	public BlockingSwingWorker() {
 		addPropertyChangeListener(new PropertyChangeListener() {
 			@Override
@@ -60,6 +62,26 @@ public abstract class BlockingSwingWorker<T> extends SwingWorker<T, String> {
 				}
 			}
 		});
+	}
+
+	public boolean isGuiRunning() {
+		return guiRunning;
+	}
+
+	public void setGuiRunning(boolean guiRunning) {
+		this.guiRunning = guiRunning;
+	}
+
+	protected void publishToGui(String status) {
+		if (guiRunning) {
+			publish(status);
+		}
+	}
+
+	protected void setGuiProgress(int progress) {
+		if (guiRunning) {
+			setProgress(progress);
+		}
 	}
 
 	public void cancel() {

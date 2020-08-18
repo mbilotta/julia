@@ -44,6 +44,7 @@ import org.altervista.mbilotta.julia.Production;
 import org.altervista.mbilotta.julia.Representation;
 import org.altervista.mbilotta.julia.Utilities;
 import org.altervista.mbilotta.julia.math.CoordinateTransform;
+import org.altervista.mbilotta.julia.program.Application;
 import org.altervista.mbilotta.julia.program.ExecutionObserver;
 import org.altervista.mbilotta.julia.program.JuliaExecutorService;
 import org.altervista.mbilotta.julia.program.JuliaSetPoint;
@@ -51,6 +52,7 @@ import org.altervista.mbilotta.julia.program.Loader;
 import org.altervista.mbilotta.julia.program.PluginInstance;
 import org.altervista.mbilotta.julia.program.Preferences;
 import org.altervista.mbilotta.julia.program.Rectangle;
+import org.altervista.mbilotta.julia.program.SaveWorker;
 import org.altervista.mbilotta.julia.program.parsers.DescriptorParser;
 import org.altervista.mbilotta.julia.program.parsers.FormulaPlugin;
 import org.altervista.mbilotta.julia.program.parsers.NumberFactoryPlugin;
@@ -259,7 +261,18 @@ public class ImageGenerationCli implements Runnable {
                 String fileName = outputFile.getName();
                 String extension = fileName.substring(fileName.lastIndexOf('.'));
                 String format = extension.substring(1);
-                ImageIO.write(finalImage, format, outputFile);
+                if (format.equalsIgnoreCase("jim")) {
+                    Application.Image metadata = new Application.Image(
+                        numberFactoryInstance, formulaInstance, representationInstance,
+                        rectangle, forceEqualScales,
+                        juliaSetPoint
+                    );
+                    SaveWorker jimWriter = new SaveWorker(outputFile, metadata, intermediateImage);
+                    jimWriter.setGuiRunning(false);
+                    jimWriter.writeJimFile();
+                } else {
+                    ImageIO.write(finalImage, format, outputFile);
+                }
             }
         } catch (Exception ex) {
             ex.printStackTrace();
