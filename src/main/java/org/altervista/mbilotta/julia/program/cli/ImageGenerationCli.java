@@ -22,6 +22,7 @@ package org.altervista.mbilotta.julia.program.cli;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
@@ -239,7 +240,25 @@ public class ImageGenerationCli implements Runnable {
             }
             done.await();
 
-            if (intermediateImage.isComplete()) {
+            File outputFile = outputPath.toFile();
+            String fileName = outputFile.getName();
+            String extension = fileName.substring(fileName.lastIndexOf('.'));
+            String format = extension.substring(1);
+
+            if (format.equalsIgnoreCase("jim")) {
+                // Write to file
+                Utilities.println("Writing to output file...");
+                if (canUseAsOutput(outputFile)) {
+                    Application.Image metadata = new Application.Image(
+                        numberFactoryInstance, formulaInstance, representationInstance,
+                        rectangle, forceEqualScales,
+                        juliaSetPoint
+                    );
+                    SaveWorker jimWriter = new SaveWorker(outputFile, metadata, intermediateImage);
+                    jimWriter.setGuiRunning(false);
+                    jimWriter.writeJimFile();
+                }
+            } else if (intermediateImage.isComplete()) {
                 Utilities.println("Rendering final image...");
 
                 // Instantiate Consumer
@@ -251,26 +270,7 @@ public class ImageGenerationCli implements Runnable {
 
                 // Write to file
                 Utilities.println("Writing to output file...");
-                File outputFile = outputPath.toFile();
-                if (!replaceExisting) {
-                    if (!outputFile.createNewFile()) {
-                        Utilities.println("Error: cannot write to ", outputPath.toAbsolutePath(), " because a file already exists at that location. Add --replace-existing to overwrite that file.");
-                        return;
-                    }
-                }
-                String fileName = outputFile.getName();
-                String extension = fileName.substring(fileName.lastIndexOf('.'));
-                String format = extension.substring(1);
-                if (format.equalsIgnoreCase("jim")) {
-                    Application.Image metadata = new Application.Image(
-                        numberFactoryInstance, formulaInstance, representationInstance,
-                        rectangle, forceEqualScales,
-                        juliaSetPoint
-                    );
-                    SaveWorker jimWriter = new SaveWorker(outputFile, metadata, intermediateImage);
-                    jimWriter.setGuiRunning(false);
-                    jimWriter.writeJimFile();
-                } else {
+                if (canUseAsOutput(outputFile)) {
                     ImageIO.write(finalImage, format, outputFile);
                 }
             }
@@ -299,6 +299,16 @@ public class ImageGenerationCli implements Runnable {
             ", helpRequested=" + helpRequested +
             ", parameters=" + parameters +
             "]";
+    }
+
+    private boolean canUseAsOutput(File file) throws IOException {
+        if (!replaceExisting) {
+            if (!file.createNewFile()) {
+                Utilities.println("Error: cannot write to ", outputPath.toAbsolutePath(), " because a file already exists at that location. Add --replace-existing to overwrite that file.");
+                return false;
+            }
+        }
+        return true;
     }
 
     private void parseParameters() {
