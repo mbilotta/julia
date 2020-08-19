@@ -43,185 +43,185 @@ import picocli.CommandLine.Parameters;
 
 
 @Command(name = "juliac",
-  header = { "Julia: The Fractal Generator", "Copyright (C) 2015 Maurizio Bilotta" },
-  description = "Create a JUP archive containing one or more Julia plugins.",
-  descriptionHeading = "%n",
-  parameterListHeading = "%nParameters:%n",
-  optionListHeading = "%nOptions:%n",
-  sortOptions = false)
+	header = { "Julia: The Fractal Generator", "Copyright (C) 2015 Maurizio Bilotta" },
+	description = "Create a JUP archive containing one or more Julia plugins.",
+	descriptionHeading = "%n",
+	parameterListHeading = "%nParameters:%n",
+	optionListHeading = "%nOptions:%n",
+	sortOptions = false)
 public class JupCli implements Runnable {
 
-  @Option(names = { "-j", "--jup" },
-    required = true,
-    description = "Needed to enable JUP command line mode.")
-  boolean jupCreationRequested;
+	@Option(names = { "-j", "--jup" },
+		required = true,
+		description = "Needed to enable JUP command line mode.")
+	boolean jupCreationRequested;
 
-  @Option(names = { "-l", "--license" }, paramLabel = "FILE",
-    description = "License file for this JUP archive.")
-  Path licensePath;
+	@Option(names = { "-l", "--license" }, paramLabel = "FILE",
+		description = "License file for this JUP archive.")
+	Path licensePath;
 
-  @Option(names = { "-o", "--output" }, paramLabel = "OUTPUT_PATH",
-    description = "Output file path. If this option is absent, a .jup file named as the last segment of PLUGIN_PATH will be created in the current directory. If OUTPUT_PATH is a directory, such file will be created there. If OUTPUT_PATH ends with \".jup\", OUTPUT_PATH will be the output file.")
-  Path outputPath;
+	@Option(names = { "-o", "--output" }, paramLabel = "OUTPUT_PATH",
+		description = "Output file path. If this option is absent, a .jup file named as the last segment of PLUGIN_PATH will be created in the current directory. If OUTPUT_PATH is a directory, such file will be created there. If OUTPUT_PATH ends with \".jup\", OUTPUT_PATH will be the output file.")
+	Path outputPath;
 
-  @Option(names = { "-x", "--replace-existing" },
-    description = "Use this flag to eventually replace an already existing file at output path.")
-  boolean replaceExisting;
+	@Option(names = { "-x", "--replace-existing" },
+		description = "Use this flag to eventually replace an already existing file at output path.")
+	boolean replaceExisting;
 
-  @Option(names = { "-h", "--help" },
-    usageHelp = true,
-    description = "Print this help message and exit.")
-  boolean helpRequested;
+	@Option(names = { "-h", "--help" },
+		usageHelp = true,
+		description = "Print this help message and exit.")
+	boolean helpRequested;
 
-  @Parameters(index = "0",
-    arity = "1",
-    paramLabel = "PLUGIN_PATH",
-    description = "Relative path that will be created inside the /xml, /bin, /doc subdirectories of the target profile when this plugin is installed.")
-  Path pluginPath;
+	@Parameters(index = "0",
+		arity = "1",
+		paramLabel = "PLUGIN_PATH",
+		description = "Relative path that will be created inside the /xml, /bin, /doc subdirectories of the target profile when this plugin is installed.")
+	Path pluginPath;
 
-  @Parameters(index = "1..*", arity = "1", paramLabel = "INPUT_PATH",
-    description = "Each INPUT_PATH can be a file or a directory. Files will be added to the right entry in the archive based on their extension: plugin descriptors must end with \".xml\"; JARs must end with \".jar\"; files that are none of the two will be treated as documentation resources. When INPUT_PATH is a directory, its contents will be added to the archive following the same logic. Subdirectories will be ignored.")
-  List<Path> inputPaths;
+	@Parameters(index = "1..*", arity = "1", paramLabel = "INPUT_PATH",
+		description = "Each INPUT_PATH can be a file or a directory. Files will be added to the right entry in the archive based on their extension: plugin descriptors must end with \".xml\"; JARs must end with \".jar\"; files that are none of the two will be treated as documentation resources. When INPUT_PATH is a directory, its contents will be added to the archive following the same logic. Subdirectories will be ignored.")
+	List<Path> inputPaths;
 
-  @Override
-  public String toString() {
-    return "[" +
-      "pluginPath=" + pluginPath +
-      ", licensePath=" + licensePath +
-      ", outputPath=" + outputPath +
-      ", helpRequested=" + helpRequested +
-      ", inputPaths=" + inputPaths +
-      "]";
-  }
+	@Override
+	public String toString() {
+		return "[" +
+			"pluginPath=" + pluginPath +
+			", licensePath=" + licensePath +
+			", outputPath=" + outputPath +
+			", helpRequested=" + helpRequested +
+			", inputPaths=" + inputPaths +
+			"]";
+	}
 
-  public int execute(String[] args) {
-    return new CommandLine(this).execute(args);
-  }
+	public int execute(String[] args) {
+		return new CommandLine(this).execute(args);
+	}
 
-  static final int KILOBYTE = 1024;
-  static final int BUFFER_SIZE = 8 * KILOBYTE;
+	static final int KILOBYTE = 1024;
+	static final int BUFFER_SIZE = 8 * KILOBYTE;
 
-  private byte[] buffer;
-  private String xmlEntry;
-  private String binEntry;
-  private String docEntry;
+	private byte[] buffer;
+	private String xmlEntry;
+	private String binEntry;
+	private String docEntry;
 
-  private void compress(Path filePath, String parentEntry, ZipOutputStream target) throws IOException {
-    target.putNextEntry(new ZipEntry(parentEntry + filePath.getFileName().toString()));
-    try (FileInputStream fis = new FileInputStream(filePath.toFile())) {
-      int length;
-      while ((length = fis.read(buffer)) >= 0) {
-        target.write(buffer, 0, length);
-      }
-    }
-  }
+	private void compress(Path filePath, String parentEntry, ZipOutputStream target) throws IOException {
+		target.putNextEntry(new ZipEntry(parentEntry + filePath.getFileName().toString()));
+		try (FileInputStream fis = new FileInputStream(filePath.toFile())) {
+			int length;
+			while ((length = fis.read(buffer)) >= 0) {
+				target.write(buffer, 0, length);
+			}
+		}
+	}
 
-  private void compressDocFile(Path filePath, ZipOutputStream target) throws IOException {
-    if (docEntry == null) {
-      docEntry = "doc/";
-      target.putNextEntry(new ZipEntry(docEntry));
-      target.closeEntry();
-    }
-    compress(filePath, docEntry, target);
-  }
+	private void compressDocFile(Path filePath, ZipOutputStream target) throws IOException {
+		if (docEntry == null) {
+			docEntry = "doc/";
+			target.putNextEntry(new ZipEntry(docEntry));
+			target.closeEntry();
+		}
+		compress(filePath, docEntry, target);
+	}
 
-  private void compress(List<Path> paths, ZipOutputStream target) throws IOException {
-    for (Path path : paths) {
-      String fileName = path.getFileName().toString();
-      if (Files.isDirectory(path)) {
-        List<Path> contents = Files.list(path)
-          .filter(subpath -> Files.isRegularFile(subpath))
-          .collect(Collectors.toList());
-        compress(contents, target);
+	private void compress(List<Path> paths, ZipOutputStream target) throws IOException {
+		for (Path path : paths) {
+			String fileName = path.getFileName().toString();
+			if (Files.isDirectory(path)) {
+				List<Path> contents = Files.list(path)
+					.filter(subpath -> Files.isRegularFile(subpath))
+					.collect(Collectors.toList());
+				compress(contents, target);
 
-      } else if (fileName.endsWith(".xml")) {
-        if (xmlEntry == null) {
-          xmlEntry = createXmlEntry(target);
-        }
-        compress(path, xmlEntry, target);
+			} else if (fileName.endsWith(".xml")) {
+				if (xmlEntry == null) {
+					xmlEntry = createXmlEntry(target);
+				}
+				compress(path, xmlEntry, target);
 
-      } else if (fileName.endsWith(".jar")) {
-        if (binEntry == null) {
-          binEntry = "bin/";
-          target.putNextEntry(new ZipEntry(binEntry));
-          target.closeEntry();
-          if (licensePath != null) {
-            compress(licensePath, binEntry, target);
-          }
-        }
-        compress(path, binEntry, target);
-        
-      } else {
-        compressDocFile(path, target);
-      }
-    }
-  }
+			} else if (fileName.endsWith(".jar")) {
+				if (binEntry == null) {
+					binEntry = "bin/";
+					target.putNextEntry(new ZipEntry(binEntry));
+					target.closeEntry();
+					if (licensePath != null) {
+						compress(licensePath, binEntry, target);
+					}
+				}
+				compress(path, binEntry, target);
+				
+			} else {
+				compressDocFile(path, target);
+			}
+		}
+	}
 
-  private String createXmlEntry(ZipOutputStream target) throws IOException {
-    String entry = "xml/";
-    target.putNextEntry(new ZipEntry(entry));
-    target.closeEntry();
-    for (Path segment : pluginPath) {
-      entry += segment + "/";
-      target.putNextEntry(new ZipEntry(entry));
-      target.closeEntry();  
-    }
-    return entry;
-  }
+	private String createXmlEntry(ZipOutputStream target) throws IOException {
+		String entry = "xml/";
+		target.putNextEntry(new ZipEntry(entry));
+		target.closeEntry();
+		for (Path segment : pluginPath) {
+			entry += segment + "/";
+			target.putNextEntry(new ZipEntry(entry));
+			target.closeEntry();  
+		}
+		return entry;
+	}
 
-  @Override
-  public void run() {
+	@Override
+	public void run() {
  
-    if (outputPath == null) {
-      String fileName = pluginPath.getFileName() + ".jup";
-      outputPath = Paths.get(fileName);
-    } else if (!outputPath.getFileName().toString().endsWith(".jup")) {
-      String fileName = pluginPath.getFileName() + ".jup";
-      outputPath = outputPath.resolve(Paths.get(fileName));
-    }
+		if (outputPath == null) {
+			String fileName = pluginPath.getFileName() + ".jup";
+			outputPath = Paths.get(fileName);
+		} else if (!outputPath.getFileName().toString().endsWith(".jup")) {
+			String fileName = pluginPath.getFileName() + ".jup";
+			outputPath = outputPath.resolve(Paths.get(fileName));
+		}
 
-    File tempFile;
-    try {
-      tempFile = File.createTempFile("juliafg-", "-jup");
-    } catch (IOException e) {
-      System.err.printf("Error (%s): %s%n", e.getClass().getSimpleName(), e.getMessage());
-      return;
-    }
-    tempFile.deleteOnExit();
+		File tempFile;
+		try {
+			tempFile = File.createTempFile("juliafg-", "-jup");
+		} catch (IOException e) {
+			System.err.printf("Error (%s): %s%n", e.getClass().getSimpleName(), e.getMessage());
+			return;
+		}
+		tempFile.deleteOnExit();
 
-    try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(tempFile))) {
-      buffer = new byte[BUFFER_SIZE];
-      if (licensePath != null) {
-        compressDocFile(licensePath, zos);
-      }
-      compress(inputPaths, zos);
+		try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(tempFile))) {
+			buffer = new byte[BUFFER_SIZE];
+			if (licensePath != null) {
+				compressDocFile(licensePath, zos);
+			}
+			compress(inputPaths, zos);
 
-      if (xmlEntry == null) {
-        System.err.println("Error: no descriptor was found. At least one must be provided.");
-        return;
-      } else if (binEntry == null) {
-        System.err.println("Error: no JAR was found. At least one must be provided.");
-        return;
-      }
-    } catch (IOException e) {
-      System.err.printf("Error (%s): %s%n", e.getClass().getSimpleName(), e.getMessage());
-      return;
-    }
+			if (xmlEntry == null) {
+				System.err.println("Error: no descriptor was found. At least one must be provided.");
+				return;
+			} else if (binEntry == null) {
+				System.err.println("Error: no JAR was found. At least one must be provided.");
+				return;
+			}
+		} catch (IOException e) {
+			System.err.printf("Error (%s): %s%n", e.getClass().getSimpleName(), e.getMessage());
+			return;
+		}
 
-    try {
-      if (replaceExisting) {
-        Files.copy(tempFile.toPath(), outputPath, StandardCopyOption.REPLACE_EXISTING);
-      } else {
-        Files.copy(tempFile.toPath(), outputPath);
-      }
-    } catch (NoSuchFileException e) {
-      System.err.println("Error: cannot write to " + outputPath.toAbsolutePath() + " because the parent directory does not exist.");
-    } catch (FileAlreadyExistsException e) {
-      System.err.println("Error: cannot write to " + outputPath.toAbsolutePath() + " because a file already exists at that location. Add --replace-existing to overwrite that file.");
-    } catch (DirectoryNotEmptyException e) {
-      System.err.println("Error: cannot write to " + outputPath.toAbsolutePath() + " because a non-empty directory already exists at that location.");
-    } catch (IOException e) {
-      System.err.printf("Error (%s): %s%n", e.getClass().getSimpleName(), e.getMessage());
-    }
-  }
+		try {
+			if (replaceExisting) {
+				Files.copy(tempFile.toPath(), outputPath, StandardCopyOption.REPLACE_EXISTING);
+			} else {
+				Files.copy(tempFile.toPath(), outputPath);
+			}
+		} catch (NoSuchFileException e) {
+			System.err.println("Error: cannot write to " + outputPath.toAbsolutePath() + " because the parent directory does not exist.");
+		} catch (FileAlreadyExistsException e) {
+			System.err.println("Error: cannot write to " + outputPath.toAbsolutePath() + " because a file already exists at that location. Add --replace-existing to overwrite that file.");
+		} catch (DirectoryNotEmptyException e) {
+			System.err.println("Error: cannot write to " + outputPath.toAbsolutePath() + " because a non-empty directory already exists at that location.");
+		} catch (IOException e) {
+			System.err.printf("Error (%s): %s%n", e.getClass().getSimpleName(), e.getMessage());
+		}
+	}
 }
