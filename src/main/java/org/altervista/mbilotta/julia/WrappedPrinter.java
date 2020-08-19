@@ -8,6 +8,7 @@ public class WrappedPrinter extends Printer {
 	private final Printer printer;
 
 	public WrappedPrinter(Printer printer) {
+		super(printer.lock);
 		this.printer = printer;
 	}
 
