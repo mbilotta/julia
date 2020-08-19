@@ -35,13 +35,13 @@ import org.altervista.mbilotta.julia.program.parsers.Parameter;
 import org.altervista.mbilotta.julia.program.parsers.Plugin;
 
 
-public class SaveWorker extends BlockingSwingWorker<Void> {
+public class JuliaImageWriter extends BlockingSwingWorker<Void> {
 	
 	private final File file;
 	private final Application.Image metadata;
 	private final IntermediateImage iimg;
 
-	public SaveWorker(File file, Application.Image metadata, IntermediateImage iimg) {
+	public JuliaImageWriter(File file, Application.Image metadata, IntermediateImage iimg) {
 		assert file != null;
 		assert metadata != null;
 		this.file = file;

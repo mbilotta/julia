@@ -633,9 +633,9 @@ public class Application {
 			if (rv == JFileChooser.APPROVE_OPTION) {
 				File file = fc.getSelectedFile();
 				FileFilter selectedFilter = fc.getFileFilter();
-				SaveWorker saveWorker = new SaveWorker(file, currentImage, selectedFilter == jimWithoutIntermDataFilter ? null : iimg);
-				executorService.execute(saveWorker);
-				saveWorker.block(mainWindow, "Writing to " + file + ":", "number factory...");
+				JuliaImageWriter jimWriter = new JuliaImageWriter(file, currentImage, selectedFilter == jimWithoutIntermDataFilter ? null : iimg);
+				executorService.execute(jimWriter);
+				jimWriter.block(mainWindow, "Writing to " + file + ":", "number factory...");
 			}
 		}
 	}
@@ -1966,7 +1966,7 @@ public class Application {
 
 	public void saveImage(final ControlWindow src, File dst) {
 		Image image = src.getImage();
-		SaveWorker saveWorker = new SaveWorker(dst, image, null) {
+		JuliaImageWriter saveWorker = new JuliaImageWriter(dst, image, null) {
 			@Override
 			protected void processException(Throwable e) {
 				if (e instanceof IOException) {

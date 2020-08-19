@@ -53,7 +53,7 @@ import org.altervista.mbilotta.julia.program.Loader;
 import org.altervista.mbilotta.julia.program.PluginInstance;
 import org.altervista.mbilotta.julia.program.Preferences;
 import org.altervista.mbilotta.julia.program.Rectangle;
-import org.altervista.mbilotta.julia.program.SaveWorker;
+import org.altervista.mbilotta.julia.program.JuliaImageWriter;
 import org.altervista.mbilotta.julia.program.parsers.DescriptorParser;
 import org.altervista.mbilotta.julia.program.parsers.FormulaPlugin;
 import org.altervista.mbilotta.julia.program.parsers.NumberFactoryPlugin;
@@ -254,7 +254,7 @@ public class ImageGenerationCli implements Runnable {
                         rectangle, forceEqualScales,
                         juliaSetPoint
                     );
-                    SaveWorker jimWriter = new SaveWorker(outputFile, metadata, intermediateImage);
+                    JuliaImageWriter jimWriter = new JuliaImageWriter(outputFile, metadata, intermediateImage);
                     jimWriter.setGuiRunning(false);
                     jimWriter.writeJimFile();
                 }
