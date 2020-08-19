@@ -248,7 +248,7 @@ public class ImageGenerationCli implements Runnable {
             if (format.equalsIgnoreCase("jim")) {
                 // Write to file
                 Utilities.println("Writing to output file...");
-                if (canUseAsOutput(outputFile)) {
+                if (canWriteTo(outputFile)) {
                     Application.Image metadata = new Application.Image(
                         numberFactoryInstance, formulaInstance, representationInstance,
                         rectangle, forceEqualScales,
@@ -256,7 +256,7 @@ public class ImageGenerationCli implements Runnable {
                     );
                     JuliaImageWriter jimWriter = new JuliaImageWriter(outputFile, metadata, intermediateImage);
                     jimWriter.setGuiRunning(false);
-                    jimWriter.writeJimFile();
+                    jimWriter.write();
                 }
             } else if (intermediateImage.isComplete()) {
                 Utilities.println("Rendering final image...");
@@ -270,7 +270,7 @@ public class ImageGenerationCli implements Runnable {
 
                 // Write to file
                 Utilities.println("Writing to output file...");
-                if (canUseAsOutput(outputFile)) {
+                if (canWriteTo(outputFile)) {
                     ImageIO.write(finalImage, format, outputFile);
                 }
             }
@@ -301,7 +301,7 @@ public class ImageGenerationCli implements Runnable {
             "]";
     }
 
-    private boolean canUseAsOutput(File file) throws IOException {
+    private boolean canWriteTo(File file) throws IOException {
         if (!replaceExisting) {
             if (!file.createNewFile()) {
                 Utilities.println("Error: cannot write to ", outputPath.toAbsolutePath(), " because a file already exists at that location. Add --replace-existing to overwrite that file.");

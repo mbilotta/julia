@@ -53,7 +53,7 @@ public class JuliaImageWriter extends BlockingSwingWorker<Void> {
 		return file;
 	}
 
-	public void writeJimFile() throws IOException, ReflectiveOperationException {
+	public void write() throws IOException, ReflectiveOperationException {
 		try (FileOutputStream fos = new FileOutputStream(file);
 				BufferedOutputStream bos = new BufferedOutputStream(fos, 2048);
 				ZipOutputStream zos = new ZipOutputStream(bos)) {
@@ -110,7 +110,7 @@ public class JuliaImageWriter extends BlockingSwingWorker<Void> {
 
 	@Override
 	protected Void doInBackground() throws Exception {
-		writeJimFile();
+		write();
 		return null;
 	}
 
