@@ -138,43 +138,43 @@ public class ImageGenerationCli implements Runnable {
             // I can't see the need of keeping this lock active
             loader.getPreferencesFile().close();
 
-            warnForParsingProblems(loader);
+            warnOfParsingProblems(loader);
 
             if (!loader.hasMinimalSetOfPlugins()) {
-                warnForInsufficientPluginsInstalled(loader);
+                warnOfInsufficientPluginsInstalled(loader);
                 return;
             }
 
             // Find matching number factory
             List<NumberFactoryPlugin> matchingNumberFactories = findMatchingPlugins(loader.getAvailableNumberFactories(), numberFactoryId);
             if (matchingNumberFactories.isEmpty()) {
-                warnForMatchNotFound("number factory", numberFactoryId);
+                warnOfMatchNotFound("number factory", numberFactoryId);
                 return;
             }
             if (matchingNumberFactories.size() > 1) {
-                warnForMultipleMatches(matchingNumberFactories, "number factories", numberFactoryId);
+                warnOfMultipleMatches(matchingNumberFactories, "number factories", numberFactoryId);
                 return;
             }
 
             // Find matching formula
             List<FormulaPlugin> matchingFormulas = findMatchingPlugins(loader.getAvailableFormulas(), formulaId);
             if (matchingFormulas.isEmpty()) {
-                warnForMatchNotFound("formula", formulaId);
+                warnOfMatchNotFound("formula", formulaId);
                 return;
             }
             if (matchingFormulas.size() > 1) {
-                warnForMultipleMatches(matchingFormulas, "formulas", formulaId);
+                warnOfMultipleMatches(matchingFormulas, "formulas", formulaId);
                 return;
             }
 
             // Find matching representation
             List<RepresentationPlugin> matchingRepresentations = findMatchingPlugins(loader.getAvailableRepresentations(), representationId);
             if (matchingRepresentations.isEmpty()) {
-                warnForMatchNotFound("representation", representationId);
+                warnOfMatchNotFound("representation", representationId);
                 return;
             }
             if (matchingRepresentations.size() > 1) {
-                warnForMultipleMatches(matchingRepresentations, "representations", representationId);
+                warnOfMultipleMatches(matchingRepresentations, "representations", representationId);
                 return;
             }
 
@@ -220,6 +220,13 @@ public class ImageGenerationCli implements Runnable {
                 coordinateTransform,
                 juliaSetPoint != null ? juliaSetPoint.toComplex(numberFactory) : null);
 
+            // Pre-rendering output file check
+            File outputFile = outputPath.toFile();
+            if (!replaceExisting && outputFile.exists()) {
+                warnOfOutputFileAlreadyExisting();
+                return;
+            }
+
             // Run computation
             Utilities.println("Rendering intermediate image...");
             JuliaExecutorService executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
@@ -240,7 +247,6 @@ public class ImageGenerationCli implements Runnable {
             }
             done.await();
 
-            File outputFile = outputPath.toFile();
             String fileName = outputFile.getName();
             String extension = fileName.substring(fileName.lastIndexOf('.'));
             String format = extension.substring(1);
@@ -304,11 +310,15 @@ public class ImageGenerationCli implements Runnable {
     private boolean canWriteTo(File file) throws IOException {
         if (!replaceExisting) {
             if (!file.createNewFile()) {
-                Utilities.println("Error: cannot write to ", outputPath.toAbsolutePath(), " because a file already exists at that location. Add --replace-existing to overwrite that file.");
+                warnOfOutputFileAlreadyExisting();
                 return false;
             }
         }
         return true;
+    }
+
+    private void warnOfOutputFileAlreadyExisting() {
+        Utilities.println("Error: cannot write to ", outputPath.toAbsolutePath(), " because a file already exists at that location. Add --replace-existing to overwrite that file.");
     }
 
     private void parseParameters() {
@@ -499,7 +509,7 @@ public class ImageGenerationCli implements Runnable {
         return matches;
     }
 
-    private static void warnForParsingProblems(Loader loader) {
+    private static void warnOfParsingProblems(Loader loader) {
         if (loader.getParserOutput() != null) {
             Utilities.print("Warning: ");
             if (loader.getProblemCount(DescriptorParser.Problem.FATAL_ERROR) > 0) {
@@ -513,7 +523,7 @@ public class ImageGenerationCli implements Runnable {
         }
     }
 
-    private static void warnForInsufficientPluginsInstalled(Loader loader) {
+    private static void warnOfInsufficientPluginsInstalled(Loader loader) {
         Utilities.println("Error: at least 1 plugin for each of the 3 plugin families must be available in order to run the program.");
         Utilities.println("Details:");
         Utilities.println("- Available number factories: ", loader.getAvailableNumberFactories().size());
@@ -521,11 +531,11 @@ public class ImageGenerationCli implements Runnable {
         Utilities.println("- Available representations: ", loader.getAvailableRepresentations().size());
     }
 
-    private static void warnForMatchNotFound(String pluginName, String searchString) {
+    private static void warnOfMatchNotFound(String pluginName, String searchString) {
         Utilities.println("Error: cannot find ", pluginName, " matching search string \"", Objects.toString(searchString, ""), "\".");
     }
 
-    private static void warnForMultipleMatches(List<? extends Plugin> matches, String pluginName, String searchString) {
+    private static void warnOfMultipleMatches(List<? extends Plugin> matches, String pluginName, String searchString) {
         Utilities.println("Error: multiple ", pluginName, " matching search string \"", Objects.toString(searchString, ""), "\":");
         matches.forEach(p -> {
             Utilities.println("- ", p.getId());
