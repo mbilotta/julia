@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -35,13 +36,18 @@ import org.altervista.mbilotta.julia.Printer;
 import org.altervista.mbilotta.julia.Representation;
 import org.altervista.mbilotta.julia.program.parsers.FormulaPlugin;
 import org.altervista.mbilotta.julia.program.parsers.NumberFactoryPlugin;
+import org.altervista.mbilotta.julia.program.parsers.Plugin;
 import org.altervista.mbilotta.julia.program.parsers.RepresentationPlugin;
 
 
-public class LoadWorker extends BlockingSwingWorker<Void> {
+public class JuliaImageReader extends BlockingSwingWorker<Void> {
 
 	private final File file;
-	private final Application application;
+
+	private List<NumberFactoryPlugin> numberFactories;
+	private List<FormulaPlugin> formulas;
+	private List<RepresentationPlugin> representations;
+
 	private final Printer errorOutput;
 	private final boolean loadIntermediateImage;
 	private int errorCount = 0;
@@ -75,11 +81,29 @@ public class LoadWorker extends BlockingSwingWorker<Void> {
 	private final Out<Boolean> forceEqualScalesOut = Out.newOut();
 	private final Out<JuliaSetPoint> juliaSetPointOut = Out.newOut();
 
-	public LoadWorker(File file, Application application, Printer errorOutput, boolean loadIntermediateImage) {
+	public JuliaImageReader(File file,
+		List<NumberFactoryPlugin> numberFactories, List<FormulaPlugin> formulas, List<RepresentationPlugin> representations,
+		Printer errorOutput, boolean loadIntermediateImage
+	) {
+		assert file != null;
+		assert numberFactories != null && !numberFactories.isEmpty();
+		assert formulas != null && !formulas.isEmpty();
+		assert representations != null && !representations.isEmpty();
+		this.file = file;
+		this.numberFactories = numberFactories;
+		this.formulas = formulas;
+		this.representations = representations;
+		this.errorOutput = errorOutput == null ? Printer.nullPrinter() : errorOutput;
+		this.loadIntermediateImage = loadIntermediateImage;
+	}
+
+	public JuliaImageReader(File file, Application application, Printer errorOutput, boolean loadIntermediateImage) {
 		assert file != null;
 		assert application != null;
 		this.file = file;
-		this.application = application;
+		this.numberFactories = application.getNumberFactories();
+		this.formulas = application.getFormulas();
+		this.representations = application.getRepresentations();
 		this.errorOutput = errorOutput == null ? Printer.nullPrinter() : errorOutput;
 		this.loadIntermediateImage = loadIntermediateImage;
 	}
@@ -164,22 +188,22 @@ public class LoadWorker extends BlockingSwingWorker<Void> {
 	protected Void doInBackground() throws Exception {
 		try (ZipFile zipFile = new ZipFile(file)) {
 
-			publish("number factory...");
+			publishToGui("number factory...");
 			numberFactoryInstance = readNumberFactory(zipFile);
 			if (isCancelled()) return null;
-			setProgress(12);
+			setGuiProgress(12);
 
-			publish("formula...");
+			publishToGui("formula...");
 			formulaInstance = readFormula(zipFile);
 			if (isCancelled()) return null;
-			setProgress(24);
+			setGuiProgress(24);
 
-			publish("representation...");
+			publishToGui("representation...");
 			representationInstance = readRepresentation(zipFile);
 			if (isCancelled()) return null;
-			setProgress(36);
+			setGuiProgress(36);
 
-			publish("rectangle...");
+			publishToGui("rectangle...");
 			ZipEntry entry = zipFile.getEntry("rectangle");
 			if (entry == null) {
 				addFatalError(null);
@@ -195,13 +219,13 @@ public class LoadWorker extends BlockingSwingWorker<Void> {
 				}
 				if (isCancelled()) return null;
 			}
-			setProgress(48);
+			setGuiProgress(48);
 
 			entry = zipFile.getEntry("juliaSetPoint");
 			if (entry == null) {
 				juliaSetPointOut.set(null);
 			} else {
-				publish("julia set point...");
+				publishToGui("julia set point...");
 				try (InputStream is = zipFile.getInputStream(entry);
 						ObjectInputStream ois = new ObjectInputStream(is)) {
 					JuliaSetPoint juliaSetPoint = readNonNull(ois, "juliaSetPoint", JuliaSetPoint.class);
@@ -212,13 +236,13 @@ public class LoadWorker extends BlockingSwingWorker<Void> {
 				}
 				if (isCancelled()) return null;
 			}
-			setProgress(60);
+			setGuiProgress(60);
 
 			if (fatalCount == 0 && loadIntermediateImage) {
 				entry = zipFile.getEntry("intermediateImage");
 				if (entry != null) {
 					hasIntermediateImage = true;
-					publish("intermediate image...");
+					publishToGui("intermediate image...");
 					try {
 						Representation representation = (Representation) representationInstance.create();
 						try (InputStream is = zipFile.getInputStream(entry);
@@ -239,7 +263,7 @@ public class LoadWorker extends BlockingSwingWorker<Void> {
 					if (isCancelled()) return null;
 				}
 			}
-			setProgress(100);
+			setGuiProgress(100);
 
 		} catch (IOException e) {
 			addFatalError(null);
@@ -281,7 +305,7 @@ public class LoadWorker extends BlockingSwingWorker<Void> {
 		try (InputStream is = zipFile.getInputStream(entry);
 				ObjectInputStream ois = new ObjectInputStream(is)) {
 			String id = readNonNull(ois, "id", String.class);
-			NumberFactoryPlugin numberFactory = application.findNumberFactory(id);
+			NumberFactoryPlugin numberFactory = findNumberFactory(id);
 			if (numberFactory == null) {
 				addError(entry);
 				errorOutput.println("unknown number factory \"", id, "\".");
@@ -313,7 +337,7 @@ public class LoadWorker extends BlockingSwingWorker<Void> {
 		try (InputStream is = zipFile.getInputStream(entry);
 				ObjectInputStream ois = new ObjectInputStream(is)) {
 			String id = readNonNull(ois, "id", String.class);
-			FormulaPlugin formula = application.findFormula(id);
+			FormulaPlugin formula = findFormula(id);
 			if (formula == null) {
 				addFatalError(entry);
 				errorOutput.println("unknown formula \"", id, "\".");
@@ -345,7 +369,7 @@ public class LoadWorker extends BlockingSwingWorker<Void> {
 		try (InputStream is = zipFile.getInputStream(entry);
 				ObjectInputStream ois = new ObjectInputStream(is)) {
 			String id = readNonNull(ois, "id", String.class);
-			RepresentationPlugin representation = application.findRepresentation(id);
+			RepresentationPlugin representation = findRepresentation(id);
 			if (representation == null) {
 				addFatalError(entry);
 				errorOutput.println("unknown representation \"", id, "\".");
@@ -364,5 +388,24 @@ public class LoadWorker extends BlockingSwingWorker<Void> {
 			errorOutput.printStackTrace(e);
 			return null;
 		}
+	}
+
+	private NumberFactoryPlugin findNumberFactory(String id) {
+		return findPlugin(id, numberFactories);
+	}
+
+	private FormulaPlugin findFormula(String id) {
+		return findPlugin(id, formulas);
+	}
+
+	private RepresentationPlugin findRepresentation(String id) {
+		return findPlugin(id, representations);
+	}
+
+	public static <P extends Plugin> P findPlugin(String id, List<P> plugins) {
+		return plugins.stream()
+			.filter(p -> p.getId().equals(id))
+			.findFirst()
+			.orElse(null);
 	}
 }

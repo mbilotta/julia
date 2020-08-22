@@ -569,7 +569,7 @@ public class Application {
 			if (rv == JFileChooser.APPROVE_OPTION) {
 				File file = fc.getSelectedFile();
 				Printer errorOutput = Printer.newStringPrinter();
-				LoadWorker productionLoader = new LoadWorker(file, Application.this, errorOutput, true) {
+				JuliaImageReader productionLoader = new JuliaImageReader(file, Application.this, errorOutput, true) {
 					@Override
 					protected void processResult(Void result) {
 						if (hasErrors()) {
@@ -1900,7 +1900,7 @@ public class Application {
 				}
 				
 				Printer errorOutput = Printer.newStringPrinter();
-				LoadWorker productionLoader = new LoadWorker(path.toFile(), this, errorOutput, true) {
+				JuliaImageReader productionLoader = new JuliaImageReader(path.toFile(), this, errorOutput, true) {
 					@Override
 					protected void processResult(Void result) {
 						if (hasErrors()) {
@@ -1984,7 +1984,7 @@ public class Application {
 
 	public void loadImage(File src, final ControlWindow dst) {
 		Printer errorOutput = Printer.newStringPrinter();
-		LoadWorker loadWorker = new LoadWorker(src, this, errorOutput, false) {
+		JuliaImageReader loadWorker = new JuliaImageReader(src, this, errorOutput, false) {
 			@Override
 			protected void processResult(Void result) {
 				if (hasErrors()) {
