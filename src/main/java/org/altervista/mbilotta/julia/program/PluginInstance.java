@@ -27,6 +27,7 @@ import static org.altervista.mbilotta.julia.Utilities.readNonNull;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.stream.IntStream;
 
 import javax.swing.JComponent;
@@ -156,7 +157,9 @@ public final class PluginInstance<P extends Plugin> implements Cloneable {
 			assert parameterValues.length == other.parameterValues.length;
 			return IntStream.range(0, parameterValues.length).allMatch(i -> {
 				Parameter<?> parameter = plugin.getParameter(i);
-				return (ignorePreviewables && parameter.isPreviewable()) || parameterValues[i].equals(other.parameterValues[i]);
+				Object value = parameterValues[i];
+				Object otherValue = other.parameterValues[i];
+				return (ignorePreviewables && parameter.isPreviewable()) || Objects.deepEquals(value, otherValue);
 			});
 		}
 		return false;
