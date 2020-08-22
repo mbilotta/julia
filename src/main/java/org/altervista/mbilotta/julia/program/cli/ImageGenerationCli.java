@@ -111,6 +111,10 @@ public class ImageGenerationCli implements Runnable {
         description = "Use this flag to eventually replace an already existing file at output path.")
     boolean replaceExisting;
 
+    @Option(names = { "-i", "--input" }, paramLabel = "INPUT_PATH",
+        description = "Input file path (JIM format).")
+    Path inputPath;
+
     @Option(names = { "-h", "--help" },
         usageHelp = true,
         description = "Print this help message and exit.")
