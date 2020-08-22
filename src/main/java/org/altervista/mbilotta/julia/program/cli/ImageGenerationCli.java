@@ -89,7 +89,7 @@ public class ImageGenerationCli implements Runnable {
     Integer height;
 
     @Option(names = { "-t", "--producer-threads" })
-    Integer numOfProducers;
+    Integer numOfProducersHint;
 
     @Option(names = { "-q", "--force-equal-scales" })
     boolean forceEqualScales = true;
@@ -185,8 +185,8 @@ public class ImageGenerationCli implements Runnable {
             if (height == null) {
                 height = preferences.getImageHeight();
             }
-            if (numOfProducers == null) {
-                numOfProducers = preferences.getNumOfProducerThreads();
+            if (numOfProducersHint == null) {
+                numOfProducersHint = preferences.getNumOfProducerThreads();
             }
 
             numberFactoryInstance = new PluginInstance<NumberFactoryPlugin>(matchingNumberFactories.get(0));
@@ -213,7 +213,7 @@ public class ImageGenerationCli implements Runnable {
             // Instantiate CoordinateTransform
             CoordinateTransform coordinateTransform = rectangle.createCoordinateTransform(width, height, forceEqualScales, numberFactory);
             // Instantiate IntermediateImage
-            IntermediateImage intermediateImage = representation.createIntermediateImage(width, height, numOfProducers);
+            IntermediateImage intermediateImage = representation.createIntermediateImage(width, height, numOfProducersHint);
             // Instantiate Production
             Production production = representation.createProduction(
                 intermediateImage, numberFactory, formula,
@@ -229,6 +229,7 @@ public class ImageGenerationCli implements Runnable {
 
             // Run computation
             Utilities.println("Rendering intermediate image...");
+            int numOfProducers = production.getNumOfProducers();
             JuliaExecutorService executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
             CountDownLatch done = new CountDownLatch(numOfProducers);
             for (int i = 0; i < numOfProducers; i++) {
@@ -295,7 +296,7 @@ public class ImageGenerationCli implements Runnable {
             "imageGenerationRequested=" + imageGenerationRequested +
             ", width=" + width +
             ", height=" + height +
-            ", numOfProducers=" + numOfProducers +
+            ", numOfProducersHint=" + numOfProducersHint +
             ", forceEqualScales=" + forceEqualScales +
             ", numberFactoryId=" + numberFactoryId +
             ", formulaId=" + formulaId +
