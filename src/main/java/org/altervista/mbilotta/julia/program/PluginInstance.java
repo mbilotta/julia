@@ -28,7 +28,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import javax.swing.JComponent;
 
@@ -155,14 +155,25 @@ public final class PluginInstance<P extends Plugin> implements Cloneable {
 	private boolean equalsImpl(PluginInstance<P> other, boolean ignorePreviewables) {
 		if (plugin.equals(other.plugin)) {
 			assert parameterValues.length == other.parameterValues.length;
-			return IntStream.range(0, parameterValues.length).allMatch(i -> {
-				Parameter<?> parameter = plugin.getParameter(i);
-				Object value = parameterValues[i];
-				Object otherValue = other.parameterValues[i];
-				return (ignorePreviewables && parameter.isPreviewable()) || Objects.deepEquals(value, otherValue);
-			});
+			Stream<Parameter<?>> stream = plugin.getParameters().stream();
+			if (ignorePreviewables) {
+				stream = stream.filter(p -> !p.isPreviewable());
+			}
+			return stream
+				.map(p -> p.getIndex())
+				.allMatch(i -> Objects.deepEquals(parameterValues[i], other.parameterValues[i]));
 		}
 		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return Arrays.deepHashCode(
+			Stream.concat(
+				Stream.of(plugin),
+				Stream.of(parameterValues)
+			).toArray()
+		);
 	}
 
 	@Override
