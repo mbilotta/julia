@@ -184,23 +184,22 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> {
 		return hasIntermediateImage;
 	}
 
-	@Override
-	protected Void doInBackground() throws Exception {
+	public void read() {
 		try (ZipFile zipFile = new ZipFile(file)) {
 
 			publishToGui("number factory...");
 			numberFactoryInstance = readNumberFactory(zipFile);
-			if (isCancelled()) return null;
+			if (isCancelled()) return;
 			setGuiProgress(12);
 
 			publishToGui("formula...");
 			formulaInstance = readFormula(zipFile);
-			if (isCancelled()) return null;
+			if (isCancelled()) return;
 			setGuiProgress(24);
 
 			publishToGui("representation...");
 			representationInstance = readRepresentation(zipFile);
-			if (isCancelled()) return null;
+			if (isCancelled()) return;
 			setGuiProgress(36);
 
 			publishToGui("rectangle...");
@@ -217,7 +216,7 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> {
 					addFatalError(entry);
 					errorOutput.printStackTrace(e);
 				}
-				if (isCancelled()) return null;
+				if (isCancelled()) return;
 			}
 			setGuiProgress(48);
 
@@ -234,7 +233,7 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> {
 					addFatalError(entry);
 					errorOutput.printStackTrace(e);
 				}
-				if (isCancelled()) return null;
+				if (isCancelled()) return;
 			}
 			setGuiProgress(60);
 
@@ -260,7 +259,7 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> {
 						errorOutput.printStackTrace(e);
 						representationInstance = null;
 					}
-					if (isCancelled()) return null;
+					if (isCancelled()) return;
 				}
 			}
 			setGuiProgress(100);
@@ -269,7 +268,11 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> {
 			addFatalError(null);
 			errorOutput.printStackTrace(e);
 		}
+	}
 
+	@Override
+	protected Void doInBackground() throws Exception {
+		read();
 		return null;
 	}
 
