@@ -27,6 +27,7 @@ import static org.altervista.mbilotta.julia.Utilities.readNonNull;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.Arrays;
+import java.util.stream.IntStream;
 
 import javax.swing.JComponent;
 
@@ -126,6 +127,39 @@ public final class PluginInstance<P extends Plugin> implements Cloneable {
 	@Override
 	public Object clone() {
 		return new PluginInstance<P>(this);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (o instanceof PluginInstance) {
+			PluginInstance<P> other = (PluginInstance<P>) o;
+			return equalsImpl(other, false);
+		}
+
+		return false;
+	}
+
+	public boolean equalsIgnorePreviewables(PluginInstance<P> other) {
+		if (this == other) {
+			return true;
+		}
+
+		return other != null && equalsImpl(other, true);
+	}
+
+	private boolean equalsImpl(PluginInstance<P> other, boolean ignorePreviewables) {
+		if (plugin.equals(other.plugin)) {
+			assert parameterValues.length == other.parameterValues.length;
+			return IntStream.range(0, parameterValues.length).allMatch(i -> {
+				Parameter<?> parameter = plugin.getParameter(i);
+				return (ignorePreviewables && parameter.isPreviewable()) || parameterValues[i].equals(other.parameterValues[i]);
+			});
+		}
+		return false;
 	}
 
 	@Override
