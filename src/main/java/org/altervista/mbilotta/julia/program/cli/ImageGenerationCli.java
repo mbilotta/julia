@@ -213,7 +213,10 @@ public class ImageGenerationCli implements Runnable {
             // Instantiate CoordinateTransform
             CoordinateTransform coordinateTransform = rectangle.createCoordinateTransform(width, height, forceEqualScales, numberFactory);
             // Instantiate IntermediateImage
-            IntermediateImage intermediateImage = representation.createIntermediateImage(width, height, numOfProducersHint);
+            IntermediateImage intermediateImage = representation.createIntermediateImage(
+                width, height,
+                Math.min(Runtime.getRuntime().availableProcessors(), numOfProducersHint)
+            );
             // Instantiate Production
             Production production = representation.createProduction(
                 intermediateImage, numberFactory, formula,
