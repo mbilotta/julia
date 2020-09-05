@@ -61,13 +61,12 @@ import org.altervista.mbilotta.julia.program.parsers.Parameter;
 import org.altervista.mbilotta.julia.program.parsers.Plugin;
 import org.altervista.mbilotta.julia.program.parsers.RepresentationPlugin;
 
-import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
+import picocli.CommandLine.ParentCommand;
 
-@Command(name = "juliac",
-    header = { "Julia: The Fractal Generator", "Copyright (C) 2015 Maurizio Bilotta" },
+@Command(name = "generate",
     description = "Generate a fractal.",
     descriptionHeading = "%n",
     parameterListHeading = "%nParameters:%n",
@@ -75,12 +74,8 @@ import picocli.CommandLine.Parameters;
     sortOptions = false)
 public class ImageGenerationCli implements Runnable {
     
-    final MainCli mainCli;
-    
-    @Option(names = { "-g", "--generate" },
-        required = true,
-        description = "Needed to enable image generation CLI mode.")
-    boolean imageGenerationRequested;
+    @ParentCommand
+    MainCli mainCli;
 
     @Option(names = { "-W", "--width" })
     Integer width;
@@ -115,11 +110,6 @@ public class ImageGenerationCli implements Runnable {
         description = "Input file path (JIM format).")
     Path inputPath;
 
-    @Option(names = { "-h", "--help" },
-        usageHelp = true,
-        description = "Print this help message and exit.")
-    boolean helpRequested;
-
     @Parameters
     List<String> parameters;
 
@@ -129,13 +119,12 @@ public class ImageGenerationCli implements Runnable {
     private Rectangle rectangle;
     private JuliaSetPoint juliaSetPoint;
 
-    public ImageGenerationCli(MainCli mainCli) {
-        this.mainCli = mainCli;
-    }
+    private JuliaExecutorService executorService;
 
     @Override
     public void run() {
         try {
+            Utilities.debug.setEnabled(mainCli.debugOutputEnabled);
             Utilities.println("Loading profile...");
             Loader loader = new Loader(mainCli);
             loader.loadProfile();
@@ -237,7 +226,7 @@ public class ImageGenerationCli implements Runnable {
             // Run computation
             Utilities.println("Rendering intermediate image...");
             int numOfProducers = production.getNumOfProducers();
-            JuliaExecutorService executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
+            executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
             CountDownLatch done = new CountDownLatch(numOfProducers);
             for (int i = 0; i < numOfProducers; i++) {
                 Production.Producer producer = production.createProducer(i);
@@ -290,17 +279,16 @@ public class ImageGenerationCli implements Runnable {
             }
         } catch (Exception ex) {
             ex.printStackTrace();
+        } finally {
+            if (executorService != null) {
+                executorService.shutdownNow();
+            }
         }
-    }
-
-    public int execute(String[] args) {
-        return new CommandLine(this).execute(args);
     }
 
     @Override
     public String toString() {
         return "[" +
-            "imageGenerationRequested=" + imageGenerationRequested +
             ", width=" + width +
             ", height=" + height +
             ", numOfProducersHint=" + numOfProducersHint +
@@ -310,7 +298,6 @@ public class ImageGenerationCli implements Runnable {
             ", representationId=" + representationId +
             ", outputPath=" + outputPath +
             ", replaceExisting=" + replaceExisting +
-            ", helpRequested=" + helpRequested +
             ", parameters=" + parameters +
             "]";
     }

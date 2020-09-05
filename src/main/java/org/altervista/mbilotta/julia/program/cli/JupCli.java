@@ -36,25 +36,18 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 
-@Command(name = "juliac",
-	header = { "Julia: The Fractal Generator", "Copyright (C) 2015 Maurizio Bilotta" },
+@Command(name = "package", 
 	description = "Create a JUP archive containing one or more Julia plugins.",
 	descriptionHeading = "%n",
 	parameterListHeading = "%nParameters:%n",
 	optionListHeading = "%nOptions:%n",
 	sortOptions = false)
 public class JupCli implements Runnable {
-
-	@Option(names = { "-j", "--jup" },
-		required = true,
-		description = "Needed to enable JUP command line mode.")
-	boolean jupCreationRequested;
 
 	@Option(names = { "-l", "--license" }, paramLabel = "FILE",
 		description = "License file for this JUP archive.")
@@ -67,11 +60,6 @@ public class JupCli implements Runnable {
 	@Option(names = { "-x", "--replace-existing" },
 		description = "Use this flag to eventually replace an already existing file at output path.")
 	boolean replaceExisting;
-
-	@Option(names = { "-h", "--help" },
-		usageHelp = true,
-		description = "Print this help message and exit.")
-	boolean helpRequested;
 
 	@Parameters(index = "0",
 		arity = "1",
@@ -89,13 +77,8 @@ public class JupCli implements Runnable {
 			"pluginPath=" + pluginPath +
 			", licensePath=" + licensePath +
 			", outputPath=" + outputPath +
-			", helpRequested=" + helpRequested +
 			", inputPaths=" + inputPaths +
 			"]";
-	}
-
-	public int execute(String[] args) {
-		return new CommandLine(this).execute(args);
 	}
 
 	static final int KILOBYTE = 1024;
