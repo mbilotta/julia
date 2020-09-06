@@ -53,6 +53,7 @@ import org.altervista.mbilotta.julia.program.Loader;
 import org.altervista.mbilotta.julia.program.PluginInstance;
 import org.altervista.mbilotta.julia.program.Preferences;
 import org.altervista.mbilotta.julia.program.Rectangle;
+import org.altervista.mbilotta.julia.program.Timer;
 import org.altervista.mbilotta.julia.program.JuliaImageWriter;
 import org.altervista.mbilotta.julia.program.parsers.DescriptorParser;
 import org.altervista.mbilotta.julia.program.parsers.FormulaPlugin;
@@ -224,10 +225,12 @@ public class ImageGenerationCli implements Runnable {
             }
 
             // Run computation
-            Utilities.println("Rendering intermediate image...");
+            Utilities.print("Rendering intermediate image...");
             int numOfProducers = production.getNumOfProducers();
             executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
             CountDownLatch done = new CountDownLatch(numOfProducers);
+            Timer timer = new Timer();
+            timer.start();
             for (int i = 0; i < numOfProducers; i++) {
                 Production.Producer producer = production.createProducer(i);
                 executorService.submitAndObserve(producer, new ExecutionObserver() {
@@ -243,6 +246,9 @@ public class ImageGenerationCli implements Runnable {
                 });
             }
             done.await();
+            timer.stop();
+
+            Utilities.println(" ", Utilities.formatDuration(timer.getElapsedTime()));
 
             String fileName = outputFile.getName();
             String extension = fileName.substring(fileName.lastIndexOf('.'));
@@ -262,7 +268,9 @@ public class ImageGenerationCli implements Runnable {
                     jimWriter.write();
                 }
             } else if (intermediateImage.isComplete()) {
-                Utilities.println("Rendering final image...");
+                Utilities.print("Rendering final image...");
+
+                timer.start();
 
                 // Instantiate Consumer
                 Consumer consumer = representation.createConsumer(intermediateImage);
@@ -271,6 +279,12 @@ public class ImageGenerationCli implements Runnable {
                 BufferedImage finalImage = consumer.createFinalImage();
                 consumer.consume(finalImage, null);
 
+                timer.stop();
+                Utilities.println(
+                    " ", Utilities.formatDuration(timer.getElapsedTime()),
+                    " (total: ", Utilities.formatDuration(timer.getTotalElapsedTime()), ")"
+                );
+                
                 // Write to file
                 Utilities.println("Writing to output file...");
                 if (canWriteTo(outputFile)) {

@@ -48,6 +48,7 @@ import javax.swing.JViewport;
 import javax.swing.border.BevelBorder;
 
 import org.altervista.mbilotta.julia.Consumer;
+import org.altervista.mbilotta.julia.Utilities;
 import org.altervista.mbilotta.julia.program.Application;
 import org.altervista.mbilotta.julia.program.Preferences;
 
@@ -88,7 +89,7 @@ public class MainWindow extends JFrame {
 		JComponent statusBar = new Box(BoxLayout.X_AXIS);
 		timerLabel.setBorder(messageLabel.getBorder());
 		timerLabel.setIcon(application.getIcon("clock"));
-		timerLabel.setText("00:00:00");
+		timerLabel.setText(Utilities.formatMillisDuration(0));
 		progressBar.setBorder(BorderFactory.createCompoundBorder(
 				BorderFactory.createBevelBorder(BevelBorder.LOWERED),
 				progressBar.getBorder()));
@@ -259,11 +260,11 @@ public class MainWindow extends JFrame {
 
 	public void resetTimer() {
 		timerValue = 0;
-		timerLabel.setText("00:00:00.000");
+		timerLabel.setText(Utilities.formatMillisDuration(0));
 	}
 
 	private void showElapsedTime(long t) {
-		timerLabel.setText(String.format("%02d:%02d:%02d.%03d", t/3_600_000, (t%3_600_000)/60_000, (t/1_000)%60, t%1_000));
+		timerLabel.setText(Utilities.formatMillisDuration(t));
 	}
 
 	public void refresh() {

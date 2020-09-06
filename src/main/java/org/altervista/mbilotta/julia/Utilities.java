@@ -50,6 +50,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -278,6 +279,14 @@ public class Utilities {
 
 	public static void printStackTrace(Throwable t) {
 		out.printStackTrace(t);
+	}
+
+	public static String formatMillisDuration(long ms) {
+		return String.format("%d:%02d:%02d.%03d", ms/3_600_000, (ms%3_600_000)/60_000, (ms/1_000)%60, ms%1_000);
+	}
+
+	public static String formatDuration(Duration d) {
+		return formatMillisDuration(d.toMillis());
 	}
 
 	public static List<Rectangle> subtract(Rectangle a, Rectangle b) {
