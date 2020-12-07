@@ -68,486 +68,489 @@ import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
 
 @Command(name = "generate",
-    description = "Generate a fractal.",
-    descriptionHeading = "%n",
-    parameterListHeading = "%nParameters:%n",
-    optionListHeading = "%nOptions:%n",
-    sortOptions = false)
+	description = "Generate a fractal.",
+	descriptionHeading = "%n",
+	parameterListHeading = "%nParameters:%n",
+	optionListHeading = "%nOptions:%n",
+	sortOptions = false)
 public class ImageGenerationCli implements Runnable {
-    
-    @ParentCommand
-    MainCli mainCli;
+	
+	@ParentCommand
+	MainCli mainCli;
 
-    @Option(names = { "-W", "--width" })
-    Integer width;
+	@Option(names = { "-W", "--width" })
+	Integer width;
 
-    @Option(names = { "-H", "--height" })
-    Integer height;
+	@Option(names = { "-H", "--height" })
+	Integer height;
 
-    @Option(names = { "-t", "--producer-threads" })
-    Integer numOfProducersHint;
+	@Option(names = { "-t", "--producer-threads" })
+	Integer numOfProducersHint;
 
-    @Option(names = { "-q", "--force-equal-scales" })
-    boolean forceEqualScales = true;
+	@Option(names = { "-q", "--force-equal-scales" })
+	boolean forceEqualScales = true;
 
-    @Option(names = { "-n", "--number-factory" })
-    String numberFactoryId;
+	@Option(names = { "-n", "--number-factory" })
+	String numberFactoryId;
 
-    @Option(names = { "-f", "--formula" })
-    String formulaId;
+	@Option(names = { "-f", "--formula" })
+	String formulaId;
 
-    @Option(names = { "-r", "--representation" })
-    String representationId;
+	@Option(names = { "-r", "--representation" })
+	String representationId;
 
-    @Option(names = { "-o", "--output" }, paramLabel = "OUTPUT_PATH", required = true,
-        description = "Output file path.")
-    Path outputPath;
+	@Option(names = { "-o", "--output" }, paramLabel = "OUTPUT_PATH", required = true,
+		description = "Output file path.")
+	Path outputPath;
 
-    @Option(names = { "-x", "--replace-existing" },
-        description = "Use this flag to eventually replace an already existing file at output path.")
-    boolean replaceExisting;
+	@Option(names = { "-x", "--replace-existing" },
+		description = "Use this flag to eventually replace an already existing file at output path.")
+	boolean replaceExisting;
 
-    @Option(names = { "-i", "--input" }, paramLabel = "INPUT_PATH",
-        description = "Input file path (JIM format).")
-    Path inputPath;
+	@Option(names = { "-i", "--input" }, paramLabel = "INPUT_PATH",
+		description = "Input file path (JIM format).")
+	Path inputPath;
 
-    @Parameters
-    List<String> parameters;
+	@Option(names = "--ignore-intermediate-image")
+	boolean ignoreIntermediateImage;
 
-    private PluginInstance<NumberFactoryPlugin> numberFactoryInstance;
-    private PluginInstance<FormulaPlugin> formulaInstance;
-    private PluginInstance<RepresentationPlugin> representationInstance;
-    private Rectangle rectangle;
-    private JuliaSetPoint juliaSetPoint;
+	@Parameters
+	List<String> parameters;
 
-    private JuliaExecutorService executorService;
+	private PluginInstance<NumberFactoryPlugin> numberFactoryInstance;
+	private PluginInstance<FormulaPlugin> formulaInstance;
+	private PluginInstance<RepresentationPlugin> representationInstance;
+	private Rectangle rectangle;
+	private JuliaSetPoint juliaSetPoint;
 
-    @Override
-    public void run() {
-        try {
-            Utilities.debug.setEnabled(mainCli.debugOutputEnabled);
-            Utilities.println("Loading profile...");
-            Loader loader = new Loader(mainCli);
-            loader.loadProfile();
-            // I can't see the need of keeping this lock active
-            loader.getPreferencesFile().close();
+	private JuliaExecutorService executorService;
 
-            warnOfParsingProblems(loader);
+	@Override
+	public void run() {
+		try {
+			Utilities.debug.setEnabled(mainCli.debugOutputEnabled);
+			Utilities.println("Loading profile...");
+			Loader loader = new Loader(mainCli);
+			loader.loadProfile();
+			// I can't see the need of keeping this lock active
+			loader.getPreferencesFile().close();
 
-            if (!loader.hasMinimalSetOfPlugins()) {
-                warnOfInsufficientPluginsInstalled(loader);
-                return;
-            }
+			warnOfParsingProblems(loader);
 
-            // Find matching number factory
-            List<NumberFactoryPlugin> matchingNumberFactories = findMatchingPlugins(loader.getAvailableNumberFactories(), numberFactoryId);
-            if (matchingNumberFactories.isEmpty()) {
-                warnOfMatchNotFound("number factory", numberFactoryId);
-                return;
-            }
-            if (matchingNumberFactories.size() > 1) {
-                warnOfMultipleMatches(matchingNumberFactories, "number factories", numberFactoryId);
-                return;
-            }
+			if (!loader.hasMinimalSetOfPlugins()) {
+				warnOfInsufficientPluginsInstalled(loader);
+				return;
+			}
 
-            // Find matching formula
-            List<FormulaPlugin> matchingFormulas = findMatchingPlugins(loader.getAvailableFormulas(), formulaId);
-            if (matchingFormulas.isEmpty()) {
-                warnOfMatchNotFound("formula", formulaId);
-                return;
-            }
-            if (matchingFormulas.size() > 1) {
-                warnOfMultipleMatches(matchingFormulas, "formulas", formulaId);
-                return;
-            }
+			// Find matching number factory
+			List<NumberFactoryPlugin> matchingNumberFactories = findMatchingPlugins(loader.getAvailableNumberFactories(), numberFactoryId);
+			if (matchingNumberFactories.isEmpty()) {
+				warnOfMatchNotFound("number factory", numberFactoryId);
+				return;
+			}
+			if (matchingNumberFactories.size() > 1) {
+				warnOfMultipleMatches(matchingNumberFactories, "number factories", numberFactoryId);
+				return;
+			}
 
-            // Find matching representation
-            List<RepresentationPlugin> matchingRepresentations = findMatchingPlugins(loader.getAvailableRepresentations(), representationId);
-            if (matchingRepresentations.isEmpty()) {
-                warnOfMatchNotFound("representation", representationId);
-                return;
-            }
-            if (matchingRepresentations.size() > 1) {
-                warnOfMultipleMatches(matchingRepresentations, "representations", representationId);
-                return;
-            }
+			// Find matching formula
+			List<FormulaPlugin> matchingFormulas = findMatchingPlugins(loader.getAvailableFormulas(), formulaId);
+			if (matchingFormulas.isEmpty()) {
+				warnOfMatchNotFound("formula", formulaId);
+				return;
+			}
+			if (matchingFormulas.size() > 1) {
+				warnOfMultipleMatches(matchingFormulas, "formulas", formulaId);
+				return;
+			}
 
-            Preferences preferences = loader.getPreferences();
-            if (width == null) {
-                width = preferences.getImageWidth();
-            }
-            if (height == null) {
-                height = preferences.getImageHeight();
-            }
-            if (numOfProducersHint == null) {
-                numOfProducersHint = preferences.getNumOfProducerThreads();
-            }
+			// Find matching representation
+			List<RepresentationPlugin> matchingRepresentations = findMatchingPlugins(loader.getAvailableRepresentations(), representationId);
+			if (matchingRepresentations.isEmpty()) {
+				warnOfMatchNotFound("representation", representationId);
+				return;
+			}
+			if (matchingRepresentations.size() > 1) {
+				warnOfMultipleMatches(matchingRepresentations, "representations", representationId);
+				return;
+			}
 
-            numberFactoryInstance = new PluginInstance<NumberFactoryPlugin>(matchingNumberFactories.get(0));
-            formulaInstance = new PluginInstance<FormulaPlugin>(matchingFormulas.get(0));
-            representationInstance = new PluginInstance<RepresentationPlugin>(matchingRepresentations.get(0));
+			Preferences preferences = loader.getPreferences();
+			if (width == null) {
+				width = preferences.getImageWidth();
+			}
+			if (height == null) {
+				height = preferences.getImageHeight();
+			}
+			if (numOfProducersHint == null) {
+				numOfProducersHint = preferences.getNumOfProducerThreads();
+			}
 
-            parseParameters();
+			numberFactoryInstance = new PluginInstance<NumberFactoryPlugin>(matchingNumberFactories.get(0));
+			formulaInstance = new PluginInstance<FormulaPlugin>(matchingFormulas.get(0));
+			representationInstance = new PluginInstance<RepresentationPlugin>(matchingRepresentations.get(0));
 
-            // Assign default rectangle
-            if (rectangle == null) {
-                if (juliaSetPoint == null) {
-                    rectangle = formulaInstance.getPlugin().getDefaultMandelbrotSetRectangle();
-                } else {
-                    rectangle = formulaInstance.getPlugin().getDefaultJuliaSetRectangle();
-                }
-            }
+			parseParameters();
 
-            // Instantiate NumberFactory
-            NumberFactory numberFactory = (NumberFactory) numberFactoryInstance.create();
-            // Instantiate Formula
-            Formula formula = (Formula) formulaInstance.create(numberFactory);
-            // Instantiate Representation
-            Representation representation = (Representation) representationInstance.create(numberFactory);
-            // Instantiate CoordinateTransform
-            CoordinateTransform coordinateTransform = rectangle.createCoordinateTransform(width, height, forceEqualScales, numberFactory);
-            // Instantiate IntermediateImage
-            IntermediateImage intermediateImage = representation.createIntermediateImage(
-                width, height,
-                Math.min(Runtime.getRuntime().availableProcessors(), numOfProducersHint)
-            );
-            // Instantiate Production
-            Production production = representation.createProduction(
-                intermediateImage, numberFactory, formula,
-                coordinateTransform,
-                juliaSetPoint != null ? juliaSetPoint.toComplex(numberFactory) : null);
+			// Assign default rectangle
+			if (rectangle == null) {
+				if (juliaSetPoint == null) {
+					rectangle = formulaInstance.getPlugin().getDefaultMandelbrotSetRectangle();
+				} else {
+					rectangle = formulaInstance.getPlugin().getDefaultJuliaSetRectangle();
+				}
+			}
 
-            // Pre-rendering output file check
-            File outputFile = outputPath.toFile();
-            if (!replaceExisting && outputFile.exists()) {
-                warnOfOutputFileAlreadyExisting();
-                return;
-            }
+			// Instantiate NumberFactory
+			NumberFactory numberFactory = (NumberFactory) numberFactoryInstance.create();
+			// Instantiate Formula
+			Formula formula = (Formula) formulaInstance.create(numberFactory);
+			// Instantiate Representation
+			Representation representation = (Representation) representationInstance.create(numberFactory);
+			// Instantiate CoordinateTransform
+			CoordinateTransform coordinateTransform = rectangle.createCoordinateTransform(width, height, forceEqualScales, numberFactory);
+			// Instantiate IntermediateImage
+			IntermediateImage intermediateImage = representation.createIntermediateImage(
+				width, height,
+				Math.min(Runtime.getRuntime().availableProcessors(), numOfProducersHint)
+			);
+			// Instantiate Production
+			Production production = representation.createProduction(
+				intermediateImage, numberFactory, formula,
+				coordinateTransform,
+				juliaSetPoint != null ? juliaSetPoint.toComplex(numberFactory) : null);
 
-            // Run computation
-            Utilities.print("Rendering intermediate image...");
-            int numOfProducers = production.getNumOfProducers();
-            executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
-            CountDownLatch done = new CountDownLatch(numOfProducers);
-            Timer timer = new Timer();
-            timer.start();
-            for (int i = 0; i < numOfProducers; i++) {
-                Production.Producer producer = production.createProducer(i);
-                executorService.submitAndObserve(producer, new ExecutionObserver() {
-                    @Override
-                    public void executionCancelled(Runnable target) {
-                        done.countDown();
-                    }
+			// Pre-rendering output file check
+			File outputFile = outputPath.toFile();
+			if (!replaceExisting && outputFile.exists()) {
+				warnOfOutputFileAlreadyExisting();
+				return;
+			}
 
-                    @Override
-                    public void executionFinished(Runnable target) {
-                        done.countDown();
-                    }
-                });
-            }
-            done.await();
-            timer.stop();
+			// Run computation
+			Utilities.print("Rendering intermediate image...");
+			int numOfProducers = production.getNumOfProducers();
+			executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
+			CountDownLatch done = new CountDownLatch(numOfProducers);
+			Timer timer = new Timer();
+			timer.start();
+			for (int i = 0; i < numOfProducers; i++) {
+				Production.Producer producer = production.createProducer(i);
+				executorService.submitAndObserve(producer, new ExecutionObserver() {
+					@Override
+					public void executionCancelled(Runnable target) {
+						done.countDown();
+					}
 
-            Utilities.println(" ", Utilities.formatDuration(timer.getElapsedTime()));
+					@Override
+					public void executionFinished(Runnable target) {
+						done.countDown();
+					}
+				});
+			}
+			done.await();
+			timer.stop();
 
-            String fileName = outputFile.getName();
-            String extension = fileName.substring(fileName.lastIndexOf('.'));
-            String format = extension.substring(1);
+			Utilities.println(" ", Utilities.formatDuration(timer.getElapsedTime()));
 
-            if (format.equalsIgnoreCase("jim")) {
-                // Write to file
-                Utilities.println("Writing to output file...");
-                if (canWriteTo(outputFile)) {
-                    Application.Image metadata = new Application.Image(
-                        numberFactoryInstance, formulaInstance, representationInstance,
-                        rectangle, forceEqualScales,
-                        juliaSetPoint
-                    );
-                    JuliaImageWriter jimWriter = new JuliaImageWriter(outputFile, metadata, intermediateImage);
-                    jimWriter.setGuiRunning(false);
-                    jimWriter.write();
-                }
-            } else if (intermediateImage.isComplete()) {
-                Utilities.print("Rendering final image...");
+			String fileName = outputFile.getName();
+			String extension = fileName.substring(fileName.lastIndexOf('.'));
+			String format = extension.substring(1);
 
-                timer.start();
+			if (format.equalsIgnoreCase("jim")) {
+				// Write to file
+				Utilities.println("Writing to output file...");
+				if (canWriteTo(outputFile)) {
+					Application.Image metadata = new Application.Image(
+						numberFactoryInstance, formulaInstance, representationInstance,
+						rectangle, forceEqualScales,
+						juliaSetPoint
+					);
+					JuliaImageWriter jimWriter = new JuliaImageWriter(outputFile, metadata, intermediateImage);
+					jimWriter.setGuiRunning(false);
+					jimWriter.write();
+				}
+			} else if (intermediateImage.isComplete()) {
+				Utilities.print("Rendering final image...");
 
-                // Instantiate Consumer
-                Consumer consumer = representation.createConsumer(intermediateImage);
+				timer.start();
 
-                // Compute final image
-                BufferedImage finalImage = consumer.createFinalImage();
-                consumer.consume(finalImage, null);
+				// Instantiate Consumer
+				Consumer consumer = representation.createConsumer(intermediateImage);
 
-                timer.stop();
-                Utilities.println(
-                    " ", Utilities.formatDuration(timer.getElapsedTime()),
-                    " (total: ", Utilities.formatDuration(timer.getTotalElapsedTime()), ")"
-                );
-                
-                // Write to file
-                Utilities.println("Writing to output file...");
-                if (canWriteTo(outputFile)) {
-                    ImageIO.write(finalImage, format, outputFile);
-                }
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        } finally {
-            if (executorService != null) {
-                executorService.shutdownNow();
-            }
-        }
-    }
+				// Compute final image
+				BufferedImage finalImage = consumer.createFinalImage();
+				consumer.consume(finalImage, null);
 
-    @Override
-    public String toString() {
-        return "[" +
-            ", width=" + width +
-            ", height=" + height +
-            ", numOfProducersHint=" + numOfProducersHint +
-            ", forceEqualScales=" + forceEqualScales +
-            ", numberFactoryId=" + numberFactoryId +
-            ", formulaId=" + formulaId +
-            ", representationId=" + representationId +
-            ", outputPath=" + outputPath +
-            ", replaceExisting=" + replaceExisting +
-            ", parameters=" + parameters +
-            "]";
-    }
+				timer.stop();
+				Utilities.println(
+					" ", Utilities.formatDuration(timer.getElapsedTime()),
+					" (total: ", Utilities.formatDuration(timer.getTotalElapsedTime()), ")"
+				);
+				
+				// Write to file
+				Utilities.println("Writing to output file...");
+				if (canWriteTo(outputFile)) {
+					ImageIO.write(finalImage, format, outputFile);
+				}
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		} finally {
+			if (executorService != null) {
+				executorService.shutdownNow();
+			}
+		}
+	}
 
-    private boolean canWriteTo(File file) throws IOException {
-        if (!replaceExisting) {
-            if (!file.createNewFile()) {
-                warnOfOutputFileAlreadyExisting();
-                return false;
-            }
-        }
-        return true;
-    }
+	@Override
+	public String toString() {
+		return "[" +
+			", width=" + width +
+			", height=" + height +
+			", numOfProducersHint=" + numOfProducersHint +
+			", forceEqualScales=" + forceEqualScales +
+			", numberFactoryId=" + numberFactoryId +
+			", formulaId=" + formulaId +
+			", representationId=" + representationId +
+			", outputPath=" + outputPath +
+			", replaceExisting=" + replaceExisting +
+			", parameters=" + parameters +
+			"]";
+	}
 
-    private void warnOfOutputFileAlreadyExisting() {
-        Utilities.println("Error: cannot write to ", outputPath.toAbsolutePath(), " because a file already exists at that location. Add --replace-existing to overwrite that file.");
-    }
+	private boolean canWriteTo(File file) throws IOException {
+		if (!replaceExisting) {
+			if (!file.createNewFile()) {
+				warnOfOutputFileAlreadyExisting();
+				return false;
+			}
+		}
+		return true;
+	}
 
-    private void parseParameters() {
-        if (parameters != null) {
-            for (String parameter : parameters) {
-                String[] sides = parameter.split("=", 2);
-                String lSide = sides[0];
-                String rSide = sides[1];
-                switch (lSide) {
-                    case "r":
-                    case "rect":
-                    case "rectangle": parseRectangle(rSide); break;
-                    case "c":
-                    case "julia":
-                    case "juliaSet":
-                    case "juliaSetPoint": parseJuliaSetPoint(rSide); break;
-                    default: if (!parseAssignment(lSide, rSide)) throw new IllegalArgumentException("cannot perform assignment " + parameter); break;
-                }
-            }    
-        }
-    }
+	private void warnOfOutputFileAlreadyExisting() {
+		Utilities.println("Error: cannot write to ", outputPath.toAbsolutePath(), " because a file already exists at that location. Add --replace-existing to overwrite that file.");
+	}
 
-    private void parseRectangle(String rectangleString) {
-        if (rectangleString.equals("default")) {
-            rectangle = null;
-        } else {
-            String[] components = rectangleString.split(",", 4);
-            if (components.length < 4) {
-                throw new IllegalArgumentException("cannot parse rectangle \"" + rectangleString + "\"");
-            }
-            Decimal re0 = new Decimal(components[0]);
-            Decimal im0 = new Decimal(components[1]);
-            Decimal re1 = new Decimal(components[2]);
-            Decimal im1 = new Decimal(components[3]);
-            rectangle = new Rectangle(re0, im0, re1, im1);    
-        }
-    }
+	private void parseParameters() {
+		if (parameters != null) {
+			for (String parameter : parameters) {
+				String[] sides = parameter.split("=", 2);
+				String lSide = sides[0];
+				String rSide = sides[1];
+				switch (lSide) {
+					case "r":
+					case "rect":
+					case "rectangle": parseRectangle(rSide); break;
+					case "c":
+					case "julia":
+					case "juliaSet":
+					case "juliaSetPoint": parseJuliaSetPoint(rSide); break;
+					default: if (!parseAssignment(lSide, rSide)) throw new IllegalArgumentException("cannot perform assignment " + parameter); break;
+				}
+			}
+		}
+	}
 
-    private void parseJuliaSetPoint(String juliaSetPointString) {
-        if (juliaSetPointString.equals("default")) {
-            juliaSetPoint = formulaInstance.getPlugin().getDefaultJuliaSetPoint();
-        } else {
-            String[] components = juliaSetPointString.split(",", 2);
-            if (components.length < 2) {
-                throw new IllegalArgumentException("cannot parse Julia set point \"" + juliaSetPointString + "\"");
-            }
-            Decimal re = new Decimal(components[0]);
-            Decimal im = new Decimal(components[1]);
-            juliaSetPoint = new JuliaSetPoint(re, im);
-        }
-    }
+	private void parseRectangle(String rectangleString) {
+		if (rectangleString.equals("default")) {
+			rectangle = null;
+		} else {
+			String[] components = rectangleString.split(",", 4);
+			if (components.length < 4) {
+				throw new IllegalArgumentException("cannot parse rectangle \"" + rectangleString + "\"");
+			}
+			Decimal re0 = new Decimal(components[0]);
+			Decimal im0 = new Decimal(components[1]);
+			Decimal re1 = new Decimal(components[2]);
+			Decimal im1 = new Decimal(components[3]);
+			rectangle = new Rectangle(re0, im0, re1, im1);    
+		}
+	}
 
-    private boolean parseAssignment(String lSide, String rSide) {
-        String[] path = lSide.split("\\.", 2);
-        List<PluginInstance<?>> targetInstances;
-        String targetInstanceId = path[0];
-        String targetParameterId = path[1];
-        switch (targetInstanceId) {
-            case "n":
-            case "nf":
-            case "numFact":
-            case "numberFactory": targetInstances = Arrays.asList(numberFactoryInstance); break;
-            case "f":
-            case "formula": targetInstances = Arrays.asList(formulaInstance); break;
-            case "r":
-            case "repr":
-            case "representation": targetInstances = Arrays.asList(representationInstance); break;
-            case "*": targetInstances = Arrays.asList(numberFactoryInstance, formulaInstance, representationInstance); break;
-            default: Utilities.println("Error: cannot parse token \"", targetInstanceId, "\"."); return false;
-        }
-        return assignTo(targetInstances, targetParameterId, rSide);
-    }
+	private void parseJuliaSetPoint(String juliaSetPointString) {
+		if (juliaSetPointString.equals("default")) {
+			juliaSetPoint = formulaInstance.getPlugin().getDefaultJuliaSetPoint();
+		} else {
+			String[] components = juliaSetPointString.split(",", 2);
+			if (components.length < 2) {
+				throw new IllegalArgumentException("cannot parse Julia set point \"" + juliaSetPointString + "\"");
+			}
+			Decimal re = new Decimal(components[0]);
+			Decimal im = new Decimal(components[1]);
+			juliaSetPoint = new JuliaSetPoint(re, im);
+		}
+	}
 
-    private boolean assignTo(List<PluginInstance<?>> targetInstances, String targetParameterId, String valueString) {
-        final Predicate<? super Boolean> IDENTITY = a -> a;
-        String[] path = targetParameterId.split("\\.", 2);
-        if (path.length == 2 && path[0].equals("hint")) {
-            if (path[1].equals("*")) {
-                return targetInstances.stream()
-                    .map(targetInstance -> assignHintGroupTo(targetInstance, valueString))
-                    .anyMatch(IDENTITY);
-            } else if (!path[1].isEmpty()) {
-                return targetInstances.stream()
-                    .map(targetInstance -> assignHintToParameter(targetInstance, path[1], valueString))
-                    .anyMatch(IDENTITY);
-            }
-        } else if (path.length == 1 && !path[0].isEmpty()) {
-            return targetInstances.stream()
-                .map(targetInstance -> assignToParameter(targetInstance, path[0], valueString))
-                .anyMatch(IDENTITY);
-        }
-        Utilities.println("Error: cannot parse token \"", targetParameterId, "\".");
-        return false;
-    }
+	private boolean parseAssignment(String lSide, String rSide) {
+		String[] path = lSide.split("\\.", 2);
+		List<PluginInstance<?>> targetInstances;
+		String targetInstanceId = path[0];
+		String targetParameterId = path[1];
+		switch (targetInstanceId) {
+			case "n":
+			case "nf":
+			case "numFact":
+			case "numberFactory": targetInstances = Arrays.asList(numberFactoryInstance); break;
+			case "f":
+			case "formula": targetInstances = Arrays.asList(formulaInstance); break;
+			case "r":
+			case "repr":
+			case "representation": targetInstances = Arrays.asList(representationInstance); break;
+			case "*": targetInstances = Arrays.asList(numberFactoryInstance, formulaInstance, representationInstance); break;
+			default: Utilities.println("Error: cannot parse token \"", targetInstanceId, "\"."); return false;
+		}
+		return assignTo(targetInstances, targetParameterId, rSide);
+	}
 
-    private boolean assignToParameter(PluginInstance<?> targetInstance, String targetParameterId, String valueString) {
-        Plugin plugin = targetInstance.getPlugin();
-        Parameter<?> targetParameter = plugin.getParameter(targetParameterId);
-        if (targetParameter == null) {
-            Utilities.println("Warning: parameter ", plugin.getFamily(), ".", targetParameterId, " does not exist.");
-            return false;
-        }
-        Object value = targetParameter.parseValue(valueString);
-        if (!targetParameter.acceptsValue(value)) {
-            throw new IllegalArgumentException(plugin.getFamily() + "." + targetParameterId + " does not permit value " + valueString);
-        }
-        targetInstance.setParameterValue(targetParameter, value);
-        return true;
-    }
+	private boolean assignTo(List<PluginInstance<?>> targetInstances, String targetParameterId, String valueString) {
+		final Predicate<? super Boolean> IDENTITY = a -> a;
+		String[] path = targetParameterId.split("\\.", 2);
+		if (path.length == 2 && path[0].equals("hint")) {
+			if (path[1].equals("*")) {
+				return targetInstances.stream()
+					.map(targetInstance -> assignHintGroupTo(targetInstance, valueString))
+					.anyMatch(IDENTITY);
+			} else if (!path[1].isEmpty()) {
+				return targetInstances.stream()
+					.map(targetInstance -> assignHintToParameter(targetInstance, path[1], valueString))
+					.anyMatch(IDENTITY);
+			}
+		} else if (path.length == 1 && !path[0].isEmpty()) {
+			return targetInstances.stream()
+				.map(targetInstance -> assignToParameter(targetInstance, path[0], valueString))
+				.anyMatch(IDENTITY);
+		}
+		Utilities.println("Error: cannot parse token \"", targetParameterId, "\".");
+		return false;
+	}
 
-    private boolean assignHintToParameter(PluginInstance<?> targetInstance, String targetParameterId, String hintGroupName) {
-        Plugin plugin = targetInstance.getPlugin();
-        Parameter<?> targetParameter = plugin.getParameter(targetParameterId);
-        if (targetParameter == null) {
-            Utilities.println("Warning: parameter ", plugin.getFamily(), ".", targetParameterId, " does not exist.");
-            return false;
-        }
-        List<Object> hintGroup = plugin.getHintGroup(hintGroupName);
-        if (hintGroup == null) {
-            if (hintGroupName.matches("[0-9]+")) {
-                int hintIndex = Integer.valueOf(hintGroupName);
-                if (targetParameter.hasHint(hintIndex)) {
-                    Object value = targetParameter.getHint(hintIndex);
-                    targetInstance.setParameterValue(targetParameter, value);
-                    return true;
-                }
-                Utilities.println("Warning: parameter ", plugin.getFamily(), ".", targetParameterId, " has no hint at index ", hintIndex, ".");
-            } else {
-                Utilities.println("Warning: ", plugin.getFamily(), " has no hint group named ", hintGroupName, ".");
-            }
-            return false;
-        }
-        Object value = hintGroup.get(targetParameter.getIndex());
-        if (value != null) {
-            targetInstance.setParameterValue(targetParameter, value);
-            return true;
-        }
-        Utilities.println("Warning: parameter ", plugin.getFamily(), ".", targetParameterId, " is not touched by hint group named ", hintGroupName, ".");
-        return false;
-    }
+	private boolean assignToParameter(PluginInstance<?> targetInstance, String targetParameterId, String valueString) {
+		Plugin plugin = targetInstance.getPlugin();
+		Parameter<?> targetParameter = plugin.getParameter(targetParameterId);
+		if (targetParameter == null) {
+			Utilities.println("Warning: parameter ", plugin.getFamily(), ".", targetParameterId, " does not exist.");
+			return false;
+		}
+		Object value = targetParameter.parseValue(valueString);
+		if (!targetParameter.acceptsValue(value)) {
+			throw new IllegalArgumentException(plugin.getFamily() + "." + targetParameterId + " does not permit value " + valueString);
+		}
+		targetInstance.setParameterValue(targetParameter, value);
+		return true;
+	}
 
-    private boolean assignHintGroupTo(PluginInstance<?> targetInstance, String hintGroupName) {
-        Plugin plugin = targetInstance.getPlugin();
-        List<Parameter<?>> parameters = plugin.getParameters();
-        List<Object> hintGroup = plugin.getHintGroup(hintGroupName);
-        if (hintGroup == null) {
-            if (hintGroupName.matches("[0-9]+")) {
-                int hintIndex = Integer.valueOf(hintGroupName);
-                boolean hintFound = false;
-                for (Parameter<?> parameter : parameters) {
-                    if (parameter.hasHint(hintIndex)) {
-                        targetInstance.setParameterValue(parameter, parameter.getHint(hintIndex));
-                        hintFound = true;
-                    }
-                }
-                if (!hintFound) {
-                    Utilities.println("Warning: no parameter of ", plugin.getFamily(), " has a hint at index ", hintIndex, ".");
-                }
-                return hintFound;
-            } else {
-                Utilities.println("Warning: ", plugin.getFamily(), " has no hint group named ", hintGroupName, ".");
-            }
-            return false;
-        }
-        for (Parameter<?> parameter : parameters) {
-            Object hint = hintGroup.get(parameter.getIndex());
-            if (hint != null) {
-                targetInstance.setParameterValue(parameter, hint);
-            }
-        }
-        return true;
-    }
+	private boolean assignHintToParameter(PluginInstance<?> targetInstance, String targetParameterId, String hintGroupName) {
+		Plugin plugin = targetInstance.getPlugin();
+		Parameter<?> targetParameter = plugin.getParameter(targetParameterId);
+		if (targetParameter == null) {
+			Utilities.println("Warning: parameter ", plugin.getFamily(), ".", targetParameterId, " does not exist.");
+			return false;
+		}
+		List<Object> hintGroup = plugin.getHintGroup(hintGroupName);
+		if (hintGroup == null) {
+			if (hintGroupName.matches("[0-9]+")) {
+				int hintIndex = Integer.valueOf(hintGroupName);
+				if (targetParameter.hasHint(hintIndex)) {
+					Object value = targetParameter.getHint(hintIndex);
+					targetInstance.setParameterValue(targetParameter, value);
+					return true;
+				}
+				Utilities.println("Warning: parameter ", plugin.getFamily(), ".", targetParameterId, " has no hint at index ", hintIndex, ".");
+			} else {
+				Utilities.println("Warning: ", plugin.getFamily(), " has no hint group named ", hintGroupName, ".");
+			}
+			return false;
+		}
+		Object value = hintGroup.get(targetParameter.getIndex());
+		if (value != null) {
+			targetInstance.setParameterValue(targetParameter, value);
+			return true;
+		}
+		Utilities.println("Warning: parameter ", plugin.getFamily(), ".", targetParameterId, " is not touched by hint group named ", hintGroupName, ".");
+		return false;
+	}
 
-    private static <P extends Plugin> List<P> findMatchingPlugins(List<P> plugins, String searchString) {
-        if (searchString == null || searchString.isEmpty()) {
-            return plugins;
-        }
+	private boolean assignHintGroupTo(PluginInstance<?> targetInstance, String hintGroupName) {
+		Plugin plugin = targetInstance.getPlugin();
+		List<Parameter<?>> parameters = plugin.getParameters();
+		List<Object> hintGroup = plugin.getHintGroup(hintGroupName);
+		if (hintGroup == null) {
+			if (hintGroupName.matches("[0-9]+")) {
+				int hintIndex = Integer.valueOf(hintGroupName);
+				boolean hintFound = false;
+				for (Parameter<?> parameter : parameters) {
+					if (parameter.hasHint(hintIndex)) {
+						targetInstance.setParameterValue(parameter, parameter.getHint(hintIndex));
+						hintFound = true;
+					}
+				}
+				if (!hintFound) {
+					Utilities.println("Warning: no parameter of ", plugin.getFamily(), " has a hint at index ", hintIndex, ".");
+				}
+				return hintFound;
+			} else {
+				Utilities.println("Warning: ", plugin.getFamily(), " has no hint group named ", hintGroupName, ".");
+			}
+			return false;
+		}
+		for (Parameter<?> parameter : parameters) {
+			Object hint = hintGroup.get(parameter.getIndex());
+			if (hint != null) {
+				targetInstance.setParameterValue(parameter, hint);
+			}
+		}
+		return true;
+	}
 
-        List<P> matches = plugins.stream()
-            .filter(p -> p.getId().contains(searchString))
-            .collect(Collectors.toList());
-        Optional<P> exactMatch = matches.stream()
-            .filter(p -> p.getId().equals(searchString))
-            .findFirst();
-        if (exactMatch.isPresent()) {
-            return Collections.singletonList(exactMatch.get());
-        }
-        return matches;
-    }
+	private static <P extends Plugin> List<P> findMatchingPlugins(List<P> plugins, String searchString) {
+		if (searchString == null || searchString.isEmpty()) {
+			return plugins;
+		}
 
-    private static void warnOfParsingProblems(Loader loader) {
-        if (loader.getParserOutput() != null) {
-            Utilities.print("Warning: ");
-            if (loader.getProblemCount(DescriptorParser.Problem.FATAL_ERROR) > 0) {
-                Utilities.print("one or more plugins will not be available due to errors in their relative descriptors.");
-            } else if (loader.getProblemCount(DescriptorParser.Problem.ERROR) > 0) {
-                Utilities.print("one or more plugins will possibly miss feautures due to errors in their relative descriptors.");
-            } else if (loader.getProblemCount(DescriptorParser.Problem.WARNING) > 0) {
-                Utilities.print("one or more plugin descriptors were parsed with warnings.");
-            }
-            Utilities.println(" See ", loader.getProfile().getDescriptorParserOutputFile(), " for details.");
-        }
-    }
+		List<P> matches = plugins.stream()
+			.filter(p -> p.getId().contains(searchString))
+			.collect(Collectors.toList());
+		Optional<P> exactMatch = matches.stream()
+			.filter(p -> p.getId().equals(searchString))
+			.findFirst();
+		if (exactMatch.isPresent()) {
+			return Collections.singletonList(exactMatch.get());
+		}
+		return matches;
+	}
 
-    private static void warnOfInsufficientPluginsInstalled(Loader loader) {
-        Utilities.println("Error: at least 1 plugin for each of the 3 plugin families must be available in order to run the program.");
-        Utilities.println("Details:");
-        Utilities.println("- Available number factories: ", loader.getAvailableNumberFactories().size());
-        Utilities.println("- Available formulas: ", loader.getAvailableFormulas().size());
-        Utilities.println("- Available representations: ", loader.getAvailableRepresentations().size());
-    }
+	private static void warnOfParsingProblems(Loader loader) {
+		if (loader.getParserOutput() != null) {
+			Utilities.print("Warning: ");
+			if (loader.getProblemCount(DescriptorParser.Problem.FATAL_ERROR) > 0) {
+				Utilities.print("one or more plugins will not be available due to errors in their relative descriptors.");
+			} else if (loader.getProblemCount(DescriptorParser.Problem.ERROR) > 0) {
+				Utilities.print("one or more plugins will possibly miss feautures due to errors in their relative descriptors.");
+			} else if (loader.getProblemCount(DescriptorParser.Problem.WARNING) > 0) {
+				Utilities.print("one or more plugin descriptors were parsed with warnings.");
+			}
+			Utilities.println(" See ", loader.getProfile().getDescriptorParserOutputFile(), " for details.");
+		}
+	}
 
-    private static void warnOfMatchNotFound(String pluginName, String searchString) {
-        Utilities.println("Error: cannot find ", pluginName, " matching search string \"", Objects.toString(searchString, ""), "\".");
-    }
+	private static void warnOfInsufficientPluginsInstalled(Loader loader) {
+		Utilities.println("Error: at least 1 plugin for each of the 3 plugin families must be available in order to run the program.");
+		Utilities.println("Details:");
+		Utilities.println("- Available number factories: ", loader.getAvailableNumberFactories().size());
+		Utilities.println("- Available formulas: ", loader.getAvailableFormulas().size());
+		Utilities.println("- Available representations: ", loader.getAvailableRepresentations().size());
+	}
 
-    private static void warnOfMultipleMatches(List<? extends Plugin> matches, String pluginName, String searchString) {
-        Utilities.println("Error: multiple ", pluginName, " matching search string \"", Objects.toString(searchString, ""), "\":");
-        matches.forEach(p -> {
-            Utilities.println("- ", p.getId());
-        });
-    }
+	private static void warnOfMatchNotFound(String pluginName, String searchString) {
+		Utilities.println("Error: cannot find ", pluginName, " matching search string \"", Objects.toString(searchString, ""), "\".");
+	}
+
+	private static void warnOfMultipleMatches(List<? extends Plugin> matches, String pluginName, String searchString) {
+		Utilities.println("Error: multiple ", pluginName, " matching search string \"", Objects.toString(searchString, ""), "\":");
+		matches.forEach(p -> {
+			Utilities.println("- ", p.getId());
+		});
+	}
 }
