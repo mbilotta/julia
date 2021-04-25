@@ -278,44 +278,47 @@ public class ImageGenerationCli implements Runnable {
 					Math.min(Runtime.getRuntime().availableProcessors(), numOfProducersHint)
 				);	
 			}
-			// Instantiate Production
-			Production production = representation.createProduction(
-				intermediateImage, numberFactory, formula,
-				coordinateTransform,
-				juliaSetPoint != null ? juliaSetPoint.toComplex(numberFactory) : null);
-
-			// Pre-rendering output file check
-			File outputFile = outputPath.toFile();
-			if (!replaceExisting && outputFile.exists()) {
-				warnOfOutputFileAlreadyExisting();
-				return;
-			}
 
 			// Run computation
-			Utilities.print("Rendering intermediate image...");
-			int numOfProducers = production.getNumOfProducers();
-			executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
-			CountDownLatch done = new CountDownLatch(numOfProducers);
+			File outputFile = outputPath.toFile();
 			Timer timer = new Timer();
-			timer.start();
-			for (int i = 0; i < numOfProducers; i++) {
-				Production.Producer producer = production.createProducer(i);
-				executorService.submitAndObserve(producer, new ExecutionObserver() {
-					@Override
-					public void executionCancelled(Runnable target) {
-						done.countDown();
-					}
+			if (!intermediateImage.isComplete()) {
+				// Instantiate Production
+				Production production = representation.createProduction(
+					intermediateImage, numberFactory, formula,
+					coordinateTransform,
+					juliaSetPoint != null ? juliaSetPoint.toComplex(numberFactory) : null);
 
-					@Override
-					public void executionFinished(Runnable target) {
-						done.countDown();
-					}
-				});
+				// Pre-rendering output file check
+				if (!replaceExisting && outputFile.exists()) {
+					warnOfOutputFileAlreadyExisting();
+					return;
+				}
+
+				Utilities.print("Rendering intermediate image...");
+				int numOfProducers = production.getNumOfProducers();
+				executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
+				CountDownLatch done = new CountDownLatch(numOfProducers);
+				timer.start();
+				for (int i = 0; i < numOfProducers; i++) {
+					Production.Producer producer = production.createProducer(i);
+					executorService.submitAndObserve(producer, new ExecutionObserver() {
+						@Override
+						public void executionCancelled(Runnable target) {
+							done.countDown();
+						}
+
+						@Override
+						public void executionFinished(Runnable target) {
+							done.countDown();
+						}
+					});
+				}
+				done.await();
+				timer.stop();
+
+				Utilities.println(" ", Utilities.formatDuration(timer.getElapsedTime()));
 			}
-			done.await();
-			timer.stop();
-
-			Utilities.println(" ", Utilities.formatDuration(timer.getElapsedTime()));
 
 			String fileName = outputFile.getName();
 			String extension = fileName.substring(fileName.lastIndexOf('.'));
