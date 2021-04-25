@@ -89,7 +89,7 @@ public class Utilities {
 	}
 
 	public static <T extends Cloneable> T safelyClone(T obj) {
-		return obj != null ? (T) obj.clone() : null;
+		return obj != null ? (T) invoke(obj, "clone") : null;
 	}
 
 	public static <T> T read(ObjectInputStream in, Object name)
