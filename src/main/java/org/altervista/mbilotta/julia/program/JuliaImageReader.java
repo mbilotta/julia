@@ -40,7 +40,7 @@ import org.altervista.mbilotta.julia.program.parsers.Plugin;
 import org.altervista.mbilotta.julia.program.parsers.RepresentationPlugin;
 
 
-public class JuliaImageReader extends BlockingSwingWorker<Void> {
+public class JuliaImageReader extends BlockingSwingWorker<Void> implements AutoCloseable {
 
 	private final File file;
 
@@ -54,6 +54,8 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> {
 	private int fatalCount = 0;
 	private boolean hasIntermediateImage = false;
 	private IntermediateImage iimg;
+
+	private ZipFile zipFile;
 
 	private final Out<Integer> errorCountOut = new Out<Integer>() {
 		@Override
@@ -104,6 +106,17 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> {
 		this.numberFactories = application.getNumberFactories();
 		this.formulas = application.getFormulas();
 		this.representations = application.getRepresentations();
+		this.errorOutput = errorOutput == null ? Printer.nullPrinter() : errorOutput;
+		this.loadIntermediateImage = loadIntermediateImage;
+	}
+
+	public JuliaImageReader(File file, Loader loader, Printer errorOutput, boolean loadIntermediateImage) {
+		assert file != null;
+		assert loader != null;
+		this.file = file;
+		this.numberFactories = loader.getAvailableNumberFactories();
+		this.formulas = loader.getAvailableFormulas();
+		this.representations = loader.getAvailableRepresentations();
 		this.errorOutput = errorOutput == null ? Printer.nullPrinter() : errorOutput;
 		this.loadIntermediateImage = loadIntermediateImage;
 	}
@@ -184,90 +197,106 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> {
 		return hasIntermediateImage;
 	}
 
-	public void read() {
-		try (ZipFile zipFile = new ZipFile(file)) {
+	public JuliaImageReader readHeader() throws IOException {
+		zipFile = new ZipFile(file);
 
-			publishToGui("number factory...");
-			numberFactoryInstance = readNumberFactory(zipFile);
-			if (isCancelled()) return;
-			setGuiProgress(12);
+		publishToGui("number factory...");
+		numberFactoryInstance = readNumberFactory(zipFile);
+		if (isCancelled()) return this;
+		setGuiProgress(12);
 
-			publishToGui("formula...");
-			formulaInstance = readFormula(zipFile);
-			if (isCancelled()) return;
-			setGuiProgress(24);
+		publishToGui("formula...");
+		formulaInstance = readFormula(zipFile);
+		if (isCancelled()) return this;
+		setGuiProgress(24);
 
-			publishToGui("representation...");
-			representationInstance = readRepresentation(zipFile);
-			if (isCancelled()) return;
-			setGuiProgress(36);
+		publishToGui("representation...");
+		representationInstance = readRepresentation(zipFile);
+		if (isCancelled()) return this;
+		setGuiProgress(36);
 
-			publishToGui("rectangle...");
-			ZipEntry entry = zipFile.getEntry("rectangle");
-			if (entry == null) {
-				addFatalError(null);
-				errorOutput.println("could not find rectangle zip entry.");
-			} else {
-				try (InputStream is = zipFile.getInputStream(entry);
-						ObjectInputStream ois = new ObjectInputStream(is)) {
-					rectangle = readNonNull(ois, "rectangle", Rectangle.class);
-					forceEqualScalesOut.set(ois.readBoolean());
-				} catch (ClassNotFoundException | IOException e) {
-					addFatalError(entry);
-					errorOutput.printStackTrace(e);
-				}
-				if (isCancelled()) return;
+		publishToGui("rectangle...");
+		ZipEntry entry = zipFile.getEntry("rectangle");
+		if (entry == null) {
+			addFatalError(null);
+			errorOutput.println("could not find rectangle zip entry.");
+		} else {
+			try (InputStream is = zipFile.getInputStream(entry);
+					ObjectInputStream ois = new ObjectInputStream(is)) {
+				rectangle = readNonNull(ois, "rectangle", Rectangle.class);
+				forceEqualScalesOut.set(ois.readBoolean());
+			} catch (ClassNotFoundException | IOException e) {
+				addFatalError(entry);
+				errorOutput.printStackTrace(e);
 			}
-			setGuiProgress(48);
+			if (isCancelled()) return this;
+		}
+		setGuiProgress(48);
 
-			entry = zipFile.getEntry("juliaSetPoint");
-			if (entry == null) {
-				juliaSetPointOut.set(null);
-			} else {
-				publishToGui("julia set point...");
-				try (InputStream is = zipFile.getInputStream(entry);
-						ObjectInputStream ois = new ObjectInputStream(is)) {
-					JuliaSetPoint juliaSetPoint = readNonNull(ois, "juliaSetPoint", JuliaSetPoint.class);
-					juliaSetPointOut.set(juliaSetPoint);
-				} catch (ClassNotFoundException | IOException e) {
-					addFatalError(entry);
-					errorOutput.printStackTrace(e);
-				}
-				if (isCancelled()) return;
+		entry = zipFile.getEntry("juliaSetPoint");
+		if (entry == null) {
+			juliaSetPointOut.set(null);
+		} else {
+			publishToGui("julia set point...");
+			try (InputStream is = zipFile.getInputStream(entry);
+					ObjectInputStream ois = new ObjectInputStream(is)) {
+				JuliaSetPoint juliaSetPoint = readNonNull(ois, "juliaSetPoint", JuliaSetPoint.class);
+				juliaSetPointOut.set(juliaSetPoint);
+			} catch (ClassNotFoundException | IOException e) {
+				addFatalError(entry);
+				errorOutput.printStackTrace(e);
 			}
-			setGuiProgress(60);
+			if (isCancelled()) return this;
+		}
+		setGuiProgress(60);
 
-			if (fatalCount == 0 && loadIntermediateImage) {
-				entry = zipFile.getEntry("intermediateImage");
-				if (entry != null) {
-					hasIntermediateImage = true;
-					publishToGui("intermediate image...");
-					try {
-						Representation representation = (Representation) representationInstance.create();
-						try (InputStream is = zipFile.getInputStream(entry);
-								ObjectInputStream ois = new ObjectInputStream(is)) {
-							iimg = representation.readIntermediateImage(ois);
-						} catch (ClassNotFoundException | IOException e) {
-							addFatalError(entry);
-							errorOutput.printStackTrace(e);
-						}
-					} catch (ReflectiveOperationException e) {
+		return this;
+	}
+
+	public void readIntermediateImage() {
+		if (fatalCount == 0 && loadIntermediateImage) {
+			ZipEntry entry = zipFile.getEntry("intermediateImage");
+			if (entry != null) {
+				hasIntermediateImage = true;
+				publishToGui("intermediate image...");
+				try {
+					Representation representation = (Representation) representationInstance.create();
+					try (InputStream is = zipFile.getInputStream(entry);
+							ObjectInputStream ois = new ObjectInputStream(is)) {
+						iimg = representation.readIntermediateImage(ois);
+					} catch (ClassNotFoundException | IOException e) {
 						addFatalError(entry);
-						errorOutput.print("could not create instance ");
-						representationInstance.printTo(errorOutput);
-						errorOutput.print(". Cause: ");
 						errorOutput.printStackTrace(e);
-						representationInstance = null;
 					}
-					if (isCancelled()) return;
+				} catch (ReflectiveOperationException e) {
+					addFatalError(entry);
+					errorOutput.print("could not create instance ");
+					representationInstance.printTo(errorOutput);
+					errorOutput.print(". Cause: ");
+					errorOutput.printStackTrace(e);
+					representationInstance = null;
 				}
+				if (isCancelled()) return;
 			}
-			setGuiProgress(100);
+		}
+		setGuiProgress(100);
+	}
 
+	public void read() {
+		try (JuliaImageReader reader = readHeader()) {
+			readIntermediateImage();
 		} catch (IOException e) {
 			addFatalError(null);
 			errorOutput.printStackTrace(e);
 		}
+	}
+
+	@Override
+	public void close() throws IOException {
+		if (zipFile != null) {
+			zipFile.close();
+		}
+		zipFile = null;
 	}
 
 	@Override
@@ -300,7 +329,7 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> {
 	private PluginInstance<NumberFactoryPlugin> readNumberFactory(ZipFile zipFile) {
 		ZipEntry entry = zipFile.getEntry("numberFactory");
 		if (entry == null) {
-			addError(null);
+			addFatalError(null);
 			errorOutput.println("could not find number factory zip entry.");
 			return null;
 		}
@@ -323,7 +352,7 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> {
 					errorOutput,
 					errorCountOut, fatalCountOut);
 		} catch (ClassNotFoundException | IOException e) {
-			addError(entry);
+			addFatalError(entry);
 			errorOutput.printStackTrace(e);
 			return null;
 		}
@@ -342,7 +371,11 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> {
 			String id = readNonNull(ois, "id", String.class);
 			FormulaPlugin formula = findFormula(id);
 			if (formula == null) {
-				addFatalError(entry);
+				if (isGuiRunning()) {
+					addFatalError(entry);
+				} else {
+					addError(entry);
+				}
 				errorOutput.println("unknown formula \"", id, "\".");
 				return null;
 			}
@@ -374,7 +407,11 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> {
 			String id = readNonNull(ois, "id", String.class);
 			RepresentationPlugin representation = findRepresentation(id);
 			if (representation == null) {
-				addFatalError(entry);
+				if (isGuiRunning()) {
+					addFatalError(entry);
+				} else {
+					addError(entry);
+				}
 				errorOutput.println("unknown representation \"", id, "\".");
 				return null;
 			}

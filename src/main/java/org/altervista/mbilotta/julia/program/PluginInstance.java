@@ -126,7 +126,7 @@ public final class PluginInstance<P extends Plugin> implements Cloneable {
 	}
 
 	@Override
-	public Object clone() {
+	public PluginInstance<P> clone() {
 		return new PluginInstance<P>(this);
 	}
 

@@ -48,6 +48,7 @@ import org.altervista.mbilotta.julia.math.CoordinateTransform;
 import org.altervista.mbilotta.julia.program.Application;
 import org.altervista.mbilotta.julia.program.ExecutionObserver;
 import org.altervista.mbilotta.julia.program.JuliaExecutorService;
+import org.altervista.mbilotta.julia.program.JuliaImageReader;
 import org.altervista.mbilotta.julia.program.JuliaSetPoint;
 import org.altervista.mbilotta.julia.program.Loader;
 import org.altervista.mbilotta.julia.program.PluginInstance;
@@ -88,7 +89,7 @@ public class ImageGenerationCli implements Runnable {
 	Integer numOfProducersHint;
 
 	@Option(names = { "-q", "--force-equal-scales" })
-	boolean forceEqualScales = true;
+	Boolean forceEqualScales;
 
 	@Option(names = { "-n", "--number-factory" })
 	String numberFactoryId;
@@ -125,6 +126,8 @@ public class ImageGenerationCli implements Runnable {
 
 	private JuliaExecutorService executorService;
 
+	private JuliaImageReader reader;
+
 	@Override
 	public void run() {
 		try {
@@ -142,37 +145,111 @@ public class ImageGenerationCli implements Runnable {
 				return;
 			}
 
-			// Find matching number factory
-			List<NumberFactoryPlugin> matchingNumberFactories = findMatchingPlugins(loader.getAvailableNumberFactories(), numberFactoryId);
-			if (matchingNumberFactories.isEmpty()) {
-				warnOfMatchNotFound("number factory", numberFactoryId);
-				return;
-			}
-			if (matchingNumberFactories.size() > 1) {
-				warnOfMultipleMatches(matchingNumberFactories, "number factories", numberFactoryId);
-				return;
+			if (inputPath != null) {
+				reader = new JuliaImageReader(inputPath.toFile(), loader, Utilities.err, true);
+				reader.setGuiRunning(false);
+				reader.readHeader();
+
+				if (reader.hasFatalErrors()) {
+					return;
+				}
+
+				numberFactoryInstance = Utilities.safelyClone(reader.getNumberFactoryInstance());
+				formulaInstance = Utilities.safelyClone(reader.getFormulaInstance());
+				representationInstance = Utilities.safelyClone(reader.getRepresentationInstance());
+				juliaSetPoint = reader.getJuliaSetPoint();
+				rectangle = reader.getRectangle();
+				if (forceEqualScales == null) {
+					forceEqualScales = reader.getForceEqualScales();
+				}
 			}
 
-			// Find matching formula
-			List<FormulaPlugin> matchingFormulas = findMatchingPlugins(loader.getAvailableFormulas(), formulaId);
-			if (matchingFormulas.isEmpty()) {
-				warnOfMatchNotFound("formula", formulaId);
-				return;
-			}
-			if (matchingFormulas.size() > 1) {
-				warnOfMultipleMatches(matchingFormulas, "formulas", formulaId);
-				return;
+			if (numberFactoryId != null || numberFactoryInstance == null) {
+				// Find matching number factory
+				List<NumberFactoryPlugin> matchingNumberFactories = findMatchingPlugins(loader.getAvailableNumberFactories(), numberFactoryId);
+				if (matchingNumberFactories.isEmpty()) {
+					warnOfMatchNotFound("number factory", numberFactoryId);
+					return;
+				}
+				if (matchingNumberFactories.size() > 1) {
+					warnOfMultipleMatches(matchingNumberFactories, "number factories", numberFactoryId);
+					return;
+				}
+				numberFactoryInstance = new PluginInstance<NumberFactoryPlugin>(matchingNumberFactories.get(0));
 			}
 
-			// Find matching representation
-			List<RepresentationPlugin> matchingRepresentations = findMatchingPlugins(loader.getAvailableRepresentations(), representationId);
-			if (matchingRepresentations.isEmpty()) {
-				warnOfMatchNotFound("representation", representationId);
-				return;
+			if (formulaId != null || formulaInstance == null) {
+				// Find matching formula
+				List<FormulaPlugin> matchingFormulas = findMatchingPlugins(loader.getAvailableFormulas(), formulaId);
+				if (matchingFormulas.isEmpty()) {
+					warnOfMatchNotFound("formula", formulaId);
+					return;
+				}
+				if (matchingFormulas.size() > 1) {
+					warnOfMultipleMatches(matchingFormulas, "formulas", formulaId);
+					return;
+				}
+				formulaInstance = new PluginInstance<FormulaPlugin>(matchingFormulas.get(0));
 			}
-			if (matchingRepresentations.size() > 1) {
-				warnOfMultipleMatches(matchingRepresentations, "representations", representationId);
-				return;
+
+			if (representationId != null || representationInstance == null) {
+				// Find matching representation
+				List<RepresentationPlugin> matchingRepresentations = findMatchingPlugins(loader.getAvailableRepresentations(), representationId);
+				if (matchingRepresentations.isEmpty()) {
+					warnOfMatchNotFound("representation", representationId);
+					return;
+				}
+				if (matchingRepresentations.size() > 1) {
+					warnOfMultipleMatches(matchingRepresentations, "representations", representationId);
+					return;
+				}
+				representationInstance = new PluginInstance<RepresentationPlugin>(matchingRepresentations.get(0));
+			}
+
+			parseParameters();
+
+			// Assign default rectangle
+			if (rectangle == null) {
+				if (juliaSetPoint == null) {
+					rectangle = formulaInstance.getPlugin().getDefaultMandelbrotSetRectangle();
+				} else {
+					rectangle = formulaInstance.getPlugin().getDefaultJuliaSetRectangle();
+				}
+			}
+			if (forceEqualScales == null) {
+				forceEqualScales = true;
+			}
+
+			IntermediateImage intermediateImage = null;
+			if (reader != null) {
+					if (!ignoreIntermediateImage) {
+						boolean canUseIntermediateImage = numberFactoryInstance.equals(reader.getNumberFactoryInstance())
+							&& formulaInstance.equals(reader.getFormulaInstance())
+							&& representationInstance.equalsIgnorePreviewables(reader.getRepresentationInstance())
+							&& Objects.equals(juliaSetPoint, reader.getJuliaSetPoint())
+							&& rectangle.equals(reader.getRectangle())
+							&& forceEqualScales.equals(reader.getForceEqualScales());
+					if (canUseIntermediateImage) {
+						reader.readIntermediateImage();
+						if (reader.hasFatalErrors()) {
+							return;
+						}
+						if (reader.hasIntermediateImage()) {
+							intermediateImage = reader.getIntermediateImage();
+							if (width == null) {
+								width = intermediateImage.getWidth();
+							}
+							if (height == null) {
+								height = intermediateImage.getHeight();
+							}
+							canUseIntermediateImage = width.equals(intermediateImage.getWidth()) && height.equals(intermediateImage.getHeight());
+							if (!canUseIntermediateImage) {
+								intermediateImage = null;
+							}
+						}
+					}
+				}
+				reader.close();
 			}
 
 			Preferences preferences = loader.getPreferences();
@@ -186,21 +263,6 @@ public class ImageGenerationCli implements Runnable {
 				numOfProducersHint = preferences.getNumOfProducerThreads();
 			}
 
-			numberFactoryInstance = new PluginInstance<NumberFactoryPlugin>(matchingNumberFactories.get(0));
-			formulaInstance = new PluginInstance<FormulaPlugin>(matchingFormulas.get(0));
-			representationInstance = new PluginInstance<RepresentationPlugin>(matchingRepresentations.get(0));
-
-			parseParameters();
-
-			// Assign default rectangle
-			if (rectangle == null) {
-				if (juliaSetPoint == null) {
-					rectangle = formulaInstance.getPlugin().getDefaultMandelbrotSetRectangle();
-				} else {
-					rectangle = formulaInstance.getPlugin().getDefaultJuliaSetRectangle();
-				}
-			}
-
 			// Instantiate NumberFactory
 			NumberFactory numberFactory = (NumberFactory) numberFactoryInstance.create();
 			// Instantiate Formula
@@ -210,10 +272,12 @@ public class ImageGenerationCli implements Runnable {
 			// Instantiate CoordinateTransform
 			CoordinateTransform coordinateTransform = rectangle.createCoordinateTransform(width, height, forceEqualScales, numberFactory);
 			// Instantiate IntermediateImage
-			IntermediateImage intermediateImage = representation.createIntermediateImage(
-				width, height,
-				Math.min(Runtime.getRuntime().availableProcessors(), numOfProducersHint)
-			);
+			if (intermediateImage == null) {
+				intermediateImage = representation.createIntermediateImage(
+					width, height,
+					Math.min(Runtime.getRuntime().availableProcessors(), numOfProducersHint)
+				);	
+			}
 			// Instantiate Production
 			Production production = representation.createProduction(
 				intermediateImage, numberFactory, formula,
@@ -299,6 +363,13 @@ public class ImageGenerationCli implements Runnable {
 		} finally {
 			if (executorService != null) {
 				executorService.shutdownNow();
+			}
+			if (reader != null) {
+				try {
+					reader.close();
+				} catch (IOException ex) {
+					ex.printStackTrace();
+				}
 			}
 		}
 	}

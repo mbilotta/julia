@@ -80,10 +80,16 @@ public class Utilities {
 
 	public static final Printer out = Printer.newStandardOutput();
 
+	public static final Printer err = Printer.newStandardError();
+
 	public static final Printer debug = Printer.wrapPrinter(out);
 
 	// Don't let anyone instantiate this class
 	private Utilities() {
+	}
+
+	public static <T extends Cloneable> T safelyClone(T obj) {
+		return obj != null ? (T) obj.clone() : null;
 	}
 
 	public static <T> T read(ObjectInputStream in, Object name)
