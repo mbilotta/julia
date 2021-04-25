@@ -187,68 +187,58 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> {
 	public void read() {
 		try (ZipFile zipFile = new ZipFile(file)) {
 
-			if (numberFactoryInstance == null) {
-				publishToGui("number factory...");
-				numberFactoryInstance = readNumberFactory(zipFile);
-				if (isCancelled()) return;	
-			}
+			publishToGui("number factory...");
+			numberFactoryInstance = readNumberFactory(zipFile);
+			if (isCancelled()) return;
 			setGuiProgress(12);
 
-			if (formulaInstance == null) {
-				publishToGui("formula...");
-				formulaInstance = readFormula(zipFile);
-				if (isCancelled()) return;	
-			}
+			publishToGui("formula...");
+			formulaInstance = readFormula(zipFile);
+			if (isCancelled()) return;
 			setGuiProgress(24);
 
-			if (representationInstance == null) {
-				publishToGui("representation...");
-				representationInstance = readRepresentation(zipFile);
-				if (isCancelled()) return;
-			}
+			publishToGui("representation...");
+			representationInstance = readRepresentation(zipFile);
+			if (isCancelled()) return;
 			setGuiProgress(36);
 
-			if (rectangle == null) {
-				publishToGui("rectangle...");
-				ZipEntry entry = zipFile.getEntry("rectangle");
-				if (entry == null) {
-					addFatalError(null);
-					errorOutput.println("could not find rectangle zip entry.");
-				} else {
-					try (InputStream is = zipFile.getInputStream(entry);
-							ObjectInputStream ois = new ObjectInputStream(is)) {
-						rectangle = readNonNull(ois, "rectangle", Rectangle.class);
-						forceEqualScalesOut.set(ois.readBoolean());
-					} catch (ClassNotFoundException | IOException e) {
-						addFatalError(entry);
-						errorOutput.printStackTrace(e);
-					}
-					if (isCancelled()) return;
+			publishToGui("rectangle...");
+			ZipEntry entry = zipFile.getEntry("rectangle");
+			if (entry == null) {
+				addFatalError(null);
+				errorOutput.println("could not find rectangle zip entry.");
+			} else {
+				try (InputStream is = zipFile.getInputStream(entry);
+						ObjectInputStream ois = new ObjectInputStream(is)) {
+					rectangle = readNonNull(ois, "rectangle", Rectangle.class);
+					forceEqualScalesOut.set(ois.readBoolean());
+				} catch (ClassNotFoundException | IOException e) {
+					addFatalError(entry);
+					errorOutput.printStackTrace(e);
 				}
+				if (isCancelled()) return;
 			}
 			setGuiProgress(48);
 
-			if (!juliaSetPointOut.isSet()) {
-				ZipEntry entry = zipFile.getEntry("juliaSetPoint");
-				if (entry == null) {
-					juliaSetPointOut.set(null);
-				} else {
-					publishToGui("julia set point...");
-					try (InputStream is = zipFile.getInputStream(entry);
-							ObjectInputStream ois = new ObjectInputStream(is)) {
-						JuliaSetPoint juliaSetPoint = readNonNull(ois, "juliaSetPoint", JuliaSetPoint.class);
-						juliaSetPointOut.set(juliaSetPoint);
-					} catch (ClassNotFoundException | IOException e) {
-						addFatalError(entry);
-						errorOutput.printStackTrace(e);
-					}
-					if (isCancelled()) return;
+			entry = zipFile.getEntry("juliaSetPoint");
+			if (entry == null) {
+				juliaSetPointOut.set(null);
+			} else {
+				publishToGui("julia set point...");
+				try (InputStream is = zipFile.getInputStream(entry);
+						ObjectInputStream ois = new ObjectInputStream(is)) {
+					JuliaSetPoint juliaSetPoint = readNonNull(ois, "juliaSetPoint", JuliaSetPoint.class);
+					juliaSetPointOut.set(juliaSetPoint);
+				} catch (ClassNotFoundException | IOException e) {
+					addFatalError(entry);
+					errorOutput.printStackTrace(e);
 				}
+				if (isCancelled()) return;
 			}
 			setGuiProgress(60);
 
 			if (fatalCount == 0 && loadIntermediateImage) {
-				ZipEntry entry = zipFile.getEntry("intermediateImage");
+				entry = zipFile.getEntry("intermediateImage");
 				if (entry != null) {
 					hasIntermediateImage = true;
 					publishToGui("intermediate image...");
