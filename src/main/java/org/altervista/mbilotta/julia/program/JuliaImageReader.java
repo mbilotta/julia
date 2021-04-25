@@ -259,6 +259,9 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> implements AutoC
 			if (entry != null) {
 				hasIntermediateImage = true;
 				publishToGui("intermediate image...");
+				addInfo(entry);
+				errorOutput.println("reading intermediate image...");
+
 				try {
 					Representation representation = (Representation) representationInstance.create();
 					try (InputStream is = zipFile.getInputStream(entry);
