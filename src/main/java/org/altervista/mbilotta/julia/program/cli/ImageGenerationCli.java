@@ -296,6 +296,7 @@ public class ImageGenerationCli implements Runnable {
 				}
 
 				Utilities.print("Rendering intermediate image...");
+				Utilities.flush();
 				int numOfProducers = production.getNumOfProducers();
 				executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
 				CountDownLatch done = new CountDownLatch(numOfProducers);
@@ -339,6 +340,7 @@ public class ImageGenerationCli implements Runnable {
 				}
 			} else if (intermediateImage.isComplete()) {
 				Utilities.print("Rendering final image...");
+				Utilities.flush();
 
 				timer.start();
 

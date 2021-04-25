@@ -283,6 +283,10 @@ public class Utilities {
 		out.print(o1, oi);
 	}
 
+	public static void flush() {
+		out.flush();
+	}
+
 	public static void printStackTrace(Throwable t) {
 		out.printStackTrace(t);
 	}
