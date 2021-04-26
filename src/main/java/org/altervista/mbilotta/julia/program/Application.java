@@ -898,7 +898,7 @@ public class Application {
 				printer = Printer.newStringPrinter();
 			}
 
-			Profile.PluginInstaller installer = profile.new PluginInstaller(file, printer);
+			Profile.PluginInstaller installer = profile.new GuiPluginInstaller(file, printer);
 			executorService.execute(installer);
 			installer.block(parent, "Reading from " + file + ":", "Opening...");
 		}

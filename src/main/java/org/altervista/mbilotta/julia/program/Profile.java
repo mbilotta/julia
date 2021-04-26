@@ -332,6 +332,21 @@ public class Profile {
 		ASK, REPLACE_EXISTING, PRESERVE_EXISTING
 	}
 
+	private enum UserAnswer {
+		YES("Yes"), YES_TO_ALL("Yes to All"), NO("No"), NO_TO_ALL("No to All"), CANCEL("Cancel");
+
+		private final String label;
+
+		private UserAnswer(String label) {
+			this.label = label;
+		}
+
+		@Override
+		public String toString() {
+			return this.label;
+		}
+	}
+
 	private static final class ZipExtraction implements Comparable<ZipExtraction> {
 
 		private final ZipEntry src;
@@ -373,7 +388,7 @@ public class Profile {
 		}
 	}
 
-	public final class PluginInstaller extends BlockingSwingWorker<Boolean> {
+	public abstract class PluginInstaller extends BlockingSwingWorker<Boolean> {
 		
 		private final File file;
 		private final Printer printer;
@@ -391,6 +406,26 @@ public class Profile {
 			cancel(false);
 		}
 
+		public int getExtractedCount() {
+			return extractedCount;
+		}
+
+		public int getExtractionsCount() {
+			return extractions.size();
+		}
+
+		protected abstract void showSuccess(String details);
+
+		protected abstract void showFailure(String details);
+
+		protected abstract void showCancellation(String details);
+
+		protected abstract void showError(Throwable e);
+
+		protected abstract UserAnswer askIfShouldRetryToCreateDirectory(Path path, Path relativePath, Throwable problem) throws Exception;
+
+		protected abstract UserAnswer askIfShouldRetryToWriteFile(String src, Path dst, Path dstRelative, Throwable problem) throws Exception;
+
 		@Override
 		protected void processResult(Boolean result) {
 			String details;
@@ -400,18 +435,9 @@ public class Profile {
 				details = null;
 			}
 			if (result) {
-				MessagePane.showInformationMessage(getBlockingDialog(),
-						"Julia",
-						"Installation succeeded. " + extractedCount + " file(s) were written. Restart the "
-						+ "program for the changes to take effect.",
-						details);
+				showSuccess(details);
 			} else {
-				MessagePane.showWarningMessage(getBlockingDialog(),
-						"Julia",
-						"Installation failed. " + extractedCount + " of " + extractions.size()
-						+ " file(s) were written. " + (details == null ?
-						"Check out \"" + installerOutput.getFileName() + "\" for details." : "See details."),
-						details);
+				showFailure(details);
 			}
 		}
 
@@ -423,103 +449,37 @@ public class Profile {
 			} else {
 				details = null;
 			}
-			MessagePane.showWarningMessage(getBlockingDialog(),
-					"Julia",
-					"Installation cancelled. " + extractedCount + " of " + extractions.size()
-					+ " file(s) were written. " + (details == null ?
-					"Check out \"" + installerOutput.getFileName() + "\" for details." : "See details."),
-					details);
+			showCancellation(details);
 		}
 
 		@Override
 		protected void processException(Throwable e) {
 			printer.flush();
 			printer.close();
-			MessagePane.showErrorMessage(getBlockingDialog(),
-					"Julia",
-					"Installation halted unexpectedly. See details.",
-					e);
+			showError(e);
 		}
 
-		private boolean createDirs(final Path relativePath) throws InterruptedException, ExecutionException {
-			final Path path = root.resolve(relativePath);
+		private boolean createDirs(Path relativePath) throws Exception {
+			Path path = root.resolve(relativePath);
 			try {
 				Files.createDirectories(path);
 				return true;
-			} catch (final FileAlreadyExistsException e) {
-				Integer rv = callSynchronously(new Callable<Integer>() {
-					@Override
-					public Integer call() {
-						String ls = System.lineSeparator();
-						MessagePane messagePane = new MessagePane(
-								"Could not create directory \"" + path.getFileName() + "\". "
-								+ "An existing file prevented the creation of this directory at "
-								+ "the target path (see details). Retry?",
-								"Target path (relative to the profile path): " + relativePath + ls
-								+ "Target path (full): " + path + ls
-								+ "Problem description: " + e,
-								MessagePane.ERROR_MESSAGE);
-						messagePane.setOptionType(MessagePane.YES_NO_CANCEL_OPTION);
-						JDialog dialog = messagePane.createDialog(getBlockingDialog(), "Julia");
-						dialog.setResizable(true);
-						dialog.setMinimumSize(dialog.getPreferredSize());
-						dialog.setVisible(true);
-						dialog.dispose();
-						return (Integer) messagePane.getValue();
-					}
-				});
-
-				if (rv == null) {
-					cancel(false);
-				} else {
-					switch (rv.intValue()) {
-					case MessagePane.YES_OPTION:    return createDirs(path);
-					case MessagePane.NO_OPTION:		break;
-					case MessagePane.CANCEL_OPTION: cancel(false); break;
-					default: throw new AssertionError(rv.intValue());
-					}
+			} catch (IOException e) {
+				UserAnswer answer = askIfShouldRetryToCreateDirectory(path, relativePath, e);
+				switch (answer) {
+				case YES:    return createDirs(path);
+				case NO:     break;
+				case CANCEL: cancel(false); break;
+				default: throw new AssertionError(answer);
 				}
 
-				return false;
-			} catch (final IOException e) {
-				Integer rv = callSynchronously(new Callable<Integer>() {
-					@Override
-					public Integer call() {
-						String ls = System.lineSeparator();
-						MessagePane messagePane = new MessagePane(
-								"Could not create directory \"" + path.getFileName() + "\" (see details). Retry?",
-								"Target path (relative to the profile path): " + relativePath + ls
-								+ "Target path (full): " + path + ls
-								+ "Problem description: " + e,
-								MessagePane.ERROR_MESSAGE);
-						messagePane.setOptionType(MessagePane.YES_NO_CANCEL_OPTION);
-						JDialog dialog = messagePane.createDialog(getBlockingDialog(), "Julia");
-						dialog.setResizable(true);
-						dialog.setMinimumSize(dialog.getPreferredSize());
-						dialog.setVisible(true);
-						dialog.dispose();
-						return (Integer) messagePane.getValue();
-					}
-				});
-
-				if (rv == null) {
-					cancel(false);
-				} else {
-					switch (rv.intValue()) {
-					case MessagePane.YES_OPTION:    return createDirs(path);
-					case MessagePane.NO_OPTION:		break;
-					case MessagePane.CANCEL_OPTION: cancel(false); break;
-					default: throw new AssertionError(rv.intValue());
-					}
-				}
-				
-				return true;
+				return !(e instanceof FileAlreadyExistsException);
 			}
 		}
 
-		private boolean extract(ZipFile zipFile, ZipExtraction extraction, boolean replaceExisting) throws InterruptedException, ExecutionException {
-			final Path path = root.resolve(extraction.getDst());
-			final Path relativePath = extraction.getDst();
+		private boolean extract(ZipFile zipFile, ZipExtraction extraction, boolean replaceExisting) throws Exception {
+			Path path = root.resolve(extraction.getDst());
+			Path relativePath = extraction.getDst();
 			try (InputStream in = zipFile.getInputStream(extraction.getSrc())) {
 				CopyOption[] copyOptions = fowb == FileOverwriteBehaviour.REPLACE_EXISTING || replaceExisting ?
 						new CopyOption[] { StandardCopyOption.REPLACE_EXISTING } : new CopyOption[] {};
@@ -528,55 +488,26 @@ public class Profile {
 				extractedCount++;
 				printer.println("Done. ", numBytes, " bytes written.");
 				return true;
-			} catch (final FileAlreadyExistsException e) {
+			} catch (FileAlreadyExistsException e) {
 				printer.print("File already exists. ");
 				if (fowb == FileOverwriteBehaviour.ASK) {
-					final String YES = "Yes";
-					final String YES_TO_ALL = "Yes to All";
-					final String NO = "No";
-					final String NO_TO_ALL = "No to All";
-					final String CANCEL = "Cancel";
-					
-					final String sourcePath = extraction.getSrc().getName();
-					String rv = callSynchronously(new Callable<String>() {
-						@Override
-						public String call() throws Exception {
-							String ls = System.lineSeparator();
-							MessagePane messagePane = new MessagePane(
-									"Target file \"" + path.getFileName() + "\" already exists (see details). "
-									+ "Overwrite the existing file?",
-									"Source path: " + sourcePath + ls
-									+ "Target path (relative to the profile path): " + relativePath + ls
-									+ "Target path (full): " + path + ls
-									+ "Problem description: " + e,
-									MessagePane.ERROR_MESSAGE);
-							messagePane.setOptions(new Object[] {
-									YES, YES_TO_ALL, NO, NO_TO_ALL, CANCEL
-							});
-							JDialog dialog = messagePane.createDialog(getBlockingDialog(), "Julia");
-							dialog.setResizable(true);
-							dialog.setMinimumSize(dialog.getPreferredSize());
-							dialog.setVisible(true);
-							dialog.dispose();
-							return (String) messagePane.getValue();
-						}
-					});
-					
-					if (rv == YES) {
+					String sourcePath = extraction.getSrc().getName();
+					UserAnswer answer = askIfShouldRetryToWriteFile(sourcePath, path, relativePath, e);
+					if (answer == UserAnswer.YES) {
 						printer.print("Replacing file... ");
 						return extract(zipFile, extraction, true);
-					} else if (rv == YES_TO_ALL) {
+					} else if (answer == UserAnswer.YES_TO_ALL) {
 						fowb = FileOverwriteBehaviour.REPLACE_EXISTING;
 						printer.print("Replacing file (from now on, existing files will always be replaced)... ");
 						return extract(zipFile, extraction, true);
-					} else if (rv == NO_TO_ALL) {
+					} else if (answer == UserAnswer.NO_TO_ALL) {
 						fowb = FileOverwriteBehaviour.PRESERVE_EXISTING;
 						printer.println("Preserved (from now on, existing files will always be preserved).");
-					} else if (rv == NO || rv == CANCEL || rv == null) {
+					} else if (answer == UserAnswer.NO || answer == UserAnswer.CANCEL) {
 						printer.println("Preserved.");
 					}
 					
-					if (rv == CANCEL || rv == null) {
+					if (answer == UserAnswer.CANCEL) {
 						cancel(false);
 					}
 				} else {
@@ -584,47 +515,20 @@ public class Profile {
 				}
 
 				return true;
-			} catch (final IOException e) {
+			} catch (IOException e) {
 				printer.print(e, ". ");
-				final String sourcePath = extraction.getSrc().getName();
-				Integer rv = callSynchronously(new Callable<Integer>() {
-					@Override
-					public Integer call() {
-						String ls = System.lineSeparator();
-						MessagePane messagePane = new MessagePane(
-								"Could not write file \"" + path.getFileName() + "\" (see details). Retry?",
-								"Source path: " + sourcePath + ls
-								+ "Target path (relative to the profile path): " + relativePath + ls
-								+ "Target path (full): " + path + ls
-								+ "Problem description: " + e,
-								MessagePane.ERROR_MESSAGE);
-						messagePane.setOptionType(MessagePane.YES_NO_CANCEL_OPTION);
-						JDialog dialog = messagePane.createDialog(getBlockingDialog(), "Julia");
-						dialog.setResizable(true);
-						dialog.setMinimumSize(dialog.getPreferredSize());
-						dialog.setVisible(true);
-						dialog.dispose();
-						return (Integer) messagePane.getValue();
-					}
-				});
-
-				if (rv == null) {
-					printer.println("Failed.");
-					cancel(false);
-				} else {
-					switch (rv.intValue()) {
-					case MessagePane.YES_OPTION:    printer.print("Retrying... "); return extract(zipFile, extraction, replaceExisting);
-					case MessagePane.NO_OPTION:		printer.println("Failed."); break;
-					case MessagePane.CANCEL_OPTION: printer.println("Failed."); cancel(false); break;
-					default: throw new AssertionError(rv.intValue());
-					}
+				String sourcePath = extraction.getSrc().getName();
+				UserAnswer answer = askIfShouldRetryToWriteFile(sourcePath, path, relativePath, e);
+				switch (answer) {
+				case YES:    printer.print("Retrying... "); return extract(zipFile, extraction, replaceExisting);
+				case NO:     printer.println("Failed."); break;
+				case CANCEL: printer.println("Failed."); cancel(false); break;
+				default: throw new AssertionError(answer);
 				}
 				
 				return false;
 			}
 		}
-
-		
 
 		@Override
 		protected Boolean doInBackground() throws Exception {
@@ -647,7 +551,7 @@ public class Profile {
 				for (ZipExtraction extraction : extractions) {
 					printer.print("Extracting ", extraction.getSrc(), " to ", extraction.getDst(), "... ");
 					Path dir = extraction.getDst().getParent();
-					publish(extraction.getSrc().getName());
+					publishToGui(extraction.getSrc().getName());
 					if (notCreatedDir != null && dir.startsWith(notCreatedDir)) {
 						printer.println("Skipped. Could not create target directory.");
 						continue;
@@ -666,17 +570,17 @@ public class Profile {
 					}
 
 					progress++;
-					setProgress(progress * 100 / maxProgress);
+					setGuiProgress(progress * 100 / maxProgress);
 				}
 
-				setProgress(100);
+				setGuiProgress(100);
 				if (isCancelled()) {
 					printer.print("Installation cancelled. ");
 				} else {
 					printer.print("Installation ", rv ? "succeeded. " : "failed. ");
 				}
 				printer.println(extractedCount, " of ", maxProgress, " file(s) were successfully written.");
-				publish("Closing...");
+				publishToGui("Closing...");
 				printer.print("Closing archive... ");
 			} catch (IOException e) {
 				printer.println(e, ". Failed.");
@@ -735,6 +639,121 @@ public class Profile {
 					}
 				}
 			}
+		}
+	}
+
+	public class GuiPluginInstaller extends PluginInstaller {
+
+		public GuiPluginInstaller(File file, Printer printer) {
+			super(file, printer);
+			setGuiRunning(true);
+		}
+
+		@Override
+		protected void showSuccess(String details) {
+			MessagePane.showInformationMessage(getBlockingDialog(),
+					"Julia",
+					"Installation succeeded. " + getExtractedCount() + " file(s) were written. Restart the "
+					+ "program for the changes to take effect.",
+					details);
+		}
+
+		@Override
+		protected void showFailure(String details) {
+			MessagePane.showWarningMessage(getBlockingDialog(),
+					"Julia",
+					"Installation failed. " + getExtractedCount() + " of " + getExtractionsCount()
+					+ " file(s) were written. " + (details == null ?
+					"Check out \"" + installerOutput.getFileName() + "\" for details." : "See details."),
+					details);
+		}
+
+		@Override
+		protected void showCancellation(String details) {
+			MessagePane.showWarningMessage(getBlockingDialog(),
+					"Julia",
+					"Installation cancelled. " + getExtractedCount() + " of " + getExtractionsCount()
+					+ " file(s) were written. " + (details == null ?
+					"Check out \"" + installerOutput.getFileName() + "\" for details." : "See details."),
+					details);
+		}
+
+		@Override
+		protected void showError(Throwable e) {
+			MessagePane.showErrorMessage(getBlockingDialog(),
+					"Julia",
+					"Installation halted unexpectedly. See details.",
+					e);
+		}
+
+		@Override
+		protected UserAnswer askIfShouldRetryToCreateDirectory(Path dst, Path dstRelative, Throwable problem) throws Exception {
+			UserAnswer rv = callSynchronously(new Callable<UserAnswer>() {
+				@Override
+				public UserAnswer call() {
+					String nl = System.lineSeparator();
+					MessagePane messagePane = new MessagePane(
+							"Could not create directory \"" + dst.getFileName() + "\""
+							+ (problem instanceof FileAlreadyExistsException ?
+								". An existing file prevented the creation of this directory at "
+								+ "the target path" : "")
+							+ " (see details). Retry?",
+							"Target path (relative to the profile path): " + dstRelative + nl
+							+ "Target path (full): " + dst + nl
+							+ "Problem description: " + problem,
+							MessagePane.ERROR_MESSAGE);
+					messagePane.setOptions(new UserAnswer[]{ UserAnswer.YES, UserAnswer.NO, UserAnswer.CANCEL });
+					JDialog dialog = messagePane.createDialog(getBlockingDialog(), "Julia");
+					dialog.setResizable(true);
+					dialog.setMinimumSize(dialog.getPreferredSize());
+					dialog.setVisible(true);
+					dialog.dispose();
+					return (UserAnswer) messagePane.getValue();
+				}
+			});
+
+			if (rv == null) {
+				return UserAnswer.CANCEL;
+			}
+			return rv;
+		}
+
+		@Override
+		protected UserAnswer askIfShouldRetryToWriteFile(String src, Path dst, Path dstRelative, Throwable problem) throws Exception {
+			UserAnswer[] options;
+			String message;
+			if (problem instanceof FileAlreadyExistsException) {
+				message = "Target file \"" + dst.getFileName() + "\" already exists (see details). "
+					+ "Overwrite the existing file?";
+				options = UserAnswer.values();
+			} else {
+				message = "Could not write file \"" + dst.getFileName() + "\" (see details). Retry?";
+				options = new UserAnswer[]{ UserAnswer.YES, UserAnswer.NO, UserAnswer.CANCEL };
+			}
+			UserAnswer rv = callSynchronously(new Callable<UserAnswer>() {
+				@Override
+				public UserAnswer call() throws Exception {
+					String nl = System.lineSeparator();
+					MessagePane messagePane = new MessagePane(message,
+							"Source path: " + src + nl
+							+ "Target path (relative to the profile path): " + dstRelative + nl
+							+ "Target path (full): " + dst + nl
+							+ "Problem description: " + problem,
+							MessagePane.ERROR_MESSAGE);
+					messagePane.setOptions(options);
+					JDialog dialog = messagePane.createDialog(getBlockingDialog(), "Julia");
+					dialog.setResizable(true);
+					dialog.setMinimumSize(dialog.getPreferredSize());
+					dialog.setVisible(true);
+					dialog.dispose();
+					return (UserAnswer) messagePane.getValue();
+				}
+			});
+
+			if (rv == null) {
+				return UserAnswer.CANCEL;
+			}
+			return rv;
 		}
 	}
 }
