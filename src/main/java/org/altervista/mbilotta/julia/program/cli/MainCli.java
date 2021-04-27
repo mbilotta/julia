@@ -32,7 +32,7 @@ import picocli.CommandLine.Option;
 
 
 @Command(name = "juliac",
-	subcommands = { JupCli.class, ImageGenerationCli.class, HelpCommand.class },
+	subcommands = { PluginInstallationCli.class, ImageGenerationCli.class, PluginPackagementCli.class, HelpCommand.class },
 	header = { "Julia: The Fractal Generator", "Copyright (C) 2015 Maurizio Bilotta" },
 	version = { "Julia: The Fractal Generator", "Version " + Application.VERSION, "Copyright (C) 2015 Maurizio Bilotta"},
 	optionListHeading = "%nOptions:%n",

@@ -46,6 +46,8 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -423,8 +425,27 @@ public class Profile {
 
 		protected abstract void showError(Throwable e);
 
+		/**
+		 * Should not throw IOException.
+		 * 
+		 * @param path
+		 * @param relativePath
+		 * @param problem
+		 * @return
+		 * @throws Exception
+		 */
 		protected abstract UserAnswer askIfShouldRetryToCreateDirectory(Path path, Path relativePath, Throwable problem) throws Exception;
 
+		/**
+		 * Should not throw IOException.
+		 * 
+		 * @param src
+		 * @param dst
+		 * @param dstRelative
+		 * @param problem
+		 * @return
+		 * @throws Exception
+		 */
 		protected abstract UserAnswer askIfShouldRetryToWriteFile(String src, Path dst, Path dstRelative, Throwable problem) throws Exception;
 
 		@Override
@@ -465,6 +486,30 @@ public class Profile {
 
 			printer.flush();
 			printer.close();
+		}
+
+		public Out<Boolean> install() throws Exception {
+			Out<Boolean> rv = Out.newOut();
+			if (isGuiRunning()) {
+				rv.set(installImpl());
+			} else {
+				try {
+					try {
+						rv.set(installImpl());
+					} catch (Exception e) {
+						throw new ExecutionException(e);
+					}
+					if (isCancelled()) {
+						throw new CancellationException();
+					}
+					processResult(rv.get());
+				} catch (ExecutionException e) {
+					processException(e.getCause());
+				} catch (CancellationException e) {
+					processCancellation();
+				}
+			}
+			return rv;
 		}
 
 		private boolean createDirs(Path relativePath) throws Exception {
@@ -538,8 +583,7 @@ public class Profile {
 			}
 		}
 
-		@Override
-		protected Boolean doInBackground() throws Exception {
+		private Boolean installImpl() throws Exception {
 			Date date = new Date();
 			DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 			printer.println("[On ", dateFormat.format(date), "]");
@@ -591,6 +635,7 @@ public class Profile {
 				publishToGui("Closing...");
 				printer.print("Closing archive... ");
 			} catch (IOException e) {
+				// Only the ZipFile constructor should throw this
 				printer.println(e, ". Failed.");
 				printer.println();
 				return extractedCount > 0 ? rv : false;
@@ -599,6 +644,11 @@ public class Profile {
 			printer.println("Done.");
 			printer.println();
 			return rv;
+		}
+
+		@Override
+		protected Boolean doInBackground() throws Exception {
+			return install().get();
 		}
 
 		private Set<ZipExtraction> extractions;

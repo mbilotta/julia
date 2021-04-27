@@ -47,7 +47,7 @@ import picocli.CommandLine.Parameters;
 	parameterListHeading = "%nParameters:%n",
 	optionListHeading = "%nOptions:%n",
 	sortOptions = false)
-public class JupCli implements Runnable {
+public class PluginPackagementCli implements Runnable {
 
 	@Option(names = { "-l", "--license" }, paramLabel = "FILE",
 		description = "License file for this JUP archive.")
