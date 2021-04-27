@@ -42,10 +42,10 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -56,6 +56,7 @@ import org.altervista.mbilotta.julia.Gradient.Stop;
 import org.altervista.mbilotta.julia.Out;
 import org.altervista.mbilotta.julia.Printer;
 import org.altervista.mbilotta.julia.StringPrinter;
+import org.altervista.mbilotta.julia.Utilities;
 import org.altervista.mbilotta.julia.program.gui.MessagePane;
 
 
@@ -333,7 +334,7 @@ public class Profile {
 	}
 
 	private enum UserAnswer {
-		YES("Yes"), YES_TO_ALL("Yes to All"), NO("No"), NO_TO_ALL("No to All"), CANCEL("Cancel");
+		YES("Yes"), YES_TO_ALL("Yes to All"), NO("No"), NO_TO_ALL("No to All"), ABORT("Abort");
 
 		private final String label;
 
@@ -439,6 +440,9 @@ public class Profile {
 			} else {
 				showFailure(details);
 			}
+
+			printer.flush();
+			printer.close();
 		}
 
 		@Override
@@ -450,13 +454,17 @@ public class Profile {
 				details = null;
 			}
 			showCancellation(details);
+
+			printer.flush();
+			printer.close();
 		}
 
 		@Override
 		protected void processException(Throwable e) {
+			showError(e);
+
 			printer.flush();
 			printer.close();
-			showError(e);
 		}
 
 		private boolean createDirs(Path relativePath) throws Exception {
@@ -469,7 +477,7 @@ public class Profile {
 				switch (answer) {
 				case YES:    return createDirs(path);
 				case NO:     break;
-				case CANCEL: cancel(false); break;
+				case ABORT: cancel(false); break;
 				default: throw new AssertionError(answer);
 				}
 
@@ -503,11 +511,11 @@ public class Profile {
 					} else if (answer == UserAnswer.NO_TO_ALL) {
 						fowb = FileOverwriteBehaviour.PRESERVE_EXISTING;
 						printer.println("Preserved (from now on, existing files will always be preserved).");
-					} else if (answer == UserAnswer.NO || answer == UserAnswer.CANCEL) {
+					} else if (answer == UserAnswer.NO || answer == UserAnswer.ABORT) {
 						printer.println("Preserved.");
 					}
 					
-					if (answer == UserAnswer.CANCEL) {
+					if (answer == UserAnswer.ABORT) {
 						cancel(false);
 					}
 				} else {
@@ -522,7 +530,7 @@ public class Profile {
 				switch (answer) {
 				case YES:    printer.print("Retrying... "); return extract(zipFile, extraction, replaceExisting);
 				case NO:     printer.println("Failed."); break;
-				case CANCEL: printer.println("Failed."); cancel(false); break;
+				case ABORT: printer.println("Failed."); cancel(false); break;
 				default: throw new AssertionError(answer);
 				}
 				
@@ -575,7 +583,7 @@ public class Profile {
 
 				setGuiProgress(100);
 				if (isCancelled()) {
-					printer.print("Installation cancelled. ");
+					printer.print("Installation aborted by the user. ");
 				} else {
 					printer.print("Installation ", rv ? "succeeded. " : "failed. ");
 				}
@@ -590,8 +598,6 @@ public class Profile {
 
 			printer.println("Done.");
 			printer.println();
-			printer.flush();
-			printer.close();
 			return rv;
 		}
 
@@ -662,7 +668,7 @@ public class Profile {
 		protected void showFailure(String details) {
 			MessagePane.showWarningMessage(getBlockingDialog(),
 					"Julia",
-					"Installation failed. " + getExtractedCount() + " of " + getExtractionsCount()
+					"Installation failed. " + getExtractedCount() + " out of " + getExtractionsCount()
 					+ " file(s) were written. " + (details == null ?
 					"Check out \"" + installerOutput.getFileName() + "\" for details." : "See details."),
 					details);
@@ -672,7 +678,7 @@ public class Profile {
 		protected void showCancellation(String details) {
 			MessagePane.showWarningMessage(getBlockingDialog(),
 					"Julia",
-					"Installation cancelled. " + getExtractedCount() + " of " + getExtractionsCount()
+					"Installation aborted by the user. " + getExtractedCount() + " out of " + getExtractionsCount()
 					+ " file(s) were written. " + (details == null ?
 					"Check out \"" + installerOutput.getFileName() + "\" for details." : "See details."),
 					details);
@@ -698,11 +704,11 @@ public class Profile {
 								". An existing file prevented the creation of this directory at "
 								+ "the target path" : "")
 							+ " (see details). Retry?",
-							"Target path (relative to the profile path): " + dstRelative + nl
+							"Target path (relative to profile path): " + dstRelative + nl
 							+ "Target path (full): " + dst + nl
 							+ "Problem description: " + problem,
 							MessagePane.ERROR_MESSAGE);
-					messagePane.setOptions(new UserAnswer[]{ UserAnswer.YES, UserAnswer.NO, UserAnswer.CANCEL });
+					messagePane.setOptions(new UserAnswer[]{ UserAnswer.YES, UserAnswer.NO, UserAnswer.ABORT });
 					JDialog dialog = messagePane.createDialog(getBlockingDialog(), "Julia");
 					dialog.setResizable(true);
 					dialog.setMinimumSize(dialog.getPreferredSize());
@@ -713,7 +719,7 @@ public class Profile {
 			});
 
 			if (rv == null) {
-				return UserAnswer.CANCEL;
+				return UserAnswer.ABORT;
 			}
 			return rv;
 		}
@@ -728,7 +734,7 @@ public class Profile {
 				options = UserAnswer.values();
 			} else {
 				message = "Could not write file \"" + dst.getFileName() + "\" (see details). Retry?";
-				options = new UserAnswer[]{ UserAnswer.YES, UserAnswer.NO, UserAnswer.CANCEL };
+				options = new UserAnswer[]{ UserAnswer.YES, UserAnswer.NO, UserAnswer.ABORT };
 			}
 			UserAnswer rv = callSynchronously(new Callable<UserAnswer>() {
 				@Override
@@ -736,7 +742,7 @@ public class Profile {
 					String nl = System.lineSeparator();
 					MessagePane messagePane = new MessagePane(message,
 							"Source path: " + src + nl
-							+ "Target path (relative to the profile path): " + dstRelative + nl
+							+ "Target path (relative to profile path): " + dstRelative + nl
 							+ "Target path (full): " + dst + nl
 							+ "Problem description: " + problem,
 							MessagePane.ERROR_MESSAGE);
@@ -751,9 +757,135 @@ public class Profile {
 			});
 
 			if (rv == null) {
-				return UserAnswer.CANCEL;
+				return UserAnswer.ABORT;
 			}
 			return rv;
+		}
+	}
+
+	public class CliPluginInstaller extends PluginInstaller {
+
+		private final Scanner in;
+
+		public CliPluginInstaller(File file, Printer printer) {
+			super(file, printer);
+			setGuiRunning(false);
+			in = new Scanner(System.in);
+		}
+
+		@Override
+		protected void showSuccess(String details) {
+			Utilities.println("Installation succeeded. ", getExtractedCount(), " file(s) were written.");
+			in.close();
+		}
+
+		@Override
+		protected void showFailure(String details) {
+			Utilities.println("Installation failed. ", getExtractedCount(), " out of ", getExtractionsCount(), " file(s) were written.");
+			Utilities.println("Check out \"", installerOutput.getFileName(), "\" for details.");
+			in.close();
+		}
+
+		@Override
+		protected void showCancellation(String details) {
+			Utilities.println("Installation aborted by the user. ", getExtractedCount(), " out of ", getExtractionsCount(), " file(s) were written.");
+			Utilities.println("Check out \"", installerOutput.getFileName(), "\" for details.");			
+			in.close();
+		}
+
+		@Override
+		protected void showError(Throwable e) {
+			Utilities.err.print("Installation halted unexpectedly. Cause: ");
+			Utilities.err.printStackTrace(e);
+			Utilities.err.flush();
+			in.close();
+		}
+
+		@Override
+		protected UserAnswer askIfShouldRetryToCreateDirectory(Path dst, Path dstRelative, Throwable problem)
+				throws Exception {
+			Utilities.println("Could not create directory \"" + dst.getFileName() + "\":");
+			Utilities.print("- Problem description: ");
+			if (problem instanceof FileAlreadyExistsException) {
+				Utilities.println("an existing file prevented the creation of this directory");
+			} else {
+				Utilities.println(problem);
+			}
+			Utilities.println("- Target path (relative to profile path): ", dstRelative);
+			Utilities.println("- Target path (full): ", dst);
+			Utilities.print("Retry? ([y]es, [n]o, [a]bort) ");
+			Utilities.flush();
+
+			String answer = in.nextLine().trim().toLowerCase();
+			while (!answer.matches("^[yna].*")) {
+				Utilities.print("Invalid answer. Retry? ([y]es, [n]o, [a]bort) ");
+				Utilities.flush();
+				answer = in.nextLine().trim().toLowerCase();
+			}
+
+			answer = answer.substring(0, 1);
+			switch (answer) {
+				case "y": return UserAnswer.YES;
+				case "n": return UserAnswer.NO;
+				case "a": return UserAnswer.ABORT;
+				default: throw new AssertionError(answer);
+			}
+		}
+
+		@Override
+		protected UserAnswer askIfShouldRetryToWriteFile(String src, Path dst, Path dstRelative, Throwable problem)
+				throws Exception {
+			Utilities.println("Could not write file \"", dst.getFileName(), "\":");
+			Utilities.print("- Problem description: ");
+			if (problem instanceof FileAlreadyExistsException) {
+				Utilities.println("target file already exists");
+			} else {
+				Utilities.println(problem);
+			}
+			Utilities.println("- Source path: ", src);
+			Utilities.println("- Target path (relative to profile path): ", dstRelative);
+			Utilities.println("- Target path (full): ", dst);
+
+			if (problem instanceof FileAlreadyExistsException) {
+				Utilities.print("Overwrite the existing file? ([y]es, [Y]es to all, [n]o, [N]o to all, [a]bort) ");
+				Utilities.flush();
+
+				String answer = in.nextLine().trim();
+				while (!answer.matches("^[yYnNaA].*")) {
+					Utilities.print("Invalid answer. Overwrite the existing file? ([y]es, [Y]es to all, [n]o, [N]o to all, [a]bort) ");
+					Utilities.flush();
+					answer = in.nextLine().trim();
+				}
+	
+				answer = answer.substring(0, 1);
+				switch (answer) {
+					case "y": return UserAnswer.YES;
+					case "Y": return UserAnswer.YES_TO_ALL;
+					case "n": return UserAnswer.NO;
+					case "N": return UserAnswer.NO_TO_ALL;
+					case "a":
+					case "A": return UserAnswer.ABORT;
+					default: throw new AssertionError(answer);
+				}
+			} else {
+				Utilities.print("Retry? ([y]es, [n]o, [a]bort) ");
+				Utilities.flush();
+
+				String answer = in.nextLine().trim().toLowerCase();
+				while (!answer.matches("^[yna].*")) {
+					Utilities.print("Invalid answer. Retry? ([y]es, [n]o, [a]bort) ");
+					Utilities.flush();
+					answer = in.nextLine().trim().toLowerCase();
+				}
+	
+				answer = answer.substring(0, 1);
+				switch (answer) {
+					case "y": return UserAnswer.YES;
+					case "n": return UserAnswer.NO;
+					case "a": return UserAnswer.ABORT;
+					default: throw new AssertionError(answer);
+				}
+			}
 		}
 	}
 }
