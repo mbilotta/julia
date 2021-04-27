@@ -20,6 +20,7 @@
 
 package org.altervista.mbilotta.julia.program.cli;
 
+import java.awt.GraphicsEnvironment;
 import java.nio.file.Path;
 
 import org.altervista.mbilotta.julia.Utilities;
@@ -28,6 +29,7 @@ import org.altervista.mbilotta.julia.program.Application;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
+import picocli.CommandLine.IExitCodeGenerator;
 import picocli.CommandLine.Option;
 
 
@@ -38,7 +40,7 @@ import picocli.CommandLine.Option;
 	optionListHeading = "%nOptions:%n",
 	commandListHeading = "%nCommands:%n",
 	sortOptions = false)
-public class MainCli implements Runnable {
+public class MainCli implements Runnable, IExitCodeGenerator {
 
 	@Option(names = { "-d", "--debug" },
 		description = "Enable debug console output")
@@ -57,18 +59,35 @@ public class MainCli implements Runnable {
 
 	private boolean guiRunning = false;
 
+	private int exitCode = 0;
+
+	static final int HEADLESS_ERROR_EXIT_CODE = 123;
+
 	@Override
 	public void run() {
 		guiRunning = true;
 		Utilities.debug.setEnabled(debugOutputEnabled);
-		Application.run(this);
+		if (GraphicsEnvironment.isHeadless()) {
+			exitCode = HEADLESS_ERROR_EXIT_CODE;
+		} else {
+			Application.run(this);
+		}
 	}
 
 	public static void main(String[] args) {
-		int exitCode = new CommandLine(new MainCli()).execute(args);
+		CommandLine cmd = new CommandLine(new MainCli());
+		int exitCode = cmd.execute(args);
 		if (exitCode != 0) {
+			if (exitCode == HEADLESS_ERROR_EXIT_CODE) {
+				cmd.usage(System.out);
+			}
 			System.exit(exitCode);
 		}
+	}
+
+	@Override
+	public int getExitCode() {
+		return exitCode;
 	}
 
 	public Path getProfilePath() {
