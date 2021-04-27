@@ -414,7 +414,7 @@ public class Profile {
 		}
 
 		public int getExtractionsCount() {
-			return extractions.size();
+			return extractions != null ? extractions.size() : 0;
 		}
 
 		protected abstract void showSuccess(String details);
@@ -428,13 +428,13 @@ public class Profile {
 		/**
 		 * Should not throw IOException.
 		 * 
-		 * @param path
-		 * @param relativePath
+		 * @param dst
+		 * @param dstRelative
 		 * @param problem
 		 * @return
 		 * @throws Exception
 		 */
-		protected abstract UserAnswer askIfShouldRetryToCreateDirectory(Path path, Path relativePath, Throwable problem) throws Exception;
+		protected abstract UserAnswer askIfShouldRetryToCreateDirectory(Path dst, Path dstRelative, Throwable problem) throws Exception;
 
 		/**
 		 * Should not throw IOException.
@@ -463,7 +463,6 @@ public class Profile {
 			}
 
 			printer.flush();
-			printer.close();
 		}
 
 		@Override
@@ -477,7 +476,6 @@ public class Profile {
 			showCancellation(details);
 
 			printer.flush();
-			printer.close();
 		}
 
 		@Override
@@ -485,7 +483,6 @@ public class Profile {
 			showError(e);
 
 			printer.flush();
-			printer.close();
 		}
 
 		public Out<Boolean> install() throws Exception {

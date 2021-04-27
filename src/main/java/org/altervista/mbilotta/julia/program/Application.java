@@ -858,6 +858,25 @@ public class Application {
 		}
 	}
 
+	private Printer createInstallationPrinter(Component parent) {
+		try {
+			return Printer.newPrinter(
+					Files.newBufferedWriter(
+							profile.getInstallerOutputFile(),
+							Charset.defaultCharset(),
+							StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND),
+					false);
+		} catch (IOException e) {
+			MessagePane.showErrorMessage(
+					parent,
+					"Julia",
+					"Could not open/create log file \"" + profile.getInstallerOutputFile().getFileName()
+					+ "\". See details.",
+					e);
+			return Printer.newStringPrinter();
+		}
+	}
+
 	private void installNewPlugins(Component parent) {
 		JFileChooser fc = new JFileChooser();
 		fc.setDialogTitle("Select a package");
@@ -867,7 +886,6 @@ public class Application {
 		int rv = fc.showDialog(parent, null);
 		if (rv == JFileChooser.APPROVE_OPTION) {
 			File file = fc.getSelectedFile();
-			Printer printer;
 			try {
 				if (preferencesFile == null) {
 					preferencesFile = profile.lock();
@@ -881,25 +899,22 @@ public class Application {
 				return;
 			}
 
-			try {
-				printer = Printer.newPrinter(
-						Files.newBufferedWriter(
-								profile.getInstallerOutputFile(),
-								Charset.defaultCharset(),
-								StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND),
-						false);
-			} catch (IOException e) {
-				MessagePane.showErrorMessage(
-						parent,
-						"Julia",
-						"Could not open/create log file \"" + profile.getInstallerOutputFile().getFileName()
-						+ "\". See details.",
-						e);
-				printer = Printer.newStringPrinter();
-			}
-
+			final Printer printer = createInstallationPrinter(parent);
 			Profile.PluginInstaller installer = profile.new GuiPluginInstaller(file, printer);
-			executorService.execute(installer);
+			executorService.submitAndObserve(installer, new ExecutionObserver() {
+				@Override
+				public void executionCancelled(Runnable target) {
+					printer.close();
+				}
+				@Override
+				public void executionFinished(Runnable target) {
+					printer.close();
+				}
+				@Override
+				public void executionFinished(Runnable target, Throwable cause) {
+					printer.close();
+				}
+			});
 			installer.block(parent, "Reading from " + file + ":", "Opening...");
 		}
 	}

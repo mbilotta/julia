@@ -48,37 +48,45 @@ public class PluginInstallationCli implements Runnable {
 
     @Override
     public void run() {
-        LockedFile profileLock = null;
-        try {
-            Utilities.debug.setEnabled(mainCli.debugOutputEnabled);
-            // Lock profile
-            Utilities.println("Locking profile...");
-            Profile profile = mainCli.getProfilePath() == null ? Profile.getDefaultProfile() : new Profile(mainCli.getProfilePath());
-            profileLock = profile.lock();
+        Utilities.debug.setEnabled(mainCli.debugOutputEnabled);
 
-            // Open log file
-            Printer printer = Printer.newPrinter(
-                Files.newBufferedWriter(
-                        profile.getInstallerOutputFile(),
-                        Charset.defaultCharset(),
-                        StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND
-                ),
-                false
-            );
+        Utilities.print("Locking profile...");
+        Utilities.flush();
+        Profile profile = mainCli.getProfilePath() == null ? Profile.getDefaultProfile() : new Profile(mainCli.getProfilePath());
+        try (LockedFile lock = profile.lock()) {
+            Utilities.println(" done.");
 
-            // Install plugin
-            PluginInstaller installer = profile.new CliPluginInstaller(jupFile, printer);
-            installer.install();
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (profileLock != null) {
-                    profileLock.close();
+            Utilities.print("Opening log file...");
+            Utilities.flush();
+            try (
+                Printer printer = Printer.newPrinter(
+                    Files.newBufferedWriter(
+                            profile.getInstallerOutputFile(),
+                            Charset.defaultCharset(),
+                            StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND
+                    ),
+                    false
+                );
+            ) {
+                Utilities.println(" done.");
+
+                Utilities.println("Installing plugins...");
+                PluginInstaller installer = profile.new CliPluginInstaller(jupFile, printer);
+                try {
+                    installer.install();
+                } catch (Exception e) {
+                    // Should not throw in CLI mode
+                    throw new AssertionError(e);
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
+
+            Utilities.print("Unlocking profile...");
+            Utilities.flush();
+        } catch (IOException e) {
+            Utilities.println(" failure: ", e);
+            return;
         }
+
+        Utilities.println(" done.");
     }
 }
