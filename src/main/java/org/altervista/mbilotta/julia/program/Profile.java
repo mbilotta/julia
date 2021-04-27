@@ -331,7 +331,7 @@ public class Profile {
 		}
 	}
 	
-	private enum FileOverwriteBehaviour {
+	public enum FileOverwriteBehaviour {
 		ASK, REPLACE_EXISTING, PRESERVE_EXISTING
 	}
 
@@ -415,6 +415,14 @@ public class Profile {
 
 		public int getExtractionsCount() {
 			return extractions != null ? extractions.size() : 0;
+		}
+
+		public FileOverwriteBehaviour getFileOverwriteBehaviour() {
+			return fowb;
+		}
+
+		public void setFileOverwriteBehaviour(FileOverwriteBehaviour fowb) {
+			this.fowb = fowb;
 		}
 
 		protected abstract void notifySuccess(String details);
@@ -527,6 +535,15 @@ public class Profile {
 			}
 		}
 
+		/**
+		 * Should not throw IOException.
+		 * 
+		 * @param zipFile
+		 * @param extraction
+		 * @param replaceExisting
+		 * @return
+		 * @throws Exception
+		 */
 		private boolean extract(ZipFile zipFile, ZipExtraction extraction, boolean replaceExisting) throws Exception {
 			Path path = root.resolve(extraction.getDst());
 			Path relativePath = extraction.getDst();

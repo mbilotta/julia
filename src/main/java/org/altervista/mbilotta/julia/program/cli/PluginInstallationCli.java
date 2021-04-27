@@ -72,6 +72,13 @@ public class PluginInstallationCli implements Runnable {
 
                 Utilities.println("Installing plugins...");
                 PluginInstaller installer = profile.new CliPluginInstaller(jupFile, printer);
+                if (fileOverwriteBehaviour != null) {
+                    if (fileOverwriteBehaviour.preserve) {
+                        installer.setFileOverwriteBehaviour(Profile.FileOverwriteBehaviour.PRESERVE_EXISTING);
+                    } else if (fileOverwriteBehaviour.overwrite) {
+                        installer.setFileOverwriteBehaviour(Profile.FileOverwriteBehaviour.REPLACE_EXISTING);
+                    }
+                }
                 try {
                     installer.install();
                 } catch (Exception e) {
