@@ -146,6 +146,7 @@ public class ImageGenerationCli implements Runnable {
 			}
 
 			if (inputPath != null) {
+				Utilities.println("Reading input file...");
 				reader = new JuliaImageReader(inputPath.toFile(), loader, Utilities.err, true);
 				reader.setGuiRunning(false);
 				reader.readHeader();
