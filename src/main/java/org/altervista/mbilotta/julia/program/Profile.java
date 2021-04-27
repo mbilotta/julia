@@ -417,13 +417,13 @@ public class Profile {
 			return extractions != null ? extractions.size() : 0;
 		}
 
-		protected abstract void showSuccess(String details);
+		protected abstract void notifySuccess(String details);
 
-		protected abstract void showFailure(String details);
+		protected abstract void notifyFailure(String details);
 
-		protected abstract void showCancellation(String details);
+		protected abstract void notifyCancellation(String details);
 
-		protected abstract void showError(Throwable e);
+		protected abstract void notifyError(Throwable e);
 
 		/**
 		 * Should not throw IOException.
@@ -457,9 +457,9 @@ public class Profile {
 				details = null;
 			}
 			if (result) {
-				showSuccess(details);
+				notifySuccess(details);
 			} else {
-				showFailure(details);
+				notifyFailure(details);
 			}
 
 			printer.flush();
@@ -473,14 +473,14 @@ public class Profile {
 			} else {
 				details = null;
 			}
-			showCancellation(details);
+			notifyCancellation(details);
 
 			printer.flush();
 		}
 
 		@Override
 		protected void processException(Throwable e) {
-			showError(e);
+			notifyError(e);
 
 			printer.flush();
 		}
@@ -517,10 +517,10 @@ public class Profile {
 			} catch (IOException e) {
 				UserAnswer answer = askIfShouldRetryToCreateDirectory(path, relativePath, e);
 				switch (answer) {
-				case YES:    return createDirs(path);
-				case NO:     break;
-				case ABORT: cancel(false); break;
-				default: throw new AssertionError(answer);
+					case YES:   return createDirs(path);
+					case NO:    break;
+					case ABORT: cancel(false); break;
+					default: throw new AssertionError(answer);
 				}
 
 				return !(e instanceof FileAlreadyExistsException);
@@ -570,10 +570,10 @@ public class Profile {
 				String sourcePath = extraction.getSrc().getName();
 				UserAnswer answer = askIfShouldRetryToWriteFile(sourcePath, path, relativePath, e);
 				switch (answer) {
-				case YES:    printer.print("Retrying... "); return extract(zipFile, extraction, replaceExisting);
-				case NO:     printer.println("Failed."); break;
-				case ABORT: printer.println("Failed."); cancel(false); break;
-				default: throw new AssertionError(answer);
+					case YES:   printer.print("Retrying... "); return extract(zipFile, extraction, replaceExisting);
+					case NO:    printer.println("Failed."); break;
+					case ABORT: printer.println("Failed."); cancel(false); break;
+					default: throw new AssertionError(answer);
 				}
 				
 				return false;
@@ -703,7 +703,7 @@ public class Profile {
 		}
 
 		@Override
-		protected void showSuccess(String details) {
+		protected void notifySuccess(String details) {
 			MessagePane.showInformationMessage(getBlockingDialog(),
 					"Julia",
 					"Installation succeeded. " + getExtractedCount() + " file(s) were written. Restart the "
@@ -712,7 +712,7 @@ public class Profile {
 		}
 
 		@Override
-		protected void showFailure(String details) {
+		protected void notifyFailure(String details) {
 			MessagePane.showWarningMessage(getBlockingDialog(),
 					"Julia",
 					"Installation failed. " + getExtractedCount() + " out of " + getExtractionsCount()
@@ -722,7 +722,7 @@ public class Profile {
 		}
 
 		@Override
-		protected void showCancellation(String details) {
+		protected void notifyCancellation(String details) {
 			MessagePane.showWarningMessage(getBlockingDialog(),
 					"Julia",
 					"Installation aborted by the user. " + getExtractedCount() + " out of " + getExtractionsCount()
@@ -732,7 +732,7 @@ public class Profile {
 		}
 
 		@Override
-		protected void showError(Throwable e) {
+		protected void notifyError(Throwable e) {
 			MessagePane.showErrorMessage(getBlockingDialog(),
 					"Julia",
 					"Installation halted unexpectedly. See details.",
@@ -821,27 +821,27 @@ public class Profile {
 		}
 
 		@Override
-		protected void showSuccess(String details) {
+		protected void notifySuccess(String details) {
 			Utilities.println("Installation succeeded. ", getExtractedCount(), " file(s) were written.");
 			in.close();
 		}
 
 		@Override
-		protected void showFailure(String details) {
+		protected void notifyFailure(String details) {
 			Utilities.println("Installation failed. ", getExtractedCount(), " out of ", getExtractionsCount(), " file(s) were written.");
 			Utilities.println("Check out \"", installerOutput.getFileName(), "\" for details.");
 			in.close();
 		}
 
 		@Override
-		protected void showCancellation(String details) {
+		protected void notifyCancellation(String details) {
 			Utilities.println("Installation aborted by the user. ", getExtractedCount(), " out of ", getExtractionsCount(), " file(s) were written.");
 			Utilities.println("Check out \"", installerOutput.getFileName(), "\" for details.");			
 			in.close();
 		}
 
 		@Override
-		protected void showError(Throwable e) {
+		protected void notifyError(Throwable e) {
 			Utilities.err.print("Installation halted unexpectedly. Cause: ");
 			Utilities.err.printStackTrace(e);
 			Utilities.err.flush();
