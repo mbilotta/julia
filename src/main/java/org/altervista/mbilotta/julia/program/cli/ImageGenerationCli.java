@@ -79,16 +79,16 @@ public class ImageGenerationCli implements Runnable {
 	@ParentCommand
 	MainCli mainCli;
 
-	@Option(names = { "-W", "--width" })
+	@Option(names = { "-W", "--width" }, description = "Width of the image in px.")
 	Integer width;
 
-	@Option(names = { "-H", "--height" })
+	@Option(names = { "-H", "--height" }, description = "Height of the image in px.")
 	Integer height;
 
-	@Option(names = { "-t", "--producer-threads" })
+	@Option(names = { "-t", "--producer-threads" }, paramLabel = "<numThreads>")
 	Integer numOfProducersHint;
 
-	@Option(names = { "-q", "--force-equal-scales" })
+	@Option(names = { "--force-equal-scales" }, negatable = true)
 	Boolean forceEqualScales;
 
 	@Option(names = { "-n", "--number-factory" })
