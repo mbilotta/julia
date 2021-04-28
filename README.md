@@ -80,7 +80,7 @@ To save in a different format, just use a different extension in the output file
 
 ### Julia set generation
 
-Full view of Julia set at C = (0.285, 0.01), JPEG format, everything else as above:
+Full view of Julia set at (0.285, 0.01), JPEG format, everything else as above:
 
     juliac.exe generate -n Double -f Quadratic -r EscapeTime -W 800 -H 600 -o julia.jpg c=0.285,0.01
 
@@ -125,6 +125,28 @@ You can use the prefixes `n` and `f` respectively:
     juliac.exe generate -n BigDecimal -f Multibrot -r EscapeTime -W 800 -H 600 -o multibrot.png n.precision=32 f.bailout=100
 
 Here `precision` is a parameter of the `BigDecimal` number factory while `bailout` pertains to the `Multibrot` formula.
+
+### Setting equivalent parameters across different plugins
+
+It may happen that formula and representation (e.g.) have homonym parameters with the exact same meaning (e.g.: `bailout`). In this case we might want to set these parameters consistently:
+
+    juliac.exe generate -n Double -f Mandelbrot -r MuEncy -W 800 -H 600 -o muency.png *.bailout=100
+
+### JIM output
+
+To save in JIM format, just append the `.jim` extension to the output file name.
+
+### JIM input
+
+JIM images can be returned to the CLI using the `-i` option. This way you can just convert them to PNG or JPEG:
+
+    juliac.exe generate -i muency.jim -o muency.png
+
+Or you can tweak some parameters and then save to a traditional format (or stick with JIM):
+
+    juliac.exe generate -i muency.jim -o muency-alt.png r.angleWeight=4
+
+You can tweak everything. You can even change a plugin or switch between Mandelbrot set/Julia set but be conscious that every modification that is different from a change in the value of a _previewable_ parameter will require a complete recalculation and this may take some time.
 
 ## Building Julia
 
