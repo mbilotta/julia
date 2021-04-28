@@ -64,6 +64,68 @@ provided you have placed `julia.jar` in your home directory. Also note that the 
 
 First time Julia is started you will get an error about missing plugins. That's because Julia doesn't come equipped with any of the pluggable elements discussed above. You can install [DPC4J](https://github.com/mbilotta/dpc4j) that provides a minimal set of plugins to start exploring fractals.
 
+## Command Line Interface (CLI)
+
+Below you'll find some examples of using the Julia CLI to generate images.
+
+### Simplest case
+
+Mandelbrot set of quadratic formula (full view) using the _escape time_ algorithm (all parameters set to default), 800x600 pixels, PNG format:
+
+    juliac.exe generate -n Double -f Quadratic -r EscapeTime -W 800 -H 600 -o mandelbrot.png
+
+At a minimum, we need to specify the number factory (`-n`), the formula (`-f`) and the representation (`-r`) to be used.
+
+To save in a different format, just use a different extension in the output file name.
+
+### Julia set generation
+
+Full view of Julia set at C = (0.285, 0.01), JPEG format, everything else as above:
+
+    juliac.exe generate -n Double -f Quadratic -r EscapeTime -W 800 -H 600 -o julia.jpg c=0.285,0.01
+
+A "default" Julia set point which depends on the formula being used can be set passing `c=default`.
+
+### Zooming
+
+Back to Mandelbrot set. This is a detail of what is known as _Seahorse Valley_:
+
+    juliac.exe generate -n Double -f Quadratic -r EscapeTime -W 800 -H 600 -o mandelbrot-seahorse.png rect=-0.751085,0.13247425,-0.734975,0.12039175 r.maxIterations=2000
+
+A partial view is set with <code>rect=_Re<sub>0</sub>_,_Im<sub>0</sub>_,_Re<sub>1</sub>_,_Im<sub>1</sub>_</code>. It is important that you specify the argument without whitespaces. Also between left and right hand sides there must be a single `=` without withespaces.
+
+Currently there is no way to set `rect` using center and diameter as you would do in other programs. I will remove this limitation in the next release.
+
+Also note that we are raising the maximum number of iterations to avoid loss of accuracy. This is accomplished by `r.maxIterations=2000` which sets the `maxIterations` parameter of the selected representation to a higher value (the default for `EscapeTime` is 500).
+
+### Setting color and gradient parameters
+
+Following example sets the `untrappedOutsidePoint` parameter of `TangentCircles` to a transparent color (the format is <code>_R_,_G_,_B_,_A_</code>), the `untrappedInsidePoint` parameter to an opaque color (alpha is omitted) and the `trappedPoint4` parameter to a gradient starting from color (0, 255, 108) going to (255, 64, 44) and stopping at (0, 0, 96):
+
+    juliac.exe generate -n Double -f Quadratic -r TangentCircles -W 800 -H 600 -o mandelbrot-tc.png r.untrappedOutsidePoint=25,150,82,50 r.untrappedInsidePoint=80,140,200 r.trappedPoint4=0,255,108@0^255,64,44@.6^0,0,96@1
+
+### Using parameter hints
+
+Here we are telling Julia to set the `gradient` parameter of `EscapeTime` to its third hint (note that hints are enumerated starting from zero):
+
+    juliac.exe generate -n Double -f Quadratic -r EscapeTime -W 800 -H 600 -o mandelbrot.png r.hint.gradient=2
+
+### Using hint groups
+
+Hint groups can be recalled similarly as hints but using `*` instead of a parameter name:
+
+    juliac.exe generate -n Double -f Carlson -r TangentCircles -W 800 -H 600 -o mandelbrot-tc-fig5.png r.hint.*=fig5
+
+Hint groups can also be used to set individual parameters. E.g. passing `r.hint.rc=fig5` will set the single parameter `rc` to its value inside group `fig5` (other parameters in the group will be unaffected).
+
+### Setting number factory and formula parameters
+
+You can use the prefixes `n` and `f` respectively:
+
+    juliac.exe generate -n BigDecimal -f Multibrot -r EscapeTime -W 800 -H 600 -o multibrot.png n.precision=32 f.bailout=100
+
+Here `precision` is a parameter of the `BigDecimal` number factory while `bailout` pertains to the `Multibrot` formula.
+
 ## Building Julia
 
 You need JDK 1.8+ and Maven installed in your system:
