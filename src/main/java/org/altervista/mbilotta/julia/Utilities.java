@@ -247,48 +247,48 @@ public class Utilities {
 		}
 	}
 
-	public static void println() {
-		out.println();
+	public static Printer println() {
+		return out.println();
 	}
 
-	public static void println(Object o) {
-		out.println(o);
+	public static Printer println(Object o) {
+		return out.println(o);
 	}
 
-	public static void println(Object o1, Object o2) {
-		out.println(o1, o2);
+	public static Printer println(Object o1, Object o2) {
+		return out.println(o1, o2);
 	}
 
-	public static void println(Object o1, Object o2, Object o3) {
-		out.println(o1, o2, o3);
+	public static Printer println(Object o1, Object o2, Object o3) {
+		return out.println(o1, o2, o3);
 	}
 
-	public static void println(Object... oi) {
-		out.println(oi);
+	public static Printer println(Object... oi) {
+		return out.println(oi);
 	}
 
-	public static void print(Object o) {
-		out.print(o);
+	public static Printer print(Object o) {
+		return out.print(o);
 	}
 
-	public static void print(Object o1, Object o2) {
-		out.print(o1, o2);
+	public static Printer print(Object o1, Object o2) {
+		return out.print(o1, o2);
 	}
 
-	public static void print(Object o1, Object o2, Object o3) {
-		out.print(o1, o2, o3);
+	public static Printer print(Object o1, Object o2, Object o3) {
+		return out.print(o1, o2, o3);
 	}
 
-	public static void print(Object o1, Object... oi) {
-		out.print(o1, oi);
+	public static Printer print(Object o1, Object... oi) {
+		return out.print(o1, oi);
 	}
 
 	public static void flush() {
 		out.flush();
 	}
 
-	public static void printStackTrace(Throwable t) {
-		out.printStackTrace(t);
+	public static Printer printStackTrace(Throwable t) {
+		return out.printStackTrace(t);
 	}
 
 	public static String formatMillisDuration(long ms) {
