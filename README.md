@@ -94,7 +94,7 @@ Back to Mandelbrot set. This is a detail of what is known as _Seahorse Valley_:
 
 A partial view is set with <code>rect=_Re<sub>0</sub>_,_Im<sub>0</sub>_,_Re<sub>1</sub>_,_Im<sub>1</sub>_</code>. It is important that you specify the argument without whitespaces. Also between left and right hand sides there must be a single `=` without withespaces.
 
-Currently there is no way to set `rect` using center and diameter as you would do in other programs. I will try to address this limitation in the next releases.
+Currently there is no way to set `rect` using center and diameter as you would do in other programs. I will try to address this limitation in the next releases. Anyway it is important to note that by default Julia will force 1:1 pixel ratio enlarging `rect` as much as needed to fit the aspect ratio of the output image. This behaviour can be prevented passing `--no-force-equal-scales`.
 
 Also note that we are raising the maximum number of iterations to avoid loss of accuracy. This is accomplished by `r.maxIterations=2000` which sets the `maxIterations` parameter of the selected representation to a higher value (the default for `EscapeTime` is 500).
 
