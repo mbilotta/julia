@@ -61,31 +61,31 @@ public abstract class Printer implements Flushable, Closeable {
 		@Override
 		public void setEnabled(boolean enabled) {};
 		@Override
-		public void println(String s) {}
+		public Printer println(String s) { return this; }
 		@Override
-		public void println(char[] chars) {}
+		public Printer println(char[] chars) { return this; }
 		@Override
-		public void println() {}
+		public Printer println() { return this; }
 		@Override
-		public void println(Object o) {}
+		public Printer println(Object o) { return this; }
 		@Override
-		public void println(Object o1, Object o2) {}
+		public Printer println(Object o1, Object o2) { return this; }
 		@Override
-		public void println(Object o1, Object o2, Object o3) {}
+		public Printer println(Object o1, Object o2, Object o3) { return this; }
 		@Override
-		public void println(Object... oi) {}
+		public Printer println(Object... oi) { return this; }
 		@Override
-		public void print(String s) {}
+		public Printer print(String s) { return this; }
 		@Override
-		public void print(char[] chars) {}
+		public Printer print(char[] chars) { return this; }
 		@Override
-		public void print(Object o) {}
+		public Printer print(Object o) { return this; }
 		@Override
-		public void print(Object o1, Object o2) {}
+		public Printer print(Object o1, Object o2) { return this; }
 		@Override
-		public void print(Object o1, Object o2, Object o3) {}
+		public Printer print(Object o1, Object o2, Object o3) { return this; }
 		@Override
-		public void print(Object o1, Object... oi) {}
+		public Printer print(Object o1, Object... oi) { return this; }
 		@Override
 		public Printer printf(String format, Object... args) {
 			return this;
@@ -95,7 +95,7 @@ public abstract class Printer implements Flushable, Closeable {
 			return this;
 		}
 		@Override
-		public void printStackTrace(Throwable t) {}
+		public Printer printStackTrace(Throwable t) { return this; }
 		@Override
 		public boolean checkError() { return false; };
 		@Override
@@ -468,7 +468,7 @@ public abstract class Printer implements Flushable, Closeable {
 		this.enabled = enabled;
 	}
 
-	public void println(String s) {
+	public Printer println(String s) {
 		if (enabled) {
 			synchronized (lock) {
 				try {
@@ -482,9 +482,10 @@ public abstract class Printer implements Flushable, Closeable {
 				}
 			}
 		}
+		return this;
 	}
 
-	public void println(char[] chars) {
+	public Printer println(char[] chars) {
 		if (enabled) {
 			synchronized (lock) {
 				try {
@@ -498,9 +499,10 @@ public abstract class Printer implements Flushable, Closeable {
 				}
 			}
 		}
+		return this;
 	}
 
-	public void println() {
+	public Printer println() {
 		if (enabled) {
 			synchronized (lock) {
 				try {
@@ -514,9 +516,10 @@ public abstract class Printer implements Flushable, Closeable {
 				}
 			}
 		}
+		return this;
 	}
 
-	public void println(Object o) {
+	public Printer println(Object o) {
 		if (enabled) {
 			synchronized (lock) {
 				try {
@@ -530,9 +533,10 @@ public abstract class Printer implements Flushable, Closeable {
 				}
 			}
 		}
+		return this;
 	}
 
-	public void println(Object o1, Object o2) {
+	public Printer println(Object o1, Object o2) {
 		if (enabled) {
 			synchronized (lock) {
 				try {
@@ -546,9 +550,10 @@ public abstract class Printer implements Flushable, Closeable {
 				}
 			}
 		}
+		return this;
 	}
 
-	public void println(Object o1, Object o2, Object o3) {
+	public Printer println(Object o1, Object o2, Object o3) {
 		if (enabled) {
 			synchronized (lock) {
 				try {
@@ -562,9 +567,10 @@ public abstract class Printer implements Flushable, Closeable {
 				}
 			}
 		}
+		return this;
 	}
 
-	public void println(Object... oi) {
+	public Printer println(Object... oi) {
 		if (enabled) {
 			synchronized (lock) {
 				try {
@@ -578,9 +584,10 @@ public abstract class Printer implements Flushable, Closeable {
 				}
 			}
 		}
+		return this;
 	}
 
-	public void print(String s) {
+	public Printer print(String s) {
 		if (enabled) {
 			synchronized (lock) {
 				try {
@@ -594,9 +601,10 @@ public abstract class Printer implements Flushable, Closeable {
 				}
 			}
 		}
+		return this;
 	}
 
-	public void print(char[] chars) {
+	public Printer print(char[] chars) {
 		if (enabled) {
 			synchronized (lock) {
 				try {
@@ -610,9 +618,10 @@ public abstract class Printer implements Flushable, Closeable {
 				}
 			}
 		}
+		return this;
 	}
 
-	public void print(Object o) {
+	public Printer print(Object o) {
 		if (enabled) {
 			synchronized (lock) {
 				try {
@@ -626,9 +635,10 @@ public abstract class Printer implements Flushable, Closeable {
 				}
 			}
 		}
+		return this;
 	}
 
-	public void print(Object o1, Object o2) {
+	public Printer print(Object o1, Object o2) {
 		if (enabled) {
 			synchronized (lock) {
 				try {
@@ -642,9 +652,10 @@ public abstract class Printer implements Flushable, Closeable {
 				}
 			}
 		}
+		return this;
 	}
 
-	public void print(Object o1, Object o2, Object o3) {
+	public Printer print(Object o1, Object o2, Object o3) {
 		if (enabled) {
 			synchronized (lock) {
 				try {
@@ -658,9 +669,10 @@ public abstract class Printer implements Flushable, Closeable {
 				}
 			}
 		}
+		return this;
 	}
 
-	public void print(Object o1, Object... oi) {
+	public Printer print(Object o1, Object... oi) {
 		if (enabled) {
 			synchronized (lock) {
 				try {
@@ -674,6 +686,7 @@ public abstract class Printer implements Flushable, Closeable {
 				}
 			}
 		}
+		return this;
 	}
 
 	public Printer printf(String format, Object ... args) {
@@ -697,7 +710,7 @@ public abstract class Printer implements Flushable, Closeable {
 		return this;
 	}
 
-	public void printStackTrace(Throwable t) {
+	public Printer printStackTrace(Throwable t) {
 		if (enabled) {
 			synchronized (lock) {
 				try {
@@ -711,6 +724,7 @@ public abstract class Printer implements Flushable, Closeable {
 				}
 			}
 		}
+		return this;
 	}
 
 	public boolean checkError() {
