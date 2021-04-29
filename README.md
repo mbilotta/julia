@@ -94,7 +94,7 @@ Back to Mandelbrot set. This is a detail of what is known as _Seahorse Valley_:
 
 A partial view is set with <code>rect=_Re<sub>0</sub>_,_Im<sub>0</sub>_,_Re<sub>1</sub>_,_Im<sub>1</sub>_</code>. It is important that you specify the argument without whitespaces. Also between left and right hand sides there must be a single `=` without withespaces.
 
-Currently there is no way to set `rect` using center and diameter as you would do in other programs. I will remove this limitation in the next release.
+Currently there is no way to set `rect` using center and diameter as you would do in other programs. I will try to address this limitation in the next releases.
 
 Also note that we are raising the maximum number of iterations to avoid loss of accuracy. This is accomplished by `r.maxIterations=2000` which sets the `maxIterations` parameter of the selected representation to a higher value (the default for `EscapeTime` is 500).
 
@@ -128,13 +128,15 @@ Here `precision` is a parameter of the `BigDecimal` number factory while `bailou
 
 ### Setting equivalent parameters across different plugins
 
-It may happen that formula and representation (e.g.) have homonym parameters with the exact same meaning (e.g.: `bailout`). In this case we might want to set these parameters consistently:
+It may happen that formula and representation (e.g.) have equivalent parameters with the exact same name and meaning (e.g.: `bailout`). In this case we might want to set these parameters consistently:
 
     juliac.exe generate -n Double -f Mandelbrot -r MuEncy -W 800 -H 600 -o muency.png *.bailout=100
 
 ### JIM output
 
 To save in JIM format, just append the `.jim` extension to the output file name.
+
+Currently it is not possible to save a partial rendering when using the CLI (it is only possible when using the GUI). I will try to address this limitation in the next releases.
 
 ### JIM input
 
@@ -146,7 +148,7 @@ Or you can tweak some parameters and then save to a traditional format (or stick
 
     juliac.exe generate -i muency.jim -o muency-alt.png r.angleWeight=4
 
-You can tweak everything. You can even change a plugin or switch between Mandelbrot set/Julia set but be conscious that every modification that is different from a change in the value of a _previewable_ parameter will require a complete recalculation and this may take some time.
+You can tweak everything. You can even change a plugin or switch between Mandelbrot set/Julia set but remember that every modification that is different from a change in the value of a _previewable_ parameter will require Julia to repeat the calculation from scratch.
 
 ## Building Julia
 
