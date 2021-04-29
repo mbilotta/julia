@@ -223,19 +223,20 @@ public class ImageGenerationCli implements Runnable {
 
 			IntermediateImage intermediateImage = null;
 			if (reader != null) {
-					if (!ignoreIntermediateImage) {
+				if (!ignoreIntermediateImage) {
+					if (reader.hasIntermediateImage()) {
 						boolean canUseIntermediateImage = numberFactoryInstance.equals(reader.getNumberFactoryInstance())
-							&& formulaInstance.equals(reader.getFormulaInstance())
-							&& representationInstance.equalsIgnorePreviewables(reader.getRepresentationInstance())
-							&& Objects.equals(juliaSetPoint, reader.getJuliaSetPoint())
-							&& rectangle.equals(reader.getRectangle())
-							&& forceEqualScales.equals(reader.getForceEqualScales());
-					if (canUseIntermediateImage) {
-						reader.readIntermediateImage();
-						if (reader.hasFatalErrors()) {
-							return;
-						}
-						if (reader.hasIntermediateImage()) {
+								&& formulaInstance.equals(reader.getFormulaInstance())
+								&& representationInstance.equalsIgnorePreviewables(reader.getRepresentationInstance())
+								&& Objects.equals(juliaSetPoint, reader.getJuliaSetPoint())
+								&& rectangle.equals(reader.getRectangle())
+								&& forceEqualScales.equals(reader.getForceEqualScales());
+
+						if (canUseIntermediateImage) {
+							reader.readIntermediateImage();
+							if (reader.hasFatalErrors()) {
+								return;
+							}
 							intermediateImage = reader.getIntermediateImage();
 							if (width == null) {
 								width = intermediateImage.getWidth();
@@ -244,10 +245,15 @@ public class ImageGenerationCli implements Runnable {
 								height = intermediateImage.getHeight();
 							}
 							canUseIntermediateImage = width.equals(intermediateImage.getWidth()) && height.equals(intermediateImage.getHeight());
-							if (!canUseIntermediateImage) {
-								intermediateImage = null;
-							}
 						}
+
+						if (!canUseIntermediateImage) {
+							intermediateImage = null;
+							reader.disposeIntermediateImage();
+							Utilities.println("Warning: the requested image cannot be computed starting from ", inputPath);
+						}
+					} else {
+						Utilities.println("Warning: no intermediate image was found in ", inputPath);
 					}
 				}
 				reader.close();

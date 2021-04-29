@@ -52,7 +52,6 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> implements AutoC
 	private final boolean loadIntermediateImage;
 	private int errorCount = 0;
 	private int fatalCount = 0;
-	private boolean hasIntermediateImage = false;
 	private IntermediateImage iimg;
 
 	private ZipFile zipFile;
@@ -194,7 +193,14 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> implements AutoC
 	}
 
 	public boolean hasIntermediateImage() {
-		return hasIntermediateImage;
+		if (zipFile == null) {
+			throw new IllegalStateException();
+		}
+		return zipFile.getEntry("intermediateImage") != null;
+	}
+
+	public void disposeIntermediateImage() {
+		iimg = null;
 	}
 
 	public JuliaImageReader readHeader() throws IOException {
@@ -257,7 +263,6 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> implements AutoC
 		if (fatalCount == 0 && loadIntermediateImage) {
 			ZipEntry entry = zipFile.getEntry("intermediateImage");
 			if (entry != null) {
-				hasIntermediateImage = true;
 				publishToGui("intermediate image...");
 				addInfo(entry);
 				errorOutput.println("reading intermediate image...");
