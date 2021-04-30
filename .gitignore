@@ -15,3 +15,6 @@ buildNumber.properties
 .classpath
 .project
 .settings
+
+# VSCode related
+.vscode/
