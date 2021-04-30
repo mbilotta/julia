@@ -235,7 +235,7 @@ public class ImageGenerationCli implements Runnable {
 			// Read intermediate image if available
 			IntermediateImage intermediateImage = null;
 			if (reader != null) {
-				if ( !noIntermImgInput || !(outputFormat.equalsIgnoreCase("jim") && noIntermImgOutput) ) {
+				if ( !noIntermImgInput && !(outputFormat.equalsIgnoreCase("jim") && noIntermImgOutput) ) {
 					if (reader.hasIntermediateImage()) {
 						boolean canUseIntermediateImage = numberFactoryInstance.equals(reader.getNumberFactoryInstance())
 								&& formulaInstance.equals(reader.getFormulaInstance())
