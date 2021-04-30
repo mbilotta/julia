@@ -409,6 +409,10 @@ public class Profile {
 			cancel(false);
 		}
 
+		public File getFile() {
+			return file;
+		}
+
 		public int getExtractedCount() {
 			return extractedCount;
 		}
@@ -846,22 +850,25 @@ public class Profile {
 		@Override
 		protected void notifyFailure(String details) {
 			Utilities.println("Installation failed. ", getExtractedCount(), " out of ", getExtractionsCount(), " file(s) were written.");
-			Utilities.println("Check out \"", installerOutput.getFileName(), "\" for details.");
+			if (getExtractedCount() == 0) {
+				Utilities.println(getFile(), " might not be an existing file or a valid package.");
+			}
+			Utilities.println("Details were written to \"", installerOutput.getFileName(), "\" inside the profile directory.");
 			in.close();
 		}
 
 		@Override
 		protected void notifyCancellation(String details) {
-			Utilities.println("Installation aborted by the user. ", getExtractedCount(), " out of ", getExtractionsCount(), " file(s) were written.");
-			Utilities.println("Check out \"", installerOutput.getFileName(), "\" for details.");			
+			Utilities.println("Installation aborted by the user. ", getExtractedCount(), " out of ", getExtractionsCount(), " file(s) were written.")
+				.println("Details were written to \"", installerOutput.getFileName(), "\" inside the profile directory.");
 			in.close();
 		}
 
 		@Override
 		protected void notifyError(Throwable e) {
-			Utilities.err.print("Installation halted unexpectedly. Cause: ");
-			Utilities.err.printStackTrace(e);
-			Utilities.err.flush();
+			Utilities.err.print("Installation halted unexpectedly. Cause: ")
+				.printStackTrace(e)
+				.flush();
 			in.close();
 		}
 
