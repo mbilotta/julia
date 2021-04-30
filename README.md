@@ -164,9 +164,15 @@ Run the following:
 
     mvn -P rel clean package
 
-## Acknowledgements
+## Credits
 
 Thanks to [Robert Munafo](https://mrob.com/pub/index.html) for providing valuable informations on fractal rendering algorithms througout its [Mu-Ency](https://mrob.com/pub/muency.html) site.
+
+### Icons
+
+Most of the icons were taken/derived from the [Momenticons](https://www.iconfinder.com/iconsets/momenticons-basic) matte set by [Momentum Design Lab](http://momentumdesignlab.com/), licensed under [Creative Commons Attribution 3.0 unported (CC BY 3.0)](http://creativecommons.org/licenses/by/3.0/).
+
+Some other icons were taken from the [Farm-fresh](https://www.iconfinder.com/iconsets/fatcow) set by [FatCow Web Hosting](https://www.fatcow.com/), licensed under [Creative Commons Attribution 3.0 United States (CC BY 3.0 US)](https://creativecommons.org/licenses/by/3.0/us/).
 
 ## Supporting this project
 
