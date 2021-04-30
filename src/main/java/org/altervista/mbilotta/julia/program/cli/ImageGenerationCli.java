@@ -104,6 +104,9 @@ public class ImageGenerationCli implements Runnable {
 		description = "Output file path.")
 	Path outputPath;
 
+	@Option(names = "--no-iimg-output")
+	boolean noIntermImgOutput;
+
 	@Option(names = { "-x", "--replace-existing" },
 		description = "Use this flag to eventually replace an already existing file at output path.")
 	boolean replaceExisting;
@@ -112,8 +115,8 @@ public class ImageGenerationCli implements Runnable {
 		description = "Input file path (JIM format).")
 	Path inputPath;
 
-	@Option(names = "--ignore-intermediate-image")
-	boolean ignoreIntermediateImage;
+	@Option(names = "--no-iimg-input")
+	boolean noIntermImgInput;
 
 	@Parameters
 	List<String> parameters;
@@ -123,6 +126,8 @@ public class ImageGenerationCli implements Runnable {
 	private PluginInstance<RepresentationPlugin> representationInstance;
 	private Rectangle rectangle;
 	private JuliaSetPoint juliaSetPoint;
+
+	private Timer timer = new Timer();
 
 	private JuliaExecutorService executorService;
 
@@ -221,9 +226,16 @@ public class ImageGenerationCli implements Runnable {
 				forceEqualScales = true;
 			}
 
+			// Infer output format
+			File outputFile = outputPath.toFile();
+			String outputFileName = outputFile.getName();
+			String outputExtension = outputFileName.substring(outputFileName.lastIndexOf('.'));
+			String outputFormat = outputExtension.substring(1);
+
+			// Read intermediate image if available
 			IntermediateImage intermediateImage = null;
 			if (reader != null) {
-				if (!ignoreIntermediateImage) {
+				if ( !noIntermImgInput || !(outputFormat.equalsIgnoreCase("jim") && noIntermImgOutput) ) {
 					if (reader.hasIntermediateImage()) {
 						boolean canUseIntermediateImage = numberFactoryInstance.equals(reader.getNumberFactoryInstance())
 								&& formulaInstance.equals(reader.getFormulaInstance())
@@ -276,63 +288,61 @@ public class ImageGenerationCli implements Runnable {
 			Formula formula = (Formula) formulaInstance.create(numberFactory);
 			// Instantiate Representation
 			Representation representation = (Representation) representationInstance.create(numberFactory);
-			// Instantiate CoordinateTransform
-			CoordinateTransform coordinateTransform = rectangle.createCoordinateTransform(width, height, forceEqualScales, numberFactory);
-			// Instantiate IntermediateImage
-			if (intermediateImage == null) {
-				intermediateImage = representation.createIntermediateImage(
-					width, height,
-					Math.min(Runtime.getRuntime().availableProcessors(), numOfProducersHint)
-				);	
-			}
 
-			// Run computation
-			File outputFile = outputPath.toFile();
-			Timer timer = new Timer();
-			if (!intermediateImage.isComplete()) {
-				// Instantiate Production
-				Production production = representation.createProduction(
-					intermediateImage, numberFactory, formula,
-					coordinateTransform,
-					juliaSetPoint != null ? juliaSetPoint.toComplex(numberFactory) : null);
-
-				// Pre-rendering output file check
-				if (!replaceExisting && outputFile.exists()) {
-					warnOfOutputFileAlreadyExisting();
-					return;
+			if ( !(outputFormat.equalsIgnoreCase("jim") && noIntermImgOutput) ) {
+				// Instantiate IntermediateImage
+				if (intermediateImage == null) {
+					intermediateImage = representation.createIntermediateImage(
+						width, height,
+						Math.min(Runtime.getRuntime().availableProcessors(), numOfProducersHint)
+					);
 				}
 
-				Utilities.print("Rendering intermediate image...");
-				Utilities.flush();
-				int numOfProducers = production.getNumOfProducers();
-				executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
-				CountDownLatch done = new CountDownLatch(numOfProducers);
-				timer.start();
-				for (int i = 0; i < numOfProducers; i++) {
-					Production.Producer producer = production.createProducer(i);
-					executorService.submitAndObserve(producer, new ExecutionObserver() {
-						@Override
-						public void executionCancelled(Runnable target) {
-							done.countDown();
-						}
+				// Run computation
+				if (!intermediateImage.isComplete()) {
+					// Instantiate CoordinateTransform
+					CoordinateTransform coordinateTransform = rectangle.createCoordinateTransform(width, height, forceEqualScales, numberFactory);
 
-						@Override
-						public void executionFinished(Runnable target) {
-							done.countDown();
-						}
-					});
+					// Instantiate Production
+					Production production = representation.createProduction(
+						intermediateImage, numberFactory, formula,
+						coordinateTransform,
+						juliaSetPoint != null ? juliaSetPoint.toComplex(numberFactory) : null);
+
+					// Pre-rendering output file check
+					if (!replaceExisting && outputFile.exists()) {
+						warnOfOutputFileAlreadyExisting();
+						return;
+					}
+
+					Utilities.print("Rendering intermediate image...");
+					Utilities.flush();
+					int numOfProducers = production.getNumOfProducers();
+					executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
+					CountDownLatch done = new CountDownLatch(numOfProducers);
+					timer.start();
+					for (int i = 0; i < numOfProducers; i++) {
+						Production.Producer producer = production.createProducer(i);
+						executorService.submitAndObserve(producer, new ExecutionObserver() {
+							@Override
+							public void executionCancelled(Runnable target) {
+								done.countDown();
+							}
+
+							@Override
+							public void executionFinished(Runnable target) {
+								done.countDown();
+							}
+						});
+					}
+					done.await();
+					timer.stop();
+
+					Utilities.println(" ", Utilities.formatDuration(timer.getElapsedTime()));
 				}
-				done.await();
-				timer.stop();
-
-				Utilities.println(" ", Utilities.formatDuration(timer.getElapsedTime()));
 			}
 
-			String fileName = outputFile.getName();
-			String extension = fileName.substring(fileName.lastIndexOf('.'));
-			String format = extension.substring(1);
-
-			if (format.equalsIgnoreCase("jim")) {
+			if (outputFormat.equalsIgnoreCase("jim")) {
 				// Write to file
 				Utilities.println("Writing to output file...");
 				if (canWriteTo(outputFile)) {
@@ -367,7 +377,7 @@ public class ImageGenerationCli implements Runnable {
 				// Write to file
 				Utilities.println("Writing to output file...");
 				if (canWriteTo(outputFile)) {
-					ImageIO.write(finalImage, format, outputFile);
+					ImageIO.write(finalImage, outputFormat, outputFile);
 				}
 			}
 		} catch (Exception ex) {
