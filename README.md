@@ -158,6 +158,12 @@ You need JDK 1.8+ and Maven installed in your system:
     cd julia
     mvn clean package
 
+### Building executable wrappers for Windows
+
+Run the following:
+
+    mvn -P rel clean package
+
 ## Acknowledgements
 
 Thanks to [Robert Munafo](https://mrob.com/pub/index.html) for providing valuable informations on fractal rendering algorithms througout its [Mu-Ency](https://mrob.com/pub/muency.html) site.
