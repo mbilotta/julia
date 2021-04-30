@@ -24,6 +24,7 @@ import java.awt.GraphicsEnvironment;
 import java.awt.HeadlessException;
 import java.nio.file.Path;
 
+import org.altervista.mbilotta.julia.ApplicationInfo;
 import org.altervista.mbilotta.julia.Utilities;
 import org.altervista.mbilotta.julia.program.Application;
 
@@ -39,7 +40,7 @@ import picocli.CommandLine.ParseResult;
 @Command(name = "juliac",
 	subcommands = { PluginInstallationCli.class, ImageGenerationCli.class, PluginPackagementCli.class, HelpCommand.class },
 	header = { "Julia: The Fractal Generator", "Copyright (C) 2015 Maurizio Bilotta" },
-	version = { "Julia: The Fractal Generator", "Version " + Application.VERSION, "Copyright (C) 2015 Maurizio Bilotta"},
+	version = { "Julia: The Fractal Generator", "Version " + ApplicationInfo.VERSION, "Copyright (C) 2015 Maurizio Bilotta"},
 	optionListHeading = "%nOptions:%n",
 	commandListHeading = "%nCommands:%n",
 	sortOptions = false)

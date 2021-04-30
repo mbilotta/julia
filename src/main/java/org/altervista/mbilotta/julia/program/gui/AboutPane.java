@@ -21,6 +21,7 @@ import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 
+import org.altervista.mbilotta.julia.ApplicationInfo;
 import org.altervista.mbilotta.julia.program.Application;
 
 
@@ -42,7 +43,7 @@ public class AboutPane extends JTabbedPane {
 		JLabel lblPreamble = new JLabel("<html><table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\">"
 				+ "<tr><td align=\"left\" valign=\"top\">"
 				+ "Julia: The Fractal Generator<br>"
-				+ "version " + Application.VERSION + "<br><br>"
+				+ "version " + ApplicationInfo.VERSION + "<br><br>"
 				+ "Copyright &copy; 2015 Maurizio Bilotta.</td>"
 				+ "<td align=\"right\" valign=\"top\"><img src=\"" + url + "\"></td></tr></table><br>"
 				+ "Julia is free software: you can redistribute it and/or modify it under the terms of the"
