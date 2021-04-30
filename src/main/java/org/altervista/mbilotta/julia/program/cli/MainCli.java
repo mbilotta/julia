@@ -21,6 +21,7 @@
 package org.altervista.mbilotta.julia.program.cli;
 
 import java.awt.GraphicsEnvironment;
+import java.awt.HeadlessException;
 import java.nio.file.Path;
 
 import org.altervista.mbilotta.julia.Utilities;
@@ -28,9 +29,11 @@ import org.altervista.mbilotta.julia.program.Application;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.ExitCode;
 import picocli.CommandLine.HelpCommand;
-import picocli.CommandLine.IExitCodeGenerator;
+import picocli.CommandLine.IExecutionExceptionHandler;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.ParseResult;
 
 
 @Command(name = "juliac",
@@ -40,7 +43,7 @@ import picocli.CommandLine.Option;
 	optionListHeading = "%nOptions:%n",
 	commandListHeading = "%nCommands:%n",
 	sortOptions = false)
-public class MainCli implements Runnable, IExitCodeGenerator {
+public class MainCli implements Runnable {
 
 	@Option(names = { "-d", "--debug" },
 		description = "Enable debug console output")
@@ -59,35 +62,36 @@ public class MainCli implements Runnable, IExitCodeGenerator {
 
 	private boolean guiRunning = false;
 
-	private int exitCode = 0;
-
-	static final int HEADLESS_ERROR_EXIT_CODE = 123;
-
 	@Override
 	public void run() {
-		guiRunning = true;
 		Utilities.debug.setEnabled(debugOutputEnabled);
 		if (GraphicsEnvironment.isHeadless()) {
-			exitCode = HEADLESS_ERROR_EXIT_CODE;
+			throw new HeadlessException();
 		} else {
+			guiRunning = true;
 			Application.run(this);
 		}
 	}
 
 	public static void main(String[] args) {
 		CommandLine cmd = new CommandLine(new MainCli());
+		cmd.setExecutionExceptionHandler(new IExecutionExceptionHandler() {
+			@Override
+			public int handleExecutionException(Exception ex, CommandLine commandLine, ParseResult parseResult)
+					throws Exception {
+				if (ex instanceof HeadlessException) {
+					commandLine.getErr().println(ex);
+					commandLine.usage(commandLine.getOut());
+					return ExitCode.SOFTWARE;
+				}
+				throw ex;
+			}
+		});
+
 		int exitCode = cmd.execute(args);
 		if (exitCode != 0) {
-			if (exitCode == HEADLESS_ERROR_EXIT_CODE) {
-				cmd.usage(System.out);
-			}
 			System.exit(exitCode);
 		}
-	}
-
-	@Override
-	public int getExitCode() {
-		return exitCode;
 	}
 
 	public Path getProfilePath() {
