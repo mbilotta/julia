@@ -66,7 +66,7 @@ First time Julia is started you will get an error about missing plugins. That's 
 
 ## Command Line Interface (CLI)
 
-Below you'll find some examples of using the Julia CLI to generate images.
+Below you'll find some examples of using the Julia CLI to generate images. Examples will make use of `juliac.exe` just for brevity: it's intended that they apply also when using `java -jar julia.jar` to run the program.
 
 ### Simplest case
 
