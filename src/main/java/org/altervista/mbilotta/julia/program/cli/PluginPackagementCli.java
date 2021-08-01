@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Maurizio Bilotta.
+ * Copyright (C) 2020 Maurizio Bilotta.
  * 
  * This file is part of Julia. See <http://mbilotta.altervista.org/>.
  * 
