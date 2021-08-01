@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.util.Properties;
 
 
 
@@ -188,6 +189,168 @@ public class Preferences implements Serializable, Cloneable {
 
 	public boolean isStartupCombinationEnabled() {
 		return startupCombinationEnabled;
+	}
+
+	public void writeTo(Properties p) {
+		p.setProperty("imageWidth", Integer.toString(imageWidth));
+		p.setProperty("imageHeight", Integer.toString(imageHeight));
+		p.setProperty("transparency", convertTransparencyToString(transparency));
+		p.setProperty("refreshDelay", Integer.toString(refreshDelay));
+		p.setProperty("numOfProducerThreads", Integer.toString(numOfProducerThreads));
+		p.setProperty("loggingEnabled", Boolean.toString(loggingEnabled));
+		p.setProperty("maxLogLength", Integer.toString(maxLogLength));
+		p.setProperty("selectionColor", convertColorToString(selectionColor));
+		p.setProperty("defaultCloseBehaviour", defaultCloseBehaviour.name());
+		p.setProperty("javaDesktopInteractionEnabled", Boolean.toString(javaDesktopInteractionEnabled));
+		if (browserCommand != null) {
+			p.setProperty("browserCommand", browserCommand);
+		} else {
+			p.setProperty("browserCommand", "");
+		}
+		p.setProperty("startupCombinationEnabled", Boolean.toString(startupCombinationEnabled));
+		if (startupNumberFactory != null) {
+			p.setProperty("startupNumberFactory", startupNumberFactory);
+		} else {
+			p.setProperty("startupNumberFactory", "");
+		}
+		if (startupFormula != null) {
+			p.setProperty("startupFormula", startupFormula);
+		} else {
+			p.setProperty("startupFormula", "");
+		}
+		if (startupRepresentation != null) {
+			p.setProperty("startupRepresentation", startupRepresentation);
+		} else {
+			p.setProperty("startupRepresentation", "");
+		}
+		p.setProperty("startupJuliaSetFlag", Boolean.toString(startupJuliaSetFlag));
+		p.setProperty("startupForceEqualScalesFlag", Boolean.toString(startupForceEqualScalesFlag));
+		if (startupImagePath != null) {
+			p.setProperty("startupImagePath", startupImagePath);
+		} else {
+			p.setProperty("startupImagePath", "");
+		}
+	}
+
+	public void readFrom(Properties p) {
+		String imageWidth = p.getProperty("imageWidth");
+		if (imageWidth != null) {
+			setImageWidth(Integer.parseInt(imageWidth.trim()));
+		}
+		String imageHeight = p.getProperty("imageHeight");
+		if (imageHeight != null) {
+			setImageHeight(Integer.parseInt(imageHeight.trim()));
+		}
+		String transparency = p.getProperty("transparency");
+		if (transparency != null) {
+			setTransparency(convertStringToTransparency(transparency.trim()));
+		}
+		String refreshDelay = p.getProperty("refreshDelay");
+		if (refreshDelay != null) {
+			setRefreshDelay(Integer.parseInt(refreshDelay.trim()));
+		}
+		String numOfProducerThreads = p.getProperty("numOfProducerThreads");
+		if (numOfProducerThreads != null) {
+			setNumOfProducerThreads(Integer.parseInt(numOfProducerThreads.trim()));
+		}
+		String loggingEnabled = p.getProperty("loggingEnabled");
+		if (loggingEnabled != null) {
+			setLoggingEnabled(Boolean.parseBoolean(loggingEnabled.trim()));
+		}
+		String maxLogLength = p.getProperty("maxLogLength");
+		if (maxLogLength != null) {
+			setMaxLogLength(Integer.parseInt(maxLogLength.trim()));
+		}
+		String selectionColor = p.getProperty("selectionColor");
+		if (selectionColor != null) {
+			setSelectionColor(convertStringToColor(selectionColor.trim()));
+		}
+		String defaultCloseBehaviour = p.getProperty("defaultCloseBehaviour");
+		if (defaultCloseBehaviour != null) {
+			setDefaultCloseBehaviour(DefaultCloseBehaviour.valueOf(defaultCloseBehaviour.trim()));
+		}
+		String javaDesktopInteractionEnabled = p.getProperty("javaDesktopInteractionEnabled");
+		if (javaDesktopInteractionEnabled != null) {
+			setJavaDesktopInteractionEnabled(Boolean.parseBoolean(javaDesktopInteractionEnabled.trim()));
+		}
+		String browserCommand = p.getProperty("browserCommand");
+		if (browserCommand != null) {
+			browserCommand = browserCommand.trim();
+			setBrowserCommand(browserCommand.isEmpty() ? null : browserCommand);
+		}
+		String startupCombinationEnabled = p.getProperty("startupCombinationEnabled");
+		if (startupCombinationEnabled != null) {
+			setStartupCombinationEnabled(Boolean.parseBoolean(startupCombinationEnabled.trim()));
+		}
+		String startupNumberFactory = p.getProperty("startupNumberFactory");
+		if (startupNumberFactory != null) {
+			startupNumberFactory = startupNumberFactory.trim();
+			setStartupNumberFactory(startupNumberFactory.isEmpty() ? null : startupNumberFactory);
+		}
+		String startupFormula = p.getProperty("startupFormula");
+		if (startupFormula != null) {
+			startupFormula = startupFormula.trim();
+			setStartupFormula(startupFormula.isEmpty() ? null : startupFormula);
+		}
+		String startupRepresentation = p.getProperty("startupRepresentation");
+		if (startupRepresentation != null) {
+			startupRepresentation = startupRepresentation.trim();
+			setStartupRepresentation(startupRepresentation.isEmpty() ? null : startupRepresentation);
+		}
+		String startupJuliaSetFlag = p.getProperty("startupJuliaSetFlag");
+		if (startupJuliaSetFlag != null) {
+			setStartupJuliaSetFlag(Boolean.parseBoolean(startupJuliaSetFlag.trim()));
+		}
+		String startupForceEqualScalesFlag = p.getProperty("startupForceEqualScalesFlag");
+		if (startupForceEqualScalesFlag != null) {
+			setStartupForceEqualScalesFlag(Boolean.parseBoolean(startupForceEqualScalesFlag.trim()));
+		}
+		String startupImagePath = p.getProperty("startupImagePath");
+		if (startupImagePath != null) {
+			startupImagePath = startupImagePath.trim();
+			setStartupImagePath(startupImagePath.isEmpty() ? null : startupImagePath);
+		}
+	}
+
+	static String convertTransparencyToString(int transparency) {
+		switch (transparency) {
+			case Transparency.TRANSLUCENT: return "TRANSLUCENT";
+			case Transparency.BITMASK: return "BITMASK";
+			case Transparency.OPAQUE: return "OPAQUE";
+			default: throw new IllegalArgumentException(Integer.toString(transparency));
+		}
+	}
+
+	static int convertStringToTransparency(String transparency) {
+		switch (transparency) {
+			case "TRANSLUCENT": return Transparency.TRANSLUCENT;
+			case "BITMASK": return Transparency.BITMASK;
+			case "OPAQUE": return Transparency.OPAQUE;
+			default: throw new IllegalArgumentException(transparency);
+		}
+	}
+
+	static String convertColorToString(Color color) {
+		int r = color.getRed();
+		int g = color.getGreen();
+		int b = color.getBlue();
+		if (color.getAlpha() == 255) {
+			return r + "," + g + "," + b;
+		}
+		int a = color.getAlpha();
+		return r + "," + g + "," + b + "," + a;
+	}
+
+	static Color convertStringToColor(String color) {
+		String[] components = color.split(",", 4);
+		if (components.length < 3) {
+			throw new IllegalArgumentException(color);
+		}
+		int r = Integer.parseInt(components[0]);
+		int g = Integer.parseInt(components[1]);
+		int b = Integer.parseInt(components[2]);
+		int a = components.length > 3 ? Integer.parseInt(components[3]) : 255;
+		return new Color(r, g, b, a);
 	}
 
 	private void readObject(ObjectInputStream in)
