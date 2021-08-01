@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Writer;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -42,6 +43,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -135,15 +137,14 @@ public class Loader extends SwingWorker<Void, String> {
 				publishToGui("Reading preferences...");
 				debug.println("Reading preferences from ", profile.getPreferencesFile(), "...");
 				preferencesFile = new LockedFile(profile.getPreferencesFile(), true);
-				preferences = readNonNull(preferencesFile.readObjectsFrom(),
-						"preferences",
-						Preferences.class);
-				debug.println("...success: ", preferences);
-			} catch (IOException | ClassNotFoundException e) {
 				preferences = new Preferences();
+				Properties properties = preferencesFile.readPropertiesFrom();
+				preferences.readFrom(properties);
+				debug.println("...success: ", preferences);
+			} catch (IOException e) {
 				debug.print("...failure. Cause: ");
 				debug.printStackTrace(e);
-				debug.println("Default preferences will be used.");
+				readLegacyPreferencesFile();
 			}
 		} else {
 			List<Path> otherFiles = new ArrayList<>(2 + descriptors.size() * 3);
@@ -229,6 +230,19 @@ public class Loader extends SwingWorker<Void, String> {
 			MessagePane.showErrorMessage(splashScreen, "Julia", "Could not run the program.", e.getCause());
 			splashScreen.setVisible(false);
 			splashScreen.dispose();
+		}
+	}
+
+	private void readLegacyPreferencesFile() {
+		debug.println("Reading preferences from ", profile.getLegacyPreferencesFile(), "...");
+		try (ObjectInputStream ois = new ObjectInputStream(Files.newInputStream(profile.getLegacyPreferencesFile()))) {
+			preferences = readNonNull(ois, "preferences", Preferences.class);
+			debug.println("...success: ", preferences);
+		} catch (IOException | ClassNotFoundException e) {
+			preferences = new Preferences();
+			debug.print("...failure. Cause: ");
+			debug.printStackTrace(e);
+			debug.println("Default preferences will be used.");	
 		}
 	}
 
@@ -585,15 +599,14 @@ public class Loader extends SwingWorker<Void, String> {
 		try {
 			publishToGui("Reading preferences...");
 			debug.println("Reading preferences from ", preferencesFile, "...");
-			preferences = readNonNull(preferencesFile.readObjectsFrom(),
-					"preferences",
-					Preferences.class);
-			debug.println("...success: ", preferences);
-		} catch (IOException | ClassNotFoundException e) {
 			preferences = new Preferences();
+			Properties properties = preferencesFile.readPropertiesFrom();
+			preferences.readFrom(properties);
+			debug.println("...success: ", preferences);
+		} catch (IOException e) {
 			debug.print("...failure. Cause: ");
 			debug.printStackTrace(e);
-			debug.println("Default preferences will be used.");
+			readLegacyPreferencesFile();
 		}
 
 		trimToSize(availableNumberFactories);

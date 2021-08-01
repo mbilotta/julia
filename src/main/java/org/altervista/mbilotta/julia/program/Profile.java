@@ -70,6 +70,7 @@ public class Profile {
 	private final Path cacheRoot;
 	private final Path documentationRoot;
 	private final Path preferences;
+	private final Path legacyPreferences;
 	private final Path localizationPreferences;
 	private final Path descriptorParserOutput;
 	private final Path classpath;
@@ -82,7 +83,8 @@ public class Profile {
 		classesRoot = Paths.get("bin");
 		cacheRoot = rootDirectory.resolve("cache");
 		documentationRoot = rootDirectory.resolve("doc");
-		preferences = rootDirectory.resolve("preferences");
+		preferences = rootDirectory.resolve("preferences.properties");
+		legacyPreferences = rootDirectory.resolve("preferences");
 		localizationPreferences = rootDirectory.resolve("localization-preferences");
 		descriptorParserOutput = descriptorRoot.resolve("parser.log");
 		classpath = rootDirectory.resolve("classpath.xml");
@@ -98,7 +100,7 @@ public class Profile {
 		try {
 			Files.createDirectory(root);
 		} catch (FileAlreadyExistsException e) {}
-		return new LockedFile(preferences, false);
+		return new LockedFile(legacyPreferences, false);
 	}
 
 	public boolean installCss() throws IOException {
@@ -119,6 +121,10 @@ public class Profile {
 
 	public Path getPreferencesFile() {
 		return preferences;
+	}
+
+	public Path getLegacyPreferencesFile() {
+		return legacyPreferences;
 	}
 
 	public Path getLocalizationPreferencesFile() {

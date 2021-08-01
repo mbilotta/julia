@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 
 
@@ -92,6 +93,18 @@ public class LockedFile implements Closeable {
 
 	public ObjectOutputStream writeObjectsTo() throws IOException {
 		return new ObjectOutputStream(writeBytesTo(false));
+	}
+
+	public Properties readPropertiesFrom() throws IOException {
+		Properties rv = new Properties();
+		rv.load(readCharsFrom());
+		return rv;
+	}
+
+	public void writePropertiesTo(Properties properties) throws IOException {
+		Writer out = writeCharsTo(false);
+		properties.store(out, null);
+		out.flush();
 	}
 
 	public InputStream readBytesFrom() {
