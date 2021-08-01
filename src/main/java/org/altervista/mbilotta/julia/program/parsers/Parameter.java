@@ -47,7 +47,6 @@ import java.util.Set;
 import javax.swing.JComponent;
 import javax.swing.JMenuItem;
 
-import org.altervista.mbilotta.julia.Groups;
 import org.altervista.mbilotta.julia.Previewable;
 import org.altervista.mbilotta.julia.Representation;
 import org.altervista.mbilotta.julia.Utilities;
@@ -92,7 +91,6 @@ public abstract class Parameter<T> implements Serializable {
 		final Class<?> pluginType;
 		final Object pluginInstance;
 		T getterHint;
-		Set<String> getterGroupSet;
 		Map<String, T> referencedGroups = new HashMap<>();
 		String parameterDescription = "";
 		final PropertyDescriptor propertyDescriptor;
@@ -119,15 +117,6 @@ public abstract class Parameter<T> implements Serializable {
 		}
 
 		public void validateHints(Element offset) throws DomValidationException {
-			if (getterHint != null) {
-				hints.add(getterHint);
-			}
-			if (getterGroupSet != null) {
-				for (String group : getterGroupSet) {
-					referencedGroups.put(group, getterHint);
-				}
-			}
-
 			int index = 1;
 			while (offset != null && offset.getLocalName().equals("hint")) {
 				XmlPath hintPath = parameterPath.getChild(offset, index);
@@ -185,7 +174,6 @@ public abstract class Parameter<T> implements Serializable {
 				offset = (Element) offset.getNextSibling();
 			}
 
-			hints.trimToSize();
 			T explicitDefault = referencedGroups.get("default");
 			if (explicitDefault != null) {
 				int i = hints.indexOf(explicitDefault);
@@ -196,6 +184,16 @@ public abstract class Parameter<T> implements Serializable {
 			} else if (hints.size() > 0) {
 				referencedGroups.put("default", hints.get(0));
 			} else {
+				if (getterHint != null) {
+					println(parameterPath, "No hints for paramenter " + id + ". A default value will be retrieved from getter method.");
+					if (getParameter().acceptsValue(getterHint)) {
+						hints.add(getterHint);
+						referencedGroups.put("default", getterHint);
+						return;
+					} else {
+						println(parameterPath, "Getter method returned a value that violates parameter constraints!");
+					}
+				}
 				descriptorParser.fatalError(DomValidationException.atEndOf(
 						parameterPath,
 						"No default value for parameter " + id + "."));
@@ -295,28 +293,6 @@ public abstract class Parameter<T> implements Serializable {
 						try {
 							getterHint = (T) getter.invoke(pluginInstance, (Object[]) null);
 							if (getterHint != null) {
-								Groups annotation = getter.getAnnotation(Groups.class);
-								if (annotation != null) {
-									List<String> groupList = Arrays.asList(annotation.value().split("\\s+"));
-									if (groupList.get(0).isEmpty()) {
-										groupList = groupList.subList(1, groupList.size());
-									}
-									switch (groupList.size()) {
-									case 0:
-										getterGroupSet = Collections.emptySet();
-										descriptorParser.warning(new ClassValidationException(this, "Empty group list from getter method annotation."));
-										break;
-									case 1:
-										getterGroupSet = Collections.singleton(groupList.get(0));
-										break;
-									default:
-										getterGroupSet = new HashSet<>(groupList);
-									}
-									if (getterGroupSet.size() < groupList.size()) {
-										descriptorParser.warning(new ClassValidationException(this, "Redundant group list from getter method annotation."));
-									}
-								}
-							} else {
 								String message = "Getter method " + getter.getName() + " has returned null.";
 								descriptorParser.warning(new ClassValidationException(this, message));
 							}

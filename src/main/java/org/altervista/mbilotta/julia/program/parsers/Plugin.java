@@ -20,13 +20,12 @@
 
 package org.altervista.mbilotta.julia.program.parsers;
 
+import static org.altervista.mbilotta.julia.Utilities.join;
 import static org.altervista.mbilotta.julia.Utilities.read;
 import static org.altervista.mbilotta.julia.Utilities.readNonNull;
 import static org.altervista.mbilotta.julia.Utilities.readNonNullList;
-import static org.altervista.mbilotta.julia.Utilities.join;
 import static org.altervista.mbilotta.julia.Utilities.writeList;
 import static org.altervista.mbilotta.julia.program.parsers.Parameter.findConstructor;
-import static org.altervista.mbilotta.julia.program.parsers.Parameter.findGetter;
 import static org.altervista.mbilotta.julia.program.parsers.Parameter.findSetter;
 import static org.altervista.mbilotta.julia.program.parsers.Parameter.newIOException;
 
@@ -38,10 +37,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -50,7 +47,6 @@ import java.util.TreeMap;
 import javax.swing.JComponent;
 
 import org.altervista.mbilotta.julia.Decimal;
-import org.altervista.mbilotta.julia.Groups;
 import org.altervista.mbilotta.julia.NumberFactory;
 import org.altervista.mbilotta.julia.Out;
 import org.altervista.mbilotta.julia.program.JuliaObjectInputStream;
@@ -338,61 +334,6 @@ public abstract class Plugin implements Serializable {
 			initializeConstructor();
 		} catch (NoSuchMethodException e) {
 			throw newIOException("constructor", e);
-		}
-
-		Object pluginInstance = null;
-		for (Parameter<?> p : parameters) {
-			try {
-				Method getter = findGetter(p.getId(), p.getType(), type);
-				if (getter != null) {
-					if (pluginInstance == null) {
-						pluginInstance = constructor.newInstance((Object[]) null);
-					}
-
-					Object getterHint = getter.invoke(pluginInstance, (Object[]) null);
-					if (getterHint != null) {
-						Set<String> getterGroupSet = null;
-						Groups annotation = getter.getAnnotation(Groups.class);
-						if (annotation != null) {
-							List<String> groupList = Arrays.asList(annotation.value().split("\\s+"));
-							if (groupList.get(0).isEmpty()) {
-								groupList = groupList.subList(1, groupList.size());
-							}
-							switch (groupList.size()) {
-							case 0:
-								getterGroupSet = Collections.emptySet();
-								break;
-							case 1:
-								getterGroupSet = Collections.singleton(groupList.get(0));
-								break;
-							default:
-								getterGroupSet = new HashSet<>(groupList);
-							}
-						}
-	
-						if (getterGroupSet == null || getterGroupSet.isEmpty()) {
-							if (!p.getHints().contains(getterHint)) {
-								throw newIOException("Possible code change was detected.");
-							}
-						} else {
-							for (String group : getterGroupSet) {
-								List<Object> hintGroup = hintGroups.get(group);
-								if (hintGroup == null) {
-									throw newIOException("Possible code change was detected.");
-								}
-								Object hint = hintGroup.get(p.getIndex());
-								if (hint == null || !hint.equals(getterHint)) {
-									throw newIOException("Possible code change was detected.");
-								}
-							}
-						}
-					}
-				}
-			} catch (NoSuchMethodException e) {
-				throw newIOException(p.getId() + ".getterMethod", e);
-			} catch (ReflectiveOperationException e) {
-				throw newIOException("Reflective invocation has failed.", e);
-			}
 		}
 	}
 
