@@ -100,7 +100,7 @@ public class Profile {
 		try {
 			Files.createDirectory(root);
 		} catch (FileAlreadyExistsException e) {}
-		return new LockedFile(legacyPreferences, false);
+		return new LockedFile(preferences, false);
 	}
 
 	public boolean installCss() throws IOException {
