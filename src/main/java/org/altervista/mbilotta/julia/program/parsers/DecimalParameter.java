@@ -183,15 +183,6 @@ public class DecimalParameter extends Parameter<Decimal> {
 				checkForbidRedundancy();
 			}
 
-			if (getterHint != null &&
-					!isValueInsideDomain(getterHint, min, max, minInclusive, maxInclusive, exceptions)) {
-				String message = "Suggested value (from getter) " + getterHint + " lies outside domain."; 
-				getterHint = null;
-				descriptorParser.fatalError(new ClassValidationException(this, message));
-			} else {
-				getterHint = descriptorParser.replace(getterHint);
-			}
-
 			Element offset = node != null ? (Element) node.getFirstChild() : null;
 			validateHints(offset);
 		}

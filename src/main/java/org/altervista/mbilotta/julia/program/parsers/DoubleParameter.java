@@ -179,13 +179,6 @@ public final class DoubleParameter extends Parameter<Double> {
 				checkForbidRedundancy();
 			}
 
-			if (getterHint != null &&
-					!isValueInsideDomain(getterHint, min, max, minInclusive, maxInclusive, exceptions, acceptsNaN)) {
-				String message = "Suggested value (from getter) " + getterHint + " lies outside domain.";
-				getterHint = null;
-				descriptorParser.fatalError(new ClassValidationException(this, message));
-			}
-
 			Element offset = node != null ? (Element) node.getFirstChild() : null;
 			validateHints(offset);
 		}

@@ -124,13 +124,6 @@ public final class IntParameter extends Parameter<Integer> {
 				descriptorParser.fatalError(e);
 			}
 
-			if (getterHint != null &&
-					(getterHint > max || getterHint < min)) {
-				String message = "Suggested value (from getter) " + getterHint + " lies outside range.";
-				getterHint = null;
-				descriptorParser.fatalError(new ClassValidationException(this, message));
-			}
-
 			Element offset = node != null ? (Element) node.getFirstChild() : null;
 			validateHints(offset);
 		}

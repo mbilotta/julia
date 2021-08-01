@@ -56,7 +56,6 @@ final class ColorParameter extends Parameter<Color> {
 				XmlPath parameterPath,
 				Class<?> pluginType, Object pluginInstance) throws DomValidationException {
 			ColorParameter.this.super(descriptorParser, parameterPath, pluginType, pluginInstance);
-			getterHint = descriptorParser.replace(getterHint);
 		}
 
 		public Color validateHint(XmlPath hintPath, Element hint) {

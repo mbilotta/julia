@@ -62,7 +62,6 @@ final class GradientParameter extends Parameter<Gradient> {
 				XmlPath parameterPath,
 				Class<?> pluginType, Object pluginInstance) throws DomValidationException {
 			GradientParameter.this.super(descriptorParser, parameterPath, pluginType, pluginInstance);
-			getterHint = descriptorParser.replace(getterHint);
 		}
 
 		public Gradient validateHint(XmlPath hintPath, Element hint) throws DomValidationException {

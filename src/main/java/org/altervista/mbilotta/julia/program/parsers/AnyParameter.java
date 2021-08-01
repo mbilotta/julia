@@ -138,33 +138,6 @@ final class AnyParameter extends Parameter<Object> {
 			return value;
 		}
 
-		public void validate(Element node) throws DomValidationException, ClassValidationException {
-			XmlPath currentPath = parameterPath;
-			init(currentPath);
-
-			try {
-				if (getterHint != null &&
-						acceptsMethod != null &&
-						!((Boolean) acceptsMethod.invoke(null, getterHint))) {
-					String valueString;
-					try {
-						valueString = toStringMethod != null ? (String) toStringMethod.invoke(null, getterHint) : getterHint.toString();
-					} catch (ReflectiveOperationException e) {
-						valueString = null;
-					}
-					getterHint = null;
-					descriptorParser.fatalError(new ClassValidationException(this,
-							"Suggested value (from getter) " + (valueString != null ? valueString : "null") + " not accepted."));
-				}
-			} catch (ReflectiveOperationException e) {
-				getterHint = null;
-				descriptorParser.fatalError(new ClassValidationException(this, "Reflective invocation has failed.", e));
-			}
-
-			Element offset = node != null ? (Element) node.getFirstChild() : null;
-			validateHints(offset);
-		}
-
 		public String getXMLParameterType() {
 			return "any";
 		}
