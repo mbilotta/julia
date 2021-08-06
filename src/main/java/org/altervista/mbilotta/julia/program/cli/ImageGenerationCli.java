@@ -222,6 +222,10 @@ public class ImageGenerationCli implements Runnable {
 					rectangle = formulaInstance.getPlugin().getDefaultJuliaSetRectangle();
 				}
 			}
+			if (rectangle.isEmpty()) {
+				Utilities.println("Error: rectangle is empty!");
+				return;
+			}
 			if (forceEqualScales == null) {
 				forceEqualScales = true;
 			}
