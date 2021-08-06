@@ -150,6 +150,84 @@ public class HTMLWriter {
 		return out;
 	}
 
+	public TagAttributes attrs() {
+		return new TagAttributes();
+	}
+
+	public TagAttributes attrs(String name, String value) {
+		return new TagAttributes().attr(name, value);
+	}
+
+	public void tag(String tag) {
+		openAndClose(tag);
+	}
+
+	public void tag(String tag, TagBody body) {
+		open(tag);
+		body.write();
+		close(tag);
+	}
+
+	public void tag(String tag, TagAttributes attrs, TagBody body) {
+		open(tag, attrs.toArray());
+		body.write();
+		close(tag);
+	}
+
+	public void tag(String tag, String content) {
+		openAndClose(tag, content, true);
+	}
+
+	public void tag(String tag, TagAttributes attrs, String content) {
+		openAndClose(tag, content, true, attrs.toArray());
+	}
+
+	public void tag(String tag, TagAttributes attrs) {
+		openAndClose(tag, attrs.toArray());
+	}
+
+	public void text(String text) {
+		println(text, true);
+	}
+
+	public TagBody textBody(String text) {
+		return () -> {
+			text(text);
+		};
+	}
+
+	public void html(TagBody body) {
+		tag("html", body);
+	}
+
+	public void head(TagBody body) {
+		tag("head", body);
+	}
+
+	public void title(String title) {
+		tag("title", title);
+	}
+
+	public void body(TagBody body) {
+		tag("body", body);
+	}
+
+	public void span(String clazz, String text) {
+		tag("span", attrs().clazz(clazz), text);
+	}
+
+	public void span(String text) {
+		tag("span", text);
+	}
+
+	public void div(String clazz, TagBody body) {
+		tag("div", attrs().clazz(clazz), body);
+	}
+
+	public void div(TagBody body) {
+		tag("div", body);
+	}
+
 	private void printTabs() {
 		int tabCount = stack.size();
 		for (int i = 0; i < tabCount; i++)
@@ -192,18 +270,18 @@ public class HTMLWriter {
 
 	public static void main(String[] args) throws IOException {
 		PrintWriter out = new PrintWriter(new File("prova.html"), "UTF-8");
-		HTMLWriter html = new HTMLWriter(out, "<!DOCTYPE html>");
-		html.open("html");
-		html.open("head");
-		html.openAndClose("meta", "charset", "UTF-8");
-		html.openAndClose("title", "Pagina di prova & ancora prova", true);
-		html.close();
-		html.open("body");
-		html.openAndClose("h1", "Pagina di prova", false, "style", "text-align: center;");
-		html.openAndClose("p", "Questa &egrave; una pagina di prova", false);
-		html.openAndClose("hr");
-		html.close();
-		html.close();
+		HTMLWriter w = new HTMLWriter(out, "<!DOCTYPE html>");
+		w.html(() -> {
+			w.head(() -> {
+				w.tag("meta", w.attrs("charset", "UTF-8"));
+				w.title("Pagina di prova & ancora prova");
+			});
+			w.body(() -> {
+				w.tag("h1", w.attrs().style("text-align: center;"), "Pagina di prova");
+				w.tag("p", "Questa è una pagina di prova");
+				w.tag("hr");
+			});
+		});
 		out.close();
 	}
 }
