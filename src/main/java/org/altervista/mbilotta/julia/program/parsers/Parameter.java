@@ -292,7 +292,7 @@ public abstract class Parameter<T> implements Serializable {
 					if (pluginInstance != null && getter != null) {
 						try {
 							getterHint = (T) getter.invoke(pluginInstance, (Object[]) null);
-							if (getterHint != null) {
+							if (getterHint == null) {
 								String message = "Getter method " + getter.getName() + " has returned null.";
 								descriptorParser.warning(new ClassValidationException(this, message));
 							}
