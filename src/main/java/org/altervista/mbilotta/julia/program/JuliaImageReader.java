@@ -78,6 +78,7 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> implements AutoC
 	private PluginInstance<NumberFactoryPlugin> numberFactoryInstance;
 	private PluginInstance<FormulaPlugin> formulaInstance;
 	private PluginInstance<RepresentationPlugin> representationInstance;
+	private Circle circle;
 	private Rectangle rectangle;
 	private final Out<Boolean> forceEqualScalesOut = Out.newOut();
 	private final Out<JuliaSetPoint> juliaSetPointOut = Out.newOut();
@@ -152,6 +153,10 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> implements AutoC
 		return representationInstance;
 	}
 
+	public Circle getCircle() {
+		return circle;
+	}
+
 	public Rectangle getRectangle() {
 		return rectangle;
 	}
@@ -222,7 +227,18 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> implements AutoC
 		setGuiProgress(36);
 
 		publishToGui("rectangle...");
-		ZipEntry entry = zipFile.getEntry("rectangle");
+		ZipEntry entry = zipFile.getEntry("circle");
+		if (entry != null) {
+			try (InputStream is = zipFile.getInputStream(entry);
+					ObjectInputStream ois = new ObjectInputStream(is)) {
+				circle = readNonNull(ois, "circle", Circle.class);
+			} catch (ClassNotFoundException | IOException e) {
+				addFatalError(entry);
+				errorOutput.printStackTrace(e);
+			}
+			if (isCancelled()) return this;
+		}
+		entry = zipFile.getEntry("rectangle");
 		if (entry == null) {
 			addFatalError(null);
 			errorOutput.println("could not find rectangle zip entry.");

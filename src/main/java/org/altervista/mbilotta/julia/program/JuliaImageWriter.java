@@ -76,6 +76,13 @@ public class JuliaImageWriter extends BlockingSwingWorker<Void> {
 			setGuiProgress(36);
 
 			publishToGui("rectangle...");
+			Circle circle = metadata.getCircle();
+			if (circle != null) {
+				zos.putNextEntry(new ZipEntry("circle"));
+				ObjectOutputStream oos = new ObjectOutputStream(zos);
+				oos.writeObject(circle);
+				oos.flush();
+			}
 			zos.putNextEntry(new ZipEntry("rectangle"));
 			ObjectOutputStream oos = new ObjectOutputStream(zos);
 			oos.writeObject(metadata.getRectangle());

@@ -46,6 +46,7 @@ import org.altervista.mbilotta.julia.Representation;
 import org.altervista.mbilotta.julia.Utilities;
 import org.altervista.mbilotta.julia.math.CoordinateTransform;
 import org.altervista.mbilotta.julia.program.Application;
+import org.altervista.mbilotta.julia.program.Circle;
 import org.altervista.mbilotta.julia.program.ExecutionObserver;
 import org.altervista.mbilotta.julia.program.JuliaExecutorService;
 import org.altervista.mbilotta.julia.program.JuliaImageReader;
@@ -124,6 +125,7 @@ public class ImageGenerationCli implements Runnable {
 	private PluginInstance<NumberFactoryPlugin> numberFactoryInstance;
 	private PluginInstance<FormulaPlugin> formulaInstance;
 	private PluginInstance<RepresentationPlugin> representationInstance;
+	private Circle circle;
 	private Rectangle rectangle;
 	private JuliaSetPoint juliaSetPoint;
 
@@ -164,11 +166,14 @@ public class ImageGenerationCli implements Runnable {
 				formulaInstance = Utilities.safelyClone(reader.getFormulaInstance());
 				representationInstance = Utilities.safelyClone(reader.getRepresentationInstance());
 				juliaSetPoint = reader.getJuliaSetPoint();
-				rectangle = reader.getRectangle();
+				circle = reader.getCircle();
+				if (circle == null) {
+					rectangle = reader.getRectangle();
+				}
 				if (forceEqualScales == null) {
 					forceEqualScales = reader.getForceEqualScales();
 				}
-			}
+		}
 
 			if (numberFactoryId != null || numberFactoryInstance == null) {
 				// Find matching number factory
@@ -215,14 +220,14 @@ public class ImageGenerationCli implements Runnable {
 			parseParameters();
 
 			// Assign default rectangle
-			if (rectangle == null) {
+			if (rectangle == null && circle == null) {
 				if (juliaSetPoint == null) {
 					rectangle = formulaInstance.getPlugin().getDefaultMandelbrotSetRectangle();
 				} else {
 					rectangle = formulaInstance.getPlugin().getDefaultJuliaSetRectangle();
 				}
 			}
-			if (rectangle.isEmpty()) {
+			if ((circle != null && circle.isEmpty()) || (rectangle != null && rectangle.isEmpty())) {
 				Utilities.println("Error: rectangle is empty!");
 				return;
 			}
@@ -245,8 +250,10 @@ public class ImageGenerationCli implements Runnable {
 								&& formulaInstance.equals(reader.getFormulaInstance())
 								&& representationInstance.equalsIgnorePreviewables(reader.getRepresentationInstance())
 								&& Objects.equals(juliaSetPoint, reader.getJuliaSetPoint())
-								&& rectangle.equals(reader.getRectangle())
-								&& forceEqualScales.equals(reader.getForceEqualScales());
+								&& (
+									(circle != null && circle.equals(reader.getCircle())) ||
+									(rectangle != null && rectangle.equals(reader.getRectangle()) && forceEqualScales.equals(reader.getForceEqualScales()))
+								);
 
 						if (canUseIntermediateImage) {
 							reader.readIntermediateImage();
@@ -305,7 +312,13 @@ public class ImageGenerationCli implements Runnable {
 				// Run computation
 				if (!intermediateImage.isComplete()) {
 					// Instantiate CoordinateTransform
-					CoordinateTransform coordinateTransform = rectangle.createCoordinateTransform(width, height, forceEqualScales, numberFactory);
+					CoordinateTransform coordinateTransform;
+					if (rectangle != null) {
+						coordinateTransform = rectangle.createCoordinateTransform(width, height, forceEqualScales, numberFactory);
+					} else {
+						coordinateTransform = circle.createCoordinateTransform(width, height, numberFactory);
+						rectangle = circle.createRectangle(width, height, numberFactory);
+					}
 
 					// Instantiate Production
 					Production production = representation.createProduction(
@@ -352,7 +365,7 @@ public class ImageGenerationCli implements Runnable {
 				if (canWriteTo(outputFile)) {
 					Application.Image metadata = new Application.Image(
 						numberFactoryInstance, formulaInstance, representationInstance,
-						rectangle, forceEqualScales,
+						circle, rectangle, forceEqualScales,
 						juliaSetPoint
 					);
 					JuliaImageWriter jimWriter = new JuliaImageWriter(outputFile, metadata, intermediateImage);
@@ -452,17 +465,33 @@ public class ImageGenerationCli implements Runnable {
 
 	private void parseRectangle(String rectangleString) {
 		if (rectangleString.equals("default")) {
+			circle = null;
 			rectangle = null;
 		} else {
-			String[] components = rectangleString.split(",", 4);
-			if (components.length < 4) {
-				throw new IllegalArgumentException("cannot parse rectangle \"" + rectangleString + "\"");
+			// First check if it is center and diameter
+			String[] components = rectangleString.split("@", 2);
+			if (components.length < 2) {
+				components = rectangleString.split(",", 4);
+				if (components.length < 4) {
+					throw new IllegalArgumentException("cannot parse rectangle \"" + rectangleString + "\"");
+				}
+				Decimal re0 = new Decimal(components[0]);
+				Decimal im0 = new Decimal(components[1]);
+				Decimal re1 = new Decimal(components[2]);
+				Decimal im1 = new Decimal(components[3]);
+				rectangle = new Rectangle(re0, im0, re1, im1);
+				circle = null;
+			} else {
+				String[] center = components[0].split(",", 2);
+				if (center.length < 2) {
+					throw new IllegalArgumentException("cannot parse rectangle \"" + rectangleString + "\"");
+				}
+				Decimal centerRe = new Decimal(center[0]);
+				Decimal centerIm = new Decimal(center[1]);
+				Decimal diameter = new Decimal(components[1]);
+				circle = new Circle(centerRe, centerIm, diameter);
+				rectangle = null;
 			}
-			Decimal re0 = new Decimal(components[0]);
-			Decimal im0 = new Decimal(components[1]);
-			Decimal re1 = new Decimal(components[2]);
-			Decimal im1 = new Decimal(components[3]);
-			rectangle = new Rectangle(re0, im0, re1, im1);    
 		}
 	}
 

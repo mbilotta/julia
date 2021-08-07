@@ -136,6 +136,7 @@ public class Application {
 		private PluginInstance<NumberFactoryPlugin> numberFactoryInstance;
 		private PluginInstance<FormulaPlugin> formulaInstance;
 		private PluginInstance<RepresentationPlugin> representationInstance;
+		private Circle circle;
 		private Rectangle rectangle;
 		private boolean forceEqualScales;
 		private JuliaSetPoint juliaSetPoint;
@@ -160,6 +161,15 @@ public class Application {
 			this.juliaSetPoint = juliaSetPoint;
 		}
 
+		public Image(PluginInstance<NumberFactoryPlugin> numberFactoryInstance,
+				PluginInstance<FormulaPlugin> formulaInstance,
+				PluginInstance<RepresentationPlugin> representationInstance,
+				Circle circle, Rectangle rectangle, boolean forceEqualScales,
+				JuliaSetPoint juliaSetPoint) {
+			this(numberFactoryInstance, formulaInstance, representationInstance, rectangle, forceEqualScales, juliaSetPoint);
+			this.circle = circle;
+		}
+
 		public PluginInstance<NumberFactoryPlugin> getNumberFactoryInstance() {
 			return numberFactoryInstance;
 		}
@@ -182,6 +192,10 @@ public class Application {
 
 		public RepresentationPlugin getRepresentation() {
 			return representationInstance == null ? null :representationInstance.getPlugin();
+		}
+
+		public Circle getCircle() {
+			return circle;
 		}
 
 		public Rectangle getRectangle() {
