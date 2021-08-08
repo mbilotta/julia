@@ -92,13 +92,13 @@ A "default" Julia set point which depends on the formula being used can be set p
 
 Back to Mandelbrot set. This is a detail of what is known as _Seahorse Valley_:
 
-    juliac.exe generate -n Double -f Quadratic -r EscapeTime -W 800 -H 600 -o mandelbrot-seahorse.png rect=-0.751085,0.13247425,-0.734975,0.12039175 r.maxIterations=2000
+    juliac.exe generate -n Double -f Quadratic -r EscapeTime -W 800 -H 600 -o mandelbrot-seahorse.png rect=−0.74303,0.126433@0.01611 r.maxIterations=2000
 
-A partial view is set with <code>rect=_Re<sub>0</sub>_,_Im<sub>0</sub>_,_Re<sub>1</sub>_,_Im<sub>1</sub>_</code>. It is important that you specify the argument without whitespaces. Also between left and right hand sides there must be a single `=` without withespaces.
+A partial view is set with <code>rect=_Re<sub>center</sub>_,_Im<sub>center</sub>_@_Width_</code> (without whitespaces). 
 
-Currently there is no way to set `rect` using center and diameter as you would do in other programs. I will try to address this limitation in the next releases. Anyway it is important to note that by default Julia will force 1:1 pixel ratio enlarging `rect` as much as needed to fit the aspect ratio of the output image. This behaviour can be prevented passing `--no-force-equal-scales`.
+Note that we are also raising the maximum number of iterations to avoid loss of accuracy. This is accomplished by `r.maxIterations=2000` which sets the `maxIterations` parameter of the selected representation to a higher value (the default for `EscapeTime` is 500).
 
-Also note that we are raising the maximum number of iterations to avoid loss of accuracy. This is accomplished by `r.maxIterations=2000` which sets the `maxIterations` parameter of the selected representation to a higher value (the default for `EscapeTime` is 500).
+Julia CLI also supports partial views specified as <code>rect=_Re<sub>0</sub>_,_Im<sub>0</sub>_,_Re<sub>1</sub>_,_Im<sub>1</sub>_</code>. When using this format, Julia will force 1:1 pixel ratio enlarging `rect` as much as needed to fit the aspect ratio of the output image. This behaviour can be prevented passing `--no-force-equal-scales`.
 
 ### Setting color and gradient parameters
 
