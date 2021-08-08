@@ -173,7 +173,7 @@ public class ImageGenerationCli implements Runnable {
 				if (forceEqualScales == null) {
 					forceEqualScales = reader.getForceEqualScales();
 				}
-		}
+			}
 
 			if (numberFactoryId != null || numberFactoryInstance == null) {
 				// Find matching number factory
@@ -332,10 +332,24 @@ public class ImageGenerationCli implements Runnable {
 						return;
 					}
 
-					Utilities.print("Rendering intermediate image...");
-					Utilities.flush();
 					int numOfProducers = production.getNumOfProducers();
 					executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
+
+					// Register shutdown hook to save a partial rendering on CTRL+C
+					Runtime.getRuntime().addShutdownHook(new PartialRenderingWriter(
+						Thread.currentThread(),
+						outputPath,
+						new Application.Image(
+							numberFactoryInstance, formulaInstance, representationInstance,
+							circle, rectangle, forceEqualScales,
+							juliaSetPoint
+						),
+						intermediateImage,
+						executorService
+					));
+
+					Utilities.print("Rendering intermediate image...");
+					Utilities.flush();
 					CountDownLatch done = new CountDownLatch(numOfProducers);
 					timer.start();
 					for (int i = 0; i < numOfProducers; i++) {
@@ -350,52 +364,70 @@ public class ImageGenerationCli implements Runnable {
 							public void executionFinished(Runnable target) {
 								done.countDown();
 							}
+
+							@Override
+							public void executionFinished(Runnable target, Throwable cause) {
+								// TODO: handle Throwable someway
+								done.countDown();
+							}
 						});
 					}
-					done.await();
-					timer.stop();
 
-					Utilities.println(" ", Utilities.formatDuration(timer.getElapsedTime()));
+					boolean interrupted = false;
+					try {
+						done.await();
+					} catch (InterruptedException ie) {
+						interrupted = true;
+					}
+					timer.stop();
+					Utilities.print(" ", Utilities.formatDuration(timer.getElapsedTime()));
+					if (interrupted) {
+						Utilities.println(" (halted)");
+					} else {
+						Utilities.println();
+					}
 				}
 			}
 
-			if (outputFormat.equalsIgnoreCase("jim")) {
-				// Write to file
-				Utilities.println("Writing to output file...");
-				if (canWriteTo(outputFile)) {
-					Application.Image metadata = new Application.Image(
-						numberFactoryInstance, formulaInstance, representationInstance,
-						circle, rectangle, forceEqualScales,
-						juliaSetPoint
+			if (intermediateImage.isComplete()) {
+				if (outputFormat.equalsIgnoreCase("jim")) {
+					// Write to file
+					Utilities.println("Writing to output file...");
+					if (canWriteTo(outputFile)) {
+						Application.Image metadata = new Application.Image(
+							numberFactoryInstance, formulaInstance, representationInstance,
+							circle, rectangle, forceEqualScales,
+							juliaSetPoint
+						);
+						JuliaImageWriter jimWriter = new JuliaImageWriter(outputFile, metadata, intermediateImage);
+						jimWriter.setGuiRunning(false);
+						jimWriter.write();
+					}
+				} else {
+					Utilities.print("Rendering final image...");
+					Utilities.flush();
+	
+					timer.start();
+	
+					// Instantiate Consumer
+					Consumer consumer = representation.createConsumer(intermediateImage);
+	
+					// Compute final image
+					BufferedImage finalImage = consumer.createFinalImage();
+					consumer.consume(finalImage, null);
+	
+					timer.stop();
+					Utilities.println(
+						" ", Utilities.formatDuration(timer.getElapsedTime()),
+						" (total: ", Utilities.formatDuration(timer.getTotalElapsedTime()), ")"
 					);
-					JuliaImageWriter jimWriter = new JuliaImageWriter(outputFile, metadata, intermediateImage);
-					jimWriter.setGuiRunning(false);
-					jimWriter.write();
-				}
-			} else if (intermediateImage.isComplete()) {
-				Utilities.print("Rendering final image...");
-				Utilities.flush();
-
-				timer.start();
-
-				// Instantiate Consumer
-				Consumer consumer = representation.createConsumer(intermediateImage);
-
-				// Compute final image
-				BufferedImage finalImage = consumer.createFinalImage();
-				consumer.consume(finalImage, null);
-
-				timer.stop();
-				Utilities.println(
-					" ", Utilities.formatDuration(timer.getElapsedTime()),
-					" (total: ", Utilities.formatDuration(timer.getTotalElapsedTime()), ")"
-				);
-				
-				// Write to file
-				Utilities.println("Writing to output file...");
-				if (canWriteTo(outputFile)) {
-					ImageIO.write(finalImage, outputFormat, outputFile);
-				}
+					
+					// Write to file
+					Utilities.println("Writing to output file...");
+					if (canWriteTo(outputFile)) {
+						ImageIO.write(finalImage, outputFormat, outputFile);
+					}
+				}	
 			}
 		} catch (Exception ex) {
 			ex.printStackTrace();
