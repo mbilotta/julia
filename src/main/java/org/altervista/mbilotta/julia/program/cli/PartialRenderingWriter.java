@@ -23,6 +23,7 @@ public class PartialRenderingWriter extends Thread {
     private IntermediateImage intermediateImage;
     private JuliaExecutorService executorService;
     
+    private boolean enabled = false;
 
     public PartialRenderingWriter(Thread mainThread, Path outputPath, Image metadata, IntermediateImage intermediateImage,
             JuliaExecutorService executorService) {
@@ -33,13 +34,21 @@ public class PartialRenderingWriter extends Thread {
         this.executorService = executorService;
     }
 
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void enable() {
+        enabled = true;
+    }
+
     @Override
     public void run() {
         mainThread.interrupt();
         try {
             mainThread.join();
             if (executorService.awaitTermination(TIMEOUT, TIMEOUT_UNIT)) {
-                if (!intermediateImage.isComplete()) {
+                if (enabled) {
                     Path outputDir = outputPath.getParent();
                     if (outputDir == null) {
                         outputDir = Paths.get("");

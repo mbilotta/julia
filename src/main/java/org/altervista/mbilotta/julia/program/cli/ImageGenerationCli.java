@@ -132,6 +132,7 @@ public class ImageGenerationCli implements Runnable {
 	private Timer timer = new Timer();
 
 	private JuliaExecutorService executorService;
+	private PartialRenderingWriter partialRenderingWriter;
 
 	private JuliaImageReader reader;
 
@@ -336,7 +337,7 @@ public class ImageGenerationCli implements Runnable {
 					executorService = new JuliaExecutorService(0, 10l, TimeUnit.MINUTES);
 
 					// Register shutdown hook to save a partial rendering on CTRL+C
-					Runtime.getRuntime().addShutdownHook(new PartialRenderingWriter(
+					partialRenderingWriter = new PartialRenderingWriter(
 						Thread.currentThread(),
 						outputPath,
 						new Application.Image(
@@ -346,7 +347,8 @@ public class ImageGenerationCli implements Runnable {
 						),
 						intermediateImage,
 						executorService
-					));
+					);
+					Runtime.getRuntime().addShutdownHook(partialRenderingWriter);
 
 					Utilities.print("Rendering intermediate image...");
 					Utilities.flush();
@@ -428,9 +430,16 @@ public class ImageGenerationCli implements Runnable {
 						ImageIO.write(finalImage, outputFormat, outputFile);
 					}
 				}	
+			} else if (partialRenderingWriter != null) {
+				partialRenderingWriter.enable();
 			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
+		} catch (RuntimeException re) {
+			re.printStackTrace();
+			if (partialRenderingWriter != null) {
+				partialRenderingWriter.enable();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		} finally {
 			if (executorService != null) {
 				executorService.shutdownNow();
@@ -438,8 +447,8 @@ public class ImageGenerationCli implements Runnable {
 			if (reader != null) {
 				try {
 					reader.close();
-				} catch (IOException ex) {
-					ex.printStackTrace();
+				} catch (IOException ioe) {
+					ioe.printStackTrace();
 				}
 			}
 		}
