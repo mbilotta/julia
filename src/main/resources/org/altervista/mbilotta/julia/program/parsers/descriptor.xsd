@@ -341,6 +341,16 @@
 			</xs:restriction>
 		</xs:complexContent>
 	</xs:complexType>
+
+	<xs:complexType name="alias">
+		<xs:complexContent>
+			<xs:restriction base="tns:plugin">
+				<xs:sequence>
+					<xs:element ref="tns:class"/>
+				</xs:sequence>
+			</xs:restriction>
+		</xs:complexContent>
+	</xs:complexType>
 	
 	<xs:element name="class" type="tns:javaClass"/>
 

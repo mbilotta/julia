@@ -20,6 +20,7 @@
 
 package org.altervista.mbilotta.julia.program;
 
+import static org.altervista.mbilotta.julia.Utilities.findPlugin;
 import static org.altervista.mbilotta.julia.Utilities.readNonNull;
 
 import java.io.File;
@@ -34,9 +35,9 @@ import org.altervista.mbilotta.julia.IntermediateImage;
 import org.altervista.mbilotta.julia.Out;
 import org.altervista.mbilotta.julia.Printer;
 import org.altervista.mbilotta.julia.Representation;
+import org.altervista.mbilotta.julia.program.parsers.AliasPlugin;
 import org.altervista.mbilotta.julia.program.parsers.FormulaPlugin;
 import org.altervista.mbilotta.julia.program.parsers.NumberFactoryPlugin;
-import org.altervista.mbilotta.julia.program.parsers.Plugin;
 import org.altervista.mbilotta.julia.program.parsers.RepresentationPlugin;
 
 
@@ -47,6 +48,7 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> implements AutoC
 	private List<NumberFactoryPlugin> numberFactories;
 	private List<FormulaPlugin> formulas;
 	private List<RepresentationPlugin> representations;
+	private List<AliasPlugin> aliases;
 
 	private final Printer errorOutput;
 	private final boolean loadIntermediateImage;
@@ -83,22 +85,6 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> implements AutoC
 	private final Out<Boolean> forceEqualScalesOut = Out.newOut();
 	private final Out<JuliaSetPoint> juliaSetPointOut = Out.newOut();
 
-	public JuliaImageReader(File file,
-		List<NumberFactoryPlugin> numberFactories, List<FormulaPlugin> formulas, List<RepresentationPlugin> representations,
-		Printer errorOutput, boolean loadIntermediateImage
-	) {
-		assert file != null;
-		assert numberFactories != null && !numberFactories.isEmpty();
-		assert formulas != null && !formulas.isEmpty();
-		assert representations != null && !representations.isEmpty();
-		this.file = file;
-		this.numberFactories = numberFactories;
-		this.formulas = formulas;
-		this.representations = representations;
-		this.errorOutput = errorOutput == null ? Printer.nullPrinter() : errorOutput;
-		this.loadIntermediateImage = loadIntermediateImage;
-	}
-
 	public JuliaImageReader(File file, Application application, Printer errorOutput, boolean loadIntermediateImage) {
 		assert file != null;
 		assert application != null;
@@ -106,6 +92,7 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> implements AutoC
 		this.numberFactories = application.getNumberFactories();
 		this.formulas = application.getFormulas();
 		this.representations = application.getRepresentations();
+		this.aliases = application.getAliases();
 		this.errorOutput = errorOutput == null ? Printer.nullPrinter() : errorOutput;
 		this.loadIntermediateImage = loadIntermediateImage;
 	}
@@ -117,6 +104,7 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> implements AutoC
 		this.numberFactories = loader.getAvailableNumberFactories();
 		this.formulas = loader.getAvailableFormulas();
 		this.representations = loader.getAvailableRepresentations();
+		this.aliases = loader.getAvailableAliases();
 		this.errorOutput = errorOutput == null ? Printer.nullPrinter() : errorOutput;
 		this.loadIntermediateImage = loadIntermediateImage;
 	}
@@ -455,21 +443,14 @@ public class JuliaImageReader extends BlockingSwingWorker<Void> implements AutoC
 	}
 
 	private NumberFactoryPlugin findNumberFactory(String id) {
-		return findPlugin(id, numberFactories);
+		return findPlugin(id, numberFactories, aliases);
 	}
 
 	private FormulaPlugin findFormula(String id) {
-		return findPlugin(id, formulas);
+		return findPlugin(id, formulas, aliases);
 	}
 
 	private RepresentationPlugin findRepresentation(String id) {
-		return findPlugin(id, representations);
-	}
-
-	public static <P extends Plugin> P findPlugin(String id, List<P> plugins) {
-		return plugins.stream()
-			.filter(p -> p.getId().equals(id))
-			.findFirst()
-			.orElse(null);
+		return findPlugin(id, representations, aliases);
 	}
 }

@@ -62,6 +62,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
+import java.util.stream.Stream;
 
 import javax.accessibility.AccessibleContext;
 import javax.swing.JColorChooser;
@@ -74,6 +75,9 @@ import javax.swing.UIManager;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.plaf.FileChooserUI;
+
+import org.altervista.mbilotta.julia.program.parsers.AliasPlugin;
+import org.altervista.mbilotta.julia.program.parsers.Plugin;
 
 
 public class Utilities {
@@ -234,6 +238,23 @@ public class Utilities {
 
 	public static <T> List<T> toList(T o1, T... oi) {
 		return Arrays.asList(toArray(o1, oi));
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <P extends Plugin> P findPlugin(String id, List<P> plugins, List<AliasPlugin> aliases) {
+		Plugin rv = Stream.concat(plugins.stream(), aliases.stream())
+			.filter(p -> p.getId().equals(id))
+			.findFirst()
+			.orElse(null);
+		
+		if (rv instanceof AliasPlugin) {
+			Class<?> type = rv.getType();
+			return plugins.stream()
+				.filter(p -> p.getType() == type)
+				.findFirst()
+				.orElse(null);
+		}
+		return (P) rv;
 	}
 
 	public static void readFully(InputStream in, byte[] b)

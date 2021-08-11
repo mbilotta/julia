@@ -22,6 +22,7 @@ package org.altervista.mbilotta.julia.program;
 
 import static org.altervista.mbilotta.julia.Utilities.createDialog;
 import static org.altervista.mbilotta.julia.Utilities.createOptionPane;
+import static org.altervista.mbilotta.julia.Utilities.findPlugin;
 import static org.altervista.mbilotta.julia.Utilities.getWindowForComponent;
 import static org.altervista.mbilotta.julia.Utilities.show;
 import static org.altervista.mbilotta.julia.Utilities.showSaveDialog;
@@ -123,6 +124,7 @@ import org.altervista.mbilotta.julia.program.gui.MessagePane;
 import org.altervista.mbilotta.julia.program.gui.PluginSelectionPane;
 import org.altervista.mbilotta.julia.program.gui.PreferencesPane;
 import org.altervista.mbilotta.julia.program.gui.SplashScreen;
+import org.altervista.mbilotta.julia.program.parsers.AliasPlugin;
 import org.altervista.mbilotta.julia.program.parsers.FormulaPlugin;
 import org.altervista.mbilotta.julia.program.parsers.NumberFactoryPlugin;
 import org.altervista.mbilotta.julia.program.parsers.Parameter;
@@ -224,6 +226,7 @@ public class Application {
 	private List<NumberFactoryPlugin> numberFactories;
 	private List<FormulaPlugin> formulas;
 	private List<RepresentationPlugin> representations;
+	private List<AliasPlugin> aliases;
 
 	private Image currentImage;
 
@@ -935,6 +938,7 @@ public class Application {
 		numberFactories = loader.getAvailableNumberFactories();
 		formulas = loader.getAvailableFormulas();
 		representations = loader.getAvailableRepresentations();
+		aliases = loader.getAvailableAliases();
 		profile = loader.getProfile();
 		preferences = loader.getPreferences();
 		preferencesFile = loader.getPreferencesFile();
@@ -1720,6 +1724,10 @@ public class Application {
 		return representations;
 	}
 
+	public List<AliasPlugin> getAliases() {
+		return aliases;
+	}
+
 	public <P extends Plugin> List<P> getPluginsLikeThis(P plugin) {
 		List<? extends Plugin> rv;
 		switch (plugin.getFamily()) {
@@ -2059,33 +2067,15 @@ public class Application {
 	}
 
 	public NumberFactoryPlugin findNumberFactory(String id) {
-		return findPlugin(id, numberFactories);
+		return findPlugin(id, numberFactories, aliases);
 	}
 
 	public FormulaPlugin findFormula(String id) {
-		return findPlugin(id, formulas);
+		return findPlugin(id, formulas, aliases);
 	}
 
 	public RepresentationPlugin findRepresentation(String id) {
-		return findPlugin(id, representations);
-	}
-
-	public Plugin findPlugin(String id, PluginFamily pluginFamily) {
-		switch (pluginFamily) {
-		case numberFactory:  return findNumberFactory(id);
-		case formula:		 return findFormula(id);
-		case representation: return findRepresentation(id);
-		default: throw new AssertionError(pluginFamily);
-		}
-	}
-
-	private static <P extends Plugin> P findPlugin(String id, List<P> plugins) {
-		for (P plugin : plugins) {
-			if (plugin.getId().equals(id)) {
-				return plugin;
-			}
-		}
-		return null;
+		return findPlugin(id, representations, aliases);
 	}
 
 	public JuliaButtonGroup getPreviewCheckBoxGroup() {

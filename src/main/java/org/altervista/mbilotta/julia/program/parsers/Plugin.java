@@ -268,6 +268,10 @@ public abstract class Plugin implements Serializable {
 
 		if (name == null) name = type.getName();
 
+		if (getFamily() == PluginFamily.alias) {
+			return;
+		}
+
 		authors = Author.inspectAnnotations(type, in instanceof JuliaObjectInputStream ? author -> ((JuliaObjectInputStream) in).resolveAuthor(author) : null);
 		parameters = readNonNullList(in, "parameters", Parameter.class);
 
@@ -341,13 +345,15 @@ public abstract class Plugin implements Serializable {
 			throws IOException {
 		out.defaultWriteObject();
 
-		writeList(out, parameters);
+		if (getFamily() != PluginFamily.alias) {
+			writeList(out, parameters);
 
-		out.writeInt(hintGroups.size());
-		for (Map.Entry<String, List<Object>> hintGroup : hintGroups.entrySet()) {
-			out.writeObject(hintGroup.getKey());
-			for (Object value : hintGroup.getValue()) {
-				out.writeObject(value);
+			out.writeInt(hintGroups.size());
+			for (Map.Entry<String, List<Object>> hintGroup : hintGroups.entrySet()) {
+				out.writeObject(hintGroup.getKey());
+				for (Object value : hintGroup.getValue()) {
+					out.writeObject(value);
+				}
 			}
 		}
 	}

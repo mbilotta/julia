@@ -57,6 +57,7 @@ import org.altervista.mbilotta.julia.program.LockedFile.CloseableHider;
 import org.altervista.mbilotta.julia.program.cli.MainCli;
 import org.altervista.mbilotta.julia.program.gui.MessagePane;
 import org.altervista.mbilotta.julia.program.gui.SplashScreen;
+import org.altervista.mbilotta.julia.program.parsers.AliasPlugin;
 import org.altervista.mbilotta.julia.program.parsers.Author;
 import org.altervista.mbilotta.julia.program.parsers.BinaryRelation;
 import org.altervista.mbilotta.julia.program.parsers.ClassValidationException;
@@ -67,6 +68,7 @@ import org.altervista.mbilotta.julia.program.parsers.FormulaPlugin;
 import org.altervista.mbilotta.julia.program.parsers.NumberFactoryPlugin;
 import org.altervista.mbilotta.julia.program.parsers.Parser;
 import org.altervista.mbilotta.julia.program.parsers.Plugin;
+import org.altervista.mbilotta.julia.program.parsers.PluginFamily;
 import org.altervista.mbilotta.julia.program.parsers.RepresentationPlugin;
 import org.altervista.mbilotta.julia.program.parsers.DomValidationException;
 import org.xml.sax.SAXException;
@@ -80,6 +82,7 @@ public class Loader extends SwingWorker<Void, String> {
 	private List<NumberFactoryPlugin> availableNumberFactories;
 	private List<FormulaPlugin> availableFormulas;
 	private List<RepresentationPlugin> availableRepresentations;
+	private List<AliasPlugin> availableAliases;
 	private DateFormat dateFormat;
 	private String parserOutput;
 	private int[] problemCount = new int[3];
@@ -297,6 +300,7 @@ public class Loader extends SwingWorker<Void, String> {
 		case numberFactory:  availableNumberFactories.add((NumberFactoryPlugin) plugin); break;
 		case formula:		 availableFormulas.add((FormulaPlugin) plugin); break;
 		case representation: availableRepresentations.add((RepresentationPlugin) plugin); break;
+		case alias:			 availableAliases.add((AliasPlugin) plugin); break;
 		default: throw new AssertionError(plugin.getFamily());
 		}
 	}
@@ -396,6 +400,7 @@ public class Loader extends SwingWorker<Void, String> {
 		availableNumberFactories = new ArrayList<>(numOfDescriptors);
 		availableFormulas = new ArrayList<>(numOfDescriptors);
 		availableRepresentations = new ArrayList<>(numOfDescriptors);
+		availableAliases = new ArrayList<>(numOfDescriptors);
 		
 		for (int k = 0; k < numOfDescriptors; k++) {
 			int progress = (int) (k * 100f / numOfDescriptors);
@@ -519,7 +524,7 @@ public class Loader extends SwingWorker<Void, String> {
 					debug.println("...success. Plugin successfully retrieved after descriptor parsing: ", plugin, ".");
 					addAvailablePlugin(plugin);
 
-					if (guiRunning || parser.getDocumentationLanguage() != null) {
+					if (plugin.getFamily() != PluginFamily.alias && (guiRunning || parser.getDocumentationLanguage() != null)) {
 						publishToGui("Writing documentation to " + documentationFile + "...");
 						DocumentationWriter documentationWriter = parser.getDocumentationWriter();
 						try {
@@ -612,6 +617,7 @@ public class Loader extends SwingWorker<Void, String> {
 		trimToSize(availableNumberFactories);
 		trimToSize(availableFormulas);
 		trimToSize(availableRepresentations);
+		trimToSize(availableAliases);
 
 		setGuiProgress(100);
 		publishToGui("Releasing profile...");
@@ -671,6 +677,13 @@ public class Loader extends SwingWorker<Void, String> {
 			return Collections.emptyList();
 		}
 		return Collections.unmodifiableList(availableRepresentations);
+	}
+
+	public List<AliasPlugin> getAvailableAliases() {
+		if (availableAliases == null) {
+			return Collections.emptyList();
+		}
+		return Collections.unmodifiableList(availableAliases);
 	}
 
 	public int getProblemCount(int type) {

@@ -101,6 +101,7 @@ public class DescriptorParser extends Parser<Plugin> {
 	@Override
 	protected void reset() {
 		super.reset();
+		documentationLanguage = null;
 		documentationWriter = null;
 		propertyMap = null;
 	}
@@ -136,12 +137,20 @@ public class DescriptorParser extends Parser<Plugin> {
 			}
 		}
 
-		try {
-			propertyMap = inspectProperties(pluginType);
-		} catch (IntrospectionException e) {
-			fatalError(DomValidationException.atEndOf(
-					currentPath,
-					"Could not inspect properties of class " + pluginType.getName(), e));
+		if (pluginFamily == PluginFamily.alias) {
+			return new AliasPlugin(getPluginId(), pluginType);
+		}
+
+		if (pluginType != null) {
+			try {
+				propertyMap = inspectProperties(pluginType);
+			} catch (IntrospectionException e) {
+				fatalError(DomValidationException.atEndOf(
+						currentPath,
+						"Could not inspect properties of class " + pluginType.getName(), e));
+				propertyMap = Collections.emptyMap();
+			}
+		} else {
 			propertyMap = Collections.emptyMap();
 		}
 

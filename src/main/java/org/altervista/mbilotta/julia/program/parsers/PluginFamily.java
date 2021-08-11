@@ -28,7 +28,8 @@ import org.altervista.mbilotta.julia.Representation;
 public enum PluginFamily {
 	formula(Formula.class),
 	representation(Representation.class),
-	numberFactory(NumberFactory.class);
+	numberFactory(NumberFactory.class),
+	alias(Object.class);
 	
 	private final Class<?> interfaceType;
 	
