@@ -269,6 +269,26 @@ public class Utilities {
 		return rv;
 	}
 
+	public static Path lowestCommonAncestor(Path a, Path b) {
+		if (a.getRoot() != null ^ b.getRoot() != null) {
+			return null;
+		}
+
+		Path rv = a.getRoot() != null ? a.getRoot() : null;
+		for (int i = 0, len = Math.min(a.getNameCount(), b.getNameCount()); i < len; i++) {
+			if (a.getName(i).equals(b.getName(i))) {
+				if (rv == null) {
+					rv = a.getName(i);
+				} else {
+					rv = rv.resolve(a.getName(i));
+				}
+			} else {
+				break;
+			}
+		}
+		return rv;
+	}
+
 	public static void readFully(InputStream in, byte[] b)
 			throws IOException {
 		int n = 0, len = b.length;

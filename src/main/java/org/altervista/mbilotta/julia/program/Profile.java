@@ -692,6 +692,8 @@ public class Profile {
 						String idPath = entryName.substring(xmlPrefix.length(), entryName.lastIndexOf('/'));
 						if (binPath == null) {
 							binPath = classesRoot.resolve(idPath);
+						} else {
+							binPath = Utilities.lowestCommonAncestor(binPath, classesRoot.resolve(idPath));
 						}
 						idPaths.add(idPath);
 						extractions.add(new ZipExtraction(entry, Paths.get(entryName)));
