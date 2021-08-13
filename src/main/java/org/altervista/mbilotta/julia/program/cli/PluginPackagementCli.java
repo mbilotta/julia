@@ -26,15 +26,20 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
+import org.altervista.mbilotta.julia.Utilities;
+import org.altervista.mbilotta.julia.program.JuliaZipOutputStream;
 
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -68,7 +73,7 @@ public class PluginPackagementCli implements Runnable {
 	Path pluginPath;
 
 	@Parameters(index = "1..*", arity = "1", paramLabel = "INPUT_PATH",
-		description = "Each INPUT_PATH can be a file or a directory. Files will be added to the right entry in the archive based on their extension: plugin descriptors must end with \".xml\"; JARs must end with \".jar\"; files that are none of the two will be treated as documentation resources. When INPUT_PATH is a directory, its contents will be added to the archive following the same logic. Subdirectories will be ignored.")
+		description = "Each INPUT_PATH can be a file or a directory. Files will be added to the right entry in the archive based on their extension: plugin descriptors must end with \".xml\"; JARs must end with \".jar\"; files that are none of the two will be treated as documentation resources. When INPUT_PATH is a directory, its contents will be added to the archive following the same logic. Subdirectories will be scanned recursively.")
 	List<Path> inputPaths;
 
 	@Override
@@ -83,15 +88,43 @@ public class PluginPackagementCli implements Runnable {
 
 	static final int KILOBYTE = 1024;
 	static final int BUFFER_SIZE = 8 * KILOBYTE;
-
 	private byte[] buffer;
-	private String xmlEntry;
-	private String binEntry;
-	private String docEntry;
 
-	private void compress(Path filePath, String parentEntry, ZipOutputStream target) throws IOException {
-		target.putNextEntry(new ZipEntry(parentEntry + filePath.getFileName().toString()));
-		try (FileInputStream fis = new FileInputStream(filePath.toFile())) {
+	private Path xmlEntry = Path.of("xml");
+	private Path binEntry = Path.of("bin");
+	private Path docEntry = Path.of("doc");
+
+	private int descriptorCount = 0;
+	private int jarCount = 0;
+
+	private void handleFile(Path file, Path treeRoot, ZipOutputStream target) throws IOException {
+		Path dstPath;
+		if (treeRoot != null) {
+			dstPath = treeRoot.relativize(file);
+		} else {
+			dstPath = file.getFileName();
+		}
+		String fileName = file.getFileName().toString();
+		if (fileName.endsWith(".xml")) {
+			descriptorCount++;
+			dstPath = xmlEntry.resolve(pluginPath).resolve(dstPath);
+		} else if (fileName.endsWith(".jar")) {
+			jarCount++;
+			dstPath = binEntry.resolve(dstPath);
+		} else {
+			dstPath = docEntry.resolve(dstPath);
+		}
+		compressFile(file, dstPath, target);
+	}
+
+	private void handleLicenseFile(Path file, ZipOutputStream target) throws IOException {
+		compressFile(file, docEntry.resolve(file.getFileName()), target);
+		compressFile(file, binEntry.resolve(file.getFileName()), target);
+	}
+
+	private void compressFile(Path srcPath, Path dstPath, ZipOutputStream target) throws IOException {
+		target.putNextEntry(new ZipEntry(Utilities.toUnixString(dstPath)));
+		try (FileInputStream fis = new FileInputStream(srcPath.toFile())) {
 			int length;
 			while ((length = fis.read(buffer)) >= 0) {
 				target.write(buffer, 0, length);
@@ -99,62 +132,24 @@ public class PluginPackagementCli implements Runnable {
 		}
 	}
 
-	private void compressDocFile(Path filePath, ZipOutputStream target) throws IOException {
-		if (docEntry == null) {
-			docEntry = "doc/";
-			target.putNextEntry(new ZipEntry(docEntry));
-			target.closeEntry();
-		}
-		compress(filePath, docEntry, target);
-	}
-
-	private void compress(List<Path> paths, ZipOutputStream target) throws IOException {
+	private void compressFiles(List<Path> paths, ZipOutputStream target) throws IOException {
 		for (Path path : paths) {
-			String fileName = path.getFileName().toString();
 			if (Files.isDirectory(path)) {
-				List<Path> contents = Files.list(path)
-					.filter(subpath -> Files.isRegularFile(subpath))
-					.collect(Collectors.toList());
-				compress(contents, target);
-
-			} else if (fileName.endsWith(".xml")) {
-				if (xmlEntry == null) {
-					xmlEntry = createXmlEntry(target);
-				}
-				compress(path, xmlEntry, target);
-
-			} else if (fileName.endsWith(".jar")) {
-				if (binEntry == null) {
-					binEntry = "bin/";
-					target.putNextEntry(new ZipEntry(binEntry));
-					target.closeEntry();
-					if (licensePath != null) {
-						compress(licensePath, binEntry, target);
+				Files.walkFileTree(path, new SimpleFileVisitor<Path>(){
+					@Override
+					public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+						handleFile(file, path, target);
+						return FileVisitResult.CONTINUE;
 					}
-				}
-				compress(path, binEntry, target);
-				
+				});
 			} else {
-				compressDocFile(path, target);
+				handleFile(path, null, target);
 			}
 		}
 	}
 
-	private String createXmlEntry(ZipOutputStream target) throws IOException {
-		String entry = "xml/";
-		target.putNextEntry(new ZipEntry(entry));
-		target.closeEntry();
-		for (Path segment : pluginPath) {
-			entry += segment + "/";
-			target.putNextEntry(new ZipEntry(entry));
-			target.closeEntry();  
-		}
-		return entry;
-	}
-
 	@Override
 	public void run() {
- 
 		if (outputPath == null) {
 			String fileName = pluginPath.getFileName() + ".jup";
 			outputPath = Paths.get(fileName);
@@ -172,17 +167,17 @@ public class PluginPackagementCli implements Runnable {
 		}
 		tempFile.deleteOnExit();
 
-		try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(tempFile))) {
+		try (ZipOutputStream zos = new JuliaZipOutputStream(new FileOutputStream(tempFile))) {
 			buffer = new byte[BUFFER_SIZE];
 			if (licensePath != null) {
-				compressDocFile(licensePath, zos);
+				handleLicenseFile(licensePath, zos);
 			}
-			compress(inputPaths, zos);
+			compressFiles(inputPaths, zos);
 
-			if (xmlEntry == null) {
+			if (descriptorCount == 0) {
 				System.err.println("Error: no descriptor was found. At least one must be provided.");
 				return;
-			} else if (binEntry == null) {
+			} else if (jarCount == 0) {
 				System.err.println("Error: no JAR was found. At least one must be provided.");
 				return;
 			}

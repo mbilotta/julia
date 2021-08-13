@@ -50,6 +50,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -255,6 +256,17 @@ public class Utilities {
 				.orElse(null);
 		}
 		return (P) rv;
+	}
+
+	public static String toUnixString(Path p) {
+		String rv = p.getRoot() != null ? "/" : "";
+		for (Path segment : p) {
+			rv += segment.getName(0) + "/";
+		}
+		if (p.getNameCount() > 0) {
+			rv = rv.substring(0, rv.length() - 1);
+		}
+		return rv;
 	}
 
 	public static void readFully(InputStream in, byte[] b)
