@@ -369,7 +369,8 @@ public class ImageGenerationCli implements Runnable {
 
 							@Override
 							public void executionFinished(Runnable target, Throwable cause) {
-								// TODO: handle Throwable someway
+								Utilities.err.print("Producer thread terminated with exception ").flush();
+								cause.printStackTrace();
 								done.countDown();
 							}
 						});
