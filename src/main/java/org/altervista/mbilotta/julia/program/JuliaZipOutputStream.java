@@ -10,7 +10,7 @@ import java.util.zip.ZipOutputStream;
 
 public class JuliaZipOutputStream extends ZipOutputStream {
 
-    private Set<String> dirEntries = new HashSet<>();
+    private final Set<String> dirEntries = new HashSet<>();
 
     public JuliaZipOutputStream(OutputStream out) {
         super(out);
@@ -19,18 +19,23 @@ public class JuliaZipOutputStream extends ZipOutputStream {
     @Override
     public void putNextEntry(ZipEntry e) throws IOException {
         String name = e.getName();
+        boolean isDirectory = name.endsWith("/");
         String[] path = name.split("/");
-        if (!name.endsWith("/")) {
-            path = Arrays.copyOfRange(path, 0, path.length - 1);
-        }
-        String parent = "";
-        for (String segment : path) {
-            parent += segment + "/";
-            if (dirEntries.add(parent)) {
-                super.putNextEntry(new ZipEntry(parent));
+        String[] parentPath = Arrays.copyOfRange(path, 0, path.length - 1);
+        String ancestor = "";
+        for (String segment : parentPath) {
+            ancestor += segment + "/";
+            if (dirEntries.add(ancestor)) {
+                super.putNextEntry(new ZipEntry(ancestor));
                 closeEntry();
             }
         }
-        super.putNextEntry(e);
+        if (isDirectory) {
+            if (dirEntries.add(name)) {
+                super.putNextEntry(e);
+            }
+        } else {
+            super.putNextEntry(e);
+        }
     }
 }
