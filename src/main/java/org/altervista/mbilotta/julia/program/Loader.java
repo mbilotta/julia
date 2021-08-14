@@ -236,16 +236,18 @@ public class Loader extends SwingWorker<Void, String> {
 		}
 	}
 
-	private void readLegacyPreferencesFile() {
+	private boolean readLegacyPreferencesFile() {
 		debug.println("Reading preferences from ", profile.getLegacyPreferencesFile(), "...");
 		try (ObjectInputStream ois = new ObjectInputStream(Files.newInputStream(profile.getLegacyPreferencesFile()))) {
 			preferences = readNonNull(ois, "preferences", Preferences.class);
 			debug.println("...success: ", preferences);
+			return true;
 		} catch (IOException | ClassNotFoundException e) {
 			preferences = new Preferences();
 			debug.print("...failure. Cause: ");
 			debug.printStackTrace(e);
 			debug.println("Default preferences will be used.");	
+			return false;
 		}
 	}
 
@@ -601,6 +603,7 @@ public class Loader extends SwingWorker<Void, String> {
 			debug.printStackTrace(e);
 		}
 
+		boolean hasLegacyPreferencesFile = false;
 		try {
 			publishToGui("Reading preferences...");
 			debug.println("Reading preferences from ", preferencesFile, "...");
@@ -611,7 +614,26 @@ public class Loader extends SwingWorker<Void, String> {
 		} catch (IOException e) {
 			debug.print("...failure. Cause: ");
 			debug.printStackTrace(e);
-			readLegacyPreferencesFile();
+			hasLegacyPreferencesFile = readLegacyPreferencesFile();
+		}
+
+		if (preferencesFile.isEmpty()) {
+			try {
+				if (hasLegacyPreferencesFile) {
+					publishToGui("Converting legacy preferences...");
+					debug.println("Writing legacy preferences to ", preferencesFile, "...");
+				} else {
+					publishToGui("Writing default preferences...");
+					debug.println("Writing default preferences to ", preferencesFile, "...");
+				}
+				Properties properties = new Properties();
+				preferences.writeTo(properties);
+				preferencesFile.writePropertiesTo(properties);
+				debug.println("...success. File written.");
+			} catch (IOException e) {
+				debug.print("...failure. Cause: ");
+				debug.printStackTrace(e);
+			}
 		}
 
 		trimToSize(availableNumberFactories);
